@@ -1,0 +1,12 @@
+Enrichissement de la triangulation avec un graphe hydrologique déduit. Remarque :  Prendre une decision dans le cas d'un talweg qui pointe vers
+plusieurs triangles potentiellement candidats.
+
+Ajouter un test le fils d'un noeud talweg est un arc ou un triangle. Fait
+
+Integrer le rôle des talus.
+
+Intégrer l'impact des routes
+
+Intégrer le réseau parcellaire
+
+Intégrer les volumes : equation de transfert.

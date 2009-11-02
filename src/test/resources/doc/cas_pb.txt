@@ -1,0 +1,16 @@
+Cas problématiques
+
+
+Données de référence : cas_talweg
+
+
+Pb de continuité des accumulations de surface dans les talweg.
+
+Regarder les edges 379 et 396 : il n'y a pas d'accumulation. Le noeud de transition est le 131. Il a un fils et deux peres.
+
+
+Full test : Le noeud 4870 a plusieurs fils alors qu'il est en continuité avec un talweg.
+
+
+Extraction des rivieres en fonction d'un seuil d'écoulement. Il serait interessant de stocker des statistiques pour eviter le calcul si la valeur choisie n'est pas dans l'intervalle min
+et max des accumulations déja calculées.

@@ -1,0 +1,9 @@
+Dans la structure TIN, les objets sont codés.
+
+Code Nom
+1 = culvert (buse)
+2 = ditch(fossé)
+3 = river(riviere)
+4 = wall (mur, talus)
+
+A prendre en compte dans les nouvelles versions = road et landcover.
