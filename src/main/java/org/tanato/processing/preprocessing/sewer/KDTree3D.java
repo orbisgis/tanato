@@ -277,5 +277,78 @@ public class KDTree3D {
 	        return candidate;
 	    }
 	    
+	    public Point nearestNeighborWithInfZ(Point point) {
+	        return nearestNeighborWithInfZ(point, root, root, 0).getPoint();
+	    }
+	    
+	    /**
+	     * Return either the same node as candidate, or another node whose point
+	     * is closer.
+	     */
+	    private Node nearestNeighborWithInfZ(Point point, Node candidate, Node node, 
+	            int depth) {
+	    	int MAXVALUE=10000000;
+	    	
+	        // Check if the current node is closest that current candidate
+	        double distCand = candidate.point.distance(point);
+	        double dist     = node.point.distance(point);
+	        if(dist<distCand && (point.getCoordinate().z>node.getPoint().getCoordinate().z)){
+	            candidate = node;
+	        }
+	        
+	        // select direction
+	        int dir = depth%2;
+
+	        Node node1, node2;
+	        
+	        // First try on the canonical side,
+	        // the result is the closest node found by depth-firth search
+	        Point anchor = node.getPoint();
+	        GeometryFactory gf= new GeometryFactory();
+	        LineString line;
+	        if(dir==0){
+	            boolean b = point.getCoordinate().x<anchor.getCoordinate().x;
+	            node1 = b ? node.left : node.right;
+	            node2 = b ? node.right : node.left;
+	           
+	           Coordinate[] coord = new Coordinate[2];
+	           	coord[0]= new Coordinate();
+	           	coord[0].x=anchor.getCoordinate().x;
+	           	coord[0].y=MAXVALUE;
+				coord[1]= new Coordinate();
+				coord[1].x=anchor.getCoordinate().x;
+	           	coord[1].y=-MAXVALUE;
+	           line =gf.createLineString(coord);
+	        } else {
+	            boolean b = point.getCoordinate().y<anchor.getCoordinate().y;
+	            node1 = b ? node.left : node.right;
+	            node2 = b ? node.right : node.left;
+	            //line = StraightLine2D.create(anchor, new Vector2D(1, 0)); 
+		           Coordinate[] coord = new Coordinate[2];
+		           	coord[0]= new Coordinate();
+		           	coord[0].x=MAXVALUE;
+		           	coord[0].y=anchor.getCoordinate().y;
+					coord[1]= new Coordinate();
+					coord[1].x=-MAXVALUE;
+		           	coord[1].y=anchor.getCoordinate().y;
+		           line =gf.createLineString(coord);
+	        }
+	        
+	        if(node1!=null) {
+	            // Try to find a better candidate
+	            candidate = nearestNeighbor(point, candidate, node1, depth+1);
+
+	            // recomputes distance to the (possibly new) candidate
+	            distCand = candidate.getPoint().distance(point);
+	        }
+	        
+	        // If line is close enough, there can be closer points to the other
+	        // side of the line
+	        if(line.distance(point)<distCand && node2!=null) {
+	            candidate = nearestNeighbor(point, candidate, node2, depth+1);
+	        }
+	        
+	        return candidate;
+	    }
 }
 
