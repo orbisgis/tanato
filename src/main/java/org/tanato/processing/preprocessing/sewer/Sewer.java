@@ -54,7 +54,7 @@ public class Sewer {
 				LineString newls;
 				if (geom2.getClass().getName()=="Point")
 				{	Coordinate[] coord = new Coordinate[2];
-					coord[1]=((Point)geom2).getCoordinate();
+					coord[0]=((Point)geom2).getCoordinate();
 					coord[1]=(tree.nearestNeighborWithInfZ((Point)geom2)).getCoordinate();
 					newls=gf.createLineString(coord);
 					result.add(newls);	
