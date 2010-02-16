@@ -11,7 +11,7 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.model.ECell;
 import org.tanato.model.HydroCellValued;
 import org.tanato.model.NCell;
@@ -44,7 +44,7 @@ public class HydroNetworkExport {
 
 	}
 
-	public ObjectMemoryDriver exportRunOffDirection(ArrayList<TCell> tcells)
+	public GenericObjectDriver exportRunOffDirection(ArrayList<TCell> tcells)
 			throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -53,7 +53,7 @@ public class HydroNetworkExport {
 				TypeFactory.createType(Type.DOUBLE) }, new String[] { "gid",
 				"the_geom", "slopeindegree" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		for (TCell tCell : tcells) {
 
@@ -111,7 +111,7 @@ public class HydroNetworkExport {
 
 	}
 
-	public ObjectMemoryDriver exportRunOffDirection(ArrayList<ECell> ecells,
+	public GenericObjectDriver exportRunOffDirection(ArrayList<ECell> ecells,
 			ArrayList<TCell> tcells) throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -120,7 +120,7 @@ public class HydroNetworkExport {
 				TypeFactory.createType(Type.DOUBLE) }, new String[] { "gid",
 				"the_geom", "slopeindegree" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		for (TCell tCell : tcells) {
 
@@ -198,7 +198,7 @@ public class HydroNetworkExport {
 
 	}
 
-	public ObjectMemoryDriver exportRidge(ArrayList<TCell> tcells)
+	public GenericObjectDriver exportRidge(ArrayList<TCell> tcells)
 			throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -207,7 +207,7 @@ public class HydroNetworkExport {
 				TypeFactory.createType(Type.DOUBLE) }, new String[] { "gid",
 				"the_geom", "length" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		int k = 0;
 		for (TCell cell : tcells) {
@@ -226,7 +226,7 @@ public class HydroNetworkExport {
 		return driver;
 	}
 
-	public ObjectMemoryDriver exportRidge(ArrayList<ECell> ecells,
+	public GenericObjectDriver exportRidge(ArrayList<ECell> ecells,
 			ArrayList<TCell> tcells) throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -235,7 +235,7 @@ public class HydroNetworkExport {
 				TypeFactory.createType(Type.DOUBLE) }, new String[] { "gid",
 				"the_geom", "length" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		int k = 0;
 		for (TCell cell : tcells) {
@@ -269,7 +269,7 @@ public class HydroNetworkExport {
 		return driver;
 	}
 
-	public ObjectMemoryDriver exportGraphConnexion(ArrayList<TCell> tcells,
+	public GenericObjectDriver exportGraphConnexion(ArrayList<TCell> tcells,
 			ArrayList<NCell> ncells, ArrayList<ECell> ecells)
 			throws DriverException {
 
@@ -279,7 +279,7 @@ public class HydroNetworkExport {
 				TypeFactory.createType(Type.FLOAT) }, new String[] { "gid",
 				"the_geom", "proportion" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		int k = 0;
 		for (TCell cell : tcells) {
@@ -352,36 +352,39 @@ public class HydroNetworkExport {
 
 		for (NCell cell : ncells) {
 
-			if (cell.getGID()!=-1){
-			Coordinate coordCell = sdsNodes.getGeometry(cell.getGID() - 1)
-					.getCentroid().getCoordinate();
-			for (HydroCellValued fCell : cell.getFilsCells()) {
+			if (cell.getGID() != -1) {
+				Coordinate coordCell = sdsNodes.getGeometry(cell.getGID() - 1)
+						.getCentroid().getCoordinate();
+				for (HydroCellValued fCell : cell.getFilsCells()) {
 
-				k++;
+					k++;
 
-				Geometry geom = null;
-				Coordinate coordEdge = null;
-				if (fCell.isEcell()) {
-					ECell eCell = (ECell) fCell.getHydroCell();
-					geom = sdsNodes
-							.getGeometry(eCell.getBasNcell().getGID() - 1);
+					Geometry geom = null;
+					Coordinate coordEdge = null;
+					if (fCell.isEcell()) {
+						ECell eCell = (ECell) fCell.getHydroCell();
+						geom = sdsNodes.getGeometry(eCell.getBasNcell()
+								.getGID() - 1);
 
-					coordEdge = geom.getCoordinate();
+						coordEdge = geom.getCoordinate();
 
-				} else if (fCell.isTcell()) {
-					geom = sdsFaces
-							.getGeometry(fCell.getHydroCell().getGID() - 1);
-					coordEdge = geom.getCentroid().getCoordinate();
+					} else if (fCell.isTcell()) {
+						geom = sdsFaces.getGeometry(fCell.getHydroCell()
+								.getGID() - 1);
+						coordEdge = geom.getCentroid().getCoordinate();
+
+					}
+
+					Geometry line = gf.createLineString(new Coordinate[] {
+							coordCell, coordEdge });
+					driver
+							.addValues(new Value[] {
+									ValueFactory.createValue(k),
+									ValueFactory.createValue(line),
+									ValueFactory.createValue(fCell
+											.getContribution()) });
 
 				}
-
-				Geometry line = gf.createLineString(new Coordinate[] {
-						coordCell, coordEdge });
-				driver.addValues(new Value[] { ValueFactory.createValue(k),
-						ValueFactory.createValue(line),
-						ValueFactory.createValue(fCell.getContribution()) });
-
-			}
 			}
 		}
 
@@ -389,7 +392,7 @@ public class HydroNetworkExport {
 
 	}
 
-	public ObjectMemoryDriver exportOutlet(ArrayList<NCell> ncells)
+	public GenericObjectDriver exportOutlet(ArrayList<NCell> ncells)
 			throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -398,7 +401,7 @@ public class HydroNetworkExport {
 				TypeFactory.createType(Type.FLOAT) }, new String[] { "gid",
 				"the_geom" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		int k = 0;
 

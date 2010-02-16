@@ -15,7 +15,7 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.model.ECell;
 import org.tanato.model.HydroCell;
 import org.tanato.model.HydroCellValued;
@@ -52,7 +52,7 @@ public class HydroNetworkProcess {
 
 	}
 
-	public ObjectMemoryDriver buildRunOffPath(ArrayList<TCell> tcells)
+	public GenericObjectDriver buildRunOffPath(ArrayList<TCell> tcells)
 			throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -60,7 +60,7 @@ public class HydroNetworkProcess {
 				TypeFactory.createType(Type.GEOMETRY) }, new String[] { "gid",
 				"the_geom" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		pathList = new LinkedList<LineString>();
 
@@ -87,7 +87,7 @@ public class HydroNetworkProcess {
 
 	}
 
-	public ObjectMemoryDriver buildRunOffPath(Coordinate p, HydroCell cell)
+	public GenericObjectDriver buildRunOffPath(Coordinate p, HydroCell cell)
 			throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -95,7 +95,7 @@ public class HydroNetworkProcess {
 				TypeFactory.createType(Type.GEOMETRY) }, new String[] { "gid",
 				"the_geom" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		pathList = new LinkedList<LineString>();
 
@@ -113,7 +113,7 @@ public class HydroNetworkProcess {
 
 	}
 
-	public ObjectMemoryDriver buildRiverNetworkTalweg(ArrayList<ECell> ecells)
+	public GenericObjectDriver buildRiverNetworkTalweg(ArrayList<ECell> ecells)
 			throws DriverException {
 
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -123,10 +123,9 @@ public class HydroNetworkProcess {
 						new DimensionConstraint(3) }) }, new String[] { "gid",
 				"the_geom" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		pathList = new LinkedList<LineString>();
-
 
 		LinkedList<NCell> talwegOutletList = new LinkedList<NCell>();
 
@@ -171,7 +170,7 @@ public class HydroNetworkProcess {
 
 	}
 
-	public ObjectMemoryDriver getAccumulation(ArrayList<ECell> ecells,
+	public GenericObjectDriver getAccumulation(ArrayList<ECell> ecells,
 			ArrayList<TCell> tcells, ArrayList<NCell> ncells)
 			throws DriverException {
 
@@ -182,7 +181,7 @@ public class HydroNetworkProcess {
 				TypeFactory.createType(Type.DOUBLE) }, new String[] { "gid",
 				"the_geom", "sumarea", "area" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		HydroNetworkStrategy hydroNetworkStrategy = new HydroNetworkStrategy(
 				ncells, ecells, tcells);
@@ -220,7 +219,7 @@ public class HydroNetworkProcess {
 
 		/*
 		 * for (NCell ecell : ncells) {
-		 *
+		 * 
 		 * Geometry geom = sdsNodes.getGeometry(ecell.getGID() - 1);
 		 * driver.addValues(new Value[] {
 		 * ValueFactory.createValue(ecell.getGID()),
@@ -233,7 +232,7 @@ public class HydroNetworkProcess {
 
 	}
 
-	public ObjectMemoryDriver getAccumulationOnTalweg(ArrayList<ECell> ecells,
+	public GenericObjectDriver getAccumulationOnTalweg(ArrayList<ECell> ecells,
 			ArrayList<TCell> tcells, ArrayList<NCell> ncells)
 			throws DriverException {
 
@@ -243,7 +242,7 @@ public class HydroNetworkProcess {
 				TypeFactory.createType(Type.DOUBLE) }, new String[] { "gid",
 				"the_geom", "sumarea" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		HydroNetworkStrategy hydroNetworkStrategy = new HydroNetworkStrategy(
 				ncells, ecells, tcells);
@@ -299,7 +298,7 @@ public class HydroNetworkProcess {
 	/**
 	 * Calcul le parcours d'une goutte d'eau à partir d'un point et de la
 	 * cellule référente de ce point.
-	 *
+	 * 
 	 * @param p
 	 * @param cell
 	 * @param compteur
@@ -374,29 +373,31 @@ public class HydroNetworkProcess {
 
 			else if (cell instanceof ECell) {
 
-				if (!cell.isTalweg()){
-				for (HydroCellValued fCell : cell.getFilsCells()) {
+				if (!cell.isTalweg()) {
+					for (HydroCellValued fCell : cell.getFilsCells()) {
 
-					if (fCell.getHydroCell() instanceof TCell) {
-						findRunOffPath(p, fCell.getHydroCell(), compteur + 1);
-					} else if (fCell.getHydroCell() instanceof NCell) {
-
-						Coordinate coordNode = sdsNodes.getGeometry(
-								fCell.getHydroCell().getGID() - 1)
-								.getCoordinates()[0];
-						LineString result = gf.createLineString(new Coordinate[] {
-								p, coordNode });
-
-						if (!pathList.contains(result)) {
-							pathList.add(result);
-
-							findRunOffPath(coordNode, fCell.getHydroCell(),
+						if (fCell.getHydroCell() instanceof TCell) {
+							findRunOffPath(p, fCell.getHydroCell(),
 									compteur + 1);
+						} else if (fCell.getHydroCell() instanceof NCell) {
+
+							Coordinate coordNode = sdsNodes.getGeometry(
+									fCell.getHydroCell().getGID() - 1)
+									.getCoordinates()[0];
+							LineString result = gf
+									.createLineString(new Coordinate[] { p,
+											coordNode });
+
+							if (!pathList.contains(result)) {
+								pathList.add(result);
+
+								findRunOffPath(coordNode, fCell.getHydroCell(),
+										compteur + 1);
+							}
+
 						}
 
 					}
-
-				}
 				}
 
 			}
@@ -417,8 +418,9 @@ public class HydroNetworkProcess {
 						Coordinate coordEndNode = sdsNodes.getGeometry(
 								baseFCell.getGID() - 1).getCoordinates()[0];
 
-						LineString result = gf.createLineString(new Coordinate[] {
-								coordStartNode, coordEndNode });
+						LineString result = gf
+								.createLineString(new Coordinate[] {
+										coordStartNode, coordEndNode });
 
 						if (!pathList.contains(result)) {
 							pathList.add(result);
@@ -444,7 +446,7 @@ public class HydroNetworkProcess {
 	/**
 	 * Calcul le parcours d'une goutte d'eau à partir d'un point et de la
 	 * cellule référente de ce point.
-	 *
+	 * 
 	 * @param p
 	 * @param cell
 	 * @param compteur
@@ -559,7 +561,7 @@ public class HydroNetworkProcess {
 
 	/**
 	 * Recherche tous les pères d'une hydrocell.
-	 *
+	 * 
 	 * @param cell
 	 * @return
 	 */
