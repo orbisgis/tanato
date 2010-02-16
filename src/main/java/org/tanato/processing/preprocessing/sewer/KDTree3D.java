@@ -10,6 +10,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 
 public class KDTree3D {
 	 /**
@@ -24,6 +25,10 @@ public class KDTree3D {
 	 * large points sets.<br>
 	 * This implementation is semi-dynamic: points can be added, but can not be
 	 * removed.
+	 *
+	 *The original code has been adapted in order to be adapted to the JTS library.
+	 *The "nearestNeighbor" algorithm has been modified in a "nearestNeighborWithInfZ" 
+	 *algorithm for searching the closest point with an inferior value of Z.
 	 *
 	 */
 	public int MAXVALUE=10000000;
@@ -277,8 +282,15 @@ public class KDTree3D {
 	        return candidate;
 	    }
 	    
+   
 	    public Point nearestNeighborWithInfZ(Point point) {
 	        return nearestNeighborWithInfZ(point, root, root, 0).getPoint();
+	    }
+	    
+	    public Point nearestNeighborWithInfZ(Polygon p) {
+	    	 GeometryFactory gf= new GeometryFactory();
+	    	 Point point =gf.createPoint(p.getCoordinate());
+	    	return nearestNeighborWithInfZ(point, root, root, 0).getPoint();
 	    }
 	    
 	    /**
