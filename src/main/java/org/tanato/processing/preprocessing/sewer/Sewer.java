@@ -2,7 +2,6 @@ package org.tanato.processing.preprocessing.sewer;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
 
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
@@ -13,12 +12,10 @@ import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.PrecisionModel;
 
 
 public class Sewer {
@@ -29,7 +26,7 @@ public class Sewer {
 	public static String path2 = "data/small_courbes.shp";
 
 	public static void main(String[] args) throws DriverLoadException, DataSourceCreationException, DriverException {
-		ArrayList<Geometry> sewer =getSewer();
+		//ArrayList<Geometry> sewer =getSewer();
 	}
 	
 	public static ArrayList<Geometry> getSewer() throws DriverLoadException, DataSourceCreationException, DriverException {
