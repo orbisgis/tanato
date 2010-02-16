@@ -31,6 +31,8 @@ public class Sewer {
 	
 	public static ArrayList<Geometry> getSewer() throws DriverLoadException, DataSourceCreationException, DriverException {
 		ArrayList<Geometry> result = new ArrayList<Geometry>();
+		ArrayList<Geometry> resultok = new ArrayList<Geometry>();
+		ArrayList<Geometry> resultnotok = new ArrayList<Geometry>();
 		
 		DataSource mydata1 = dsf.getDataSource(new File(path1));
 		DataSource mydata2 = dsf.getDataSource(new File(path2));
@@ -52,14 +54,38 @@ public class Sewer {
 		for (int j = 0; j < sds2.getRowCount(); j++) {
 				Geometry geom2 = sds2.getGeometry(j);
 				LineString newls;
-				if (geom2.getClass().getName()=="Point")
+				if (geom2.getClass().getName()=="Polygon")
 				{	Coordinate[] coord = new Coordinate[2];
 					coord[0]=((Point)geom2).getCoordinate();
 					coord[1]=(tree.nearestNeighborWithInfZ((Point)geom2)).getCoordinate();
 					newls=gf.createLineString(coord);
 					result.add(newls);	
 				}
+		}
+		
+		//research of the cases with some houses in the way
+		for (int i=0;i<result.size();i++)
+		{
+			for (int j = 0; j < sds2.getRowCount(); j++) {
+				Geometry geom2 = sds2.getGeometry(j);
+				LineString newls;
+				boolean b;
+				if (geom2.getClass().getName()=="Polygon")
+					{	Coordinate[] coord = new Coordinate[2];
+						coord[0]=((Point)geom2).getCoordinate();
+						coord[1]=(tree.nearestNeighborWithInfZ((Point)geom2)).getCoordinate();
+						newls=gf.createLineString(coord);
+						result.add(newls);	
+					}
 			}
+		}
+		
+		//resolving the cases with some houses in the way
+		while (resultnotok.size()>0)
+			{
+			}
+			
+		
 		sds2.close();
 		return result;
 	}

@@ -13,7 +13,7 @@ import com.vividsolutions.jts.geom.Point;
 
 public class KDTree3D {
 	 /**
-	 * file KDTree3D.java
+	 * file KDTree3D.java, adapted from http://geom-java.sourceforge.net
 	 */
 	/**
 	 * A data structure for storing a great number of points. During construction
@@ -24,9 +24,10 @@ public class KDTree3D {
 	 * large points sets.<br>
 	 * This implementation is semi-dynamic: points can be added, but can not be
 	 * removed.
-	 * @author dlegland
 	 *
 	 */
+	public int MAXVALUE=10000000;
+	
   	    public class Node{
 	        private  Point 	point;
 	        private Node left;
@@ -100,11 +101,11 @@ public class KDTree3D {
 	         for (int i=0;i<(sl.size());i++)
 	        {
 	        	 Geometry geom =sl.get(i);
-	        	 if (geom.getClass().getName()=="Point")
+	        	 if (geom instanceof Point)
 	        	 {
 	        		 points.add((Point)geom);
 	        	 }
-	        	 if (geom.getClass().getName()=="LineString")
+	        	 if (geom instanceof LineString)
 	        	 {
 	 				for (int k=0;k<geom.getNumPoints();k++)
 					{points.add(((LineString)geom).getPointN(k));
@@ -213,7 +214,6 @@ public class KDTree3D {
 	     */
 	    private Node nearestNeighbor(Point point, Node candidate, Node node, 
 	            int depth) {
-	    	int MAXVALUE=10000000;
 	    	
 	        // Check if the current node is closest that current candidate
 	        double distCand = candidate.point.distance(point);
