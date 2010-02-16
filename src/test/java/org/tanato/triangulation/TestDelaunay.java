@@ -17,7 +17,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.jdelaunay.delaunay.Delaunay;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
@@ -100,7 +100,7 @@ public class TestDelaunay {
 
 		delaunay.morphologicalQualification();
 
-		 delaunay.removeFlatTriangles();
+		delaunay.removeFlatTriangles();
 
 		// aMesh.saveMeshXML();
 
@@ -150,11 +150,11 @@ public class TestDelaunay {
 
 	}
 
-	private static ObjectMemoryDriver driverNodes;
+	private static GenericObjectDriver driverNodes;
 
-	private static ObjectMemoryDriver driverEdges;
+	private static GenericObjectDriver driverEdges;
 
-	private static ObjectMemoryDriver driverFaces;
+	private static GenericObjectDriver driverFaces;
 
 	public static void getResults(Delaunay delaunay) throws DriverException {
 
@@ -168,7 +168,7 @@ public class TestDelaunay {
 				TypeFactory.createType(Type.GEOMETRY) }, new String[] { "gid",
 				"start_n", "end_n", "left_t", "right_t", "type", "the_geom" });
 
-		driverEdges = new ObjectMemoryDriver(metadata);
+		driverEdges = new GenericObjectDriver(metadata);
 
 		GeometryFactory gf = new GeometryFactory();
 
@@ -229,7 +229,7 @@ public class TestDelaunay {
 				TypeFactory.createType(Type.GEOMETRY) }, new String[] { "gid",
 				"type", "the_geom" });
 
-		driverNodes = new ObjectMemoryDriver(metadata);
+		driverNodes = new GenericObjectDriver(metadata);
 
 		for (MyPoint aPoint : points) {
 			int id = aPoint.getGid();
@@ -252,7 +252,7 @@ public class TestDelaunay {
 				TypeFactory.createType(Type.INT) }, new String[] { "gid",
 				"type", "the_geom", "edge1", "edge2", "edge3" });
 
-		driverFaces = new ObjectMemoryDriver(metadata);
+		driverFaces = new GenericObjectDriver(metadata);
 
 		for (MyTriangle aTriangle : triangles) {
 

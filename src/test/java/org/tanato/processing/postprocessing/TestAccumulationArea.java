@@ -2,18 +2,18 @@ package org.tanato.processing.postprocessing;
 
 import java.io.File;
 import java.util.ArrayList;
+
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.SetUpData;
 import org.tanato.model.ECell;
 import org.tanato.model.NCell;
 import org.tanato.model.TCell;
-import org.tanato.processing.postprocessing.HydroNetworkProcess;
 
 public class TestAccumulationArea {
 
@@ -62,7 +62,7 @@ public class TestAccumulationArea {
 		HydroNetworkProcess hydroNetworkProcess = new HydroNetworkProcess(
 				sdsFaces, sdsEdges, sdsNodes);
 
-		ObjectMemoryDriver driver = hydroNetworkProcess
+		GenericObjectDriver driver = hydroNetworkProcess
 				.getAccumulation(eCells, tCells, nCells);
 		/*
 		 * ObjectMemoryDriver driver = hydroNetworkProcess

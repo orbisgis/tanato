@@ -20,7 +20,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.jdelaunay.delaunay.ConstraintType;
 import org.jdelaunay.delaunay.Delaunay;
 import org.jdelaunay.delaunay.DelaunayError;
@@ -88,7 +88,7 @@ public class Modelisation1Delaunay {
 
 		/*
 		 * DataSource topopts = dsf.getDataSource(new File(pathPtTopo));
-		 *
+		 * 
 		 * SpatialDataSourceDecorator sdsTopopts = new
 		 * SpatialDataSourceDecorator( topopts);
 		 */
@@ -172,25 +172,25 @@ public class Modelisation1Delaunay {
 
 		/*
 		 * sdsTopopts.open();
-		 *
+		 * 
 		 * zField = sdsTopopts.getFieldIndexByName("value");
-		 *
+		 * 
 		 * for (int i = 0; i < sdsTopopts.getRowCount(); i++) {
-		 *
+		 * 
 		 * Geometry geom = sdsTopopts.getGeometry(i);
-		 *
+		 * 
 		 * for (int j = 0; j < geom.getNumGeometries(); j++) {
-		 *
+		 * 
 		 * double zValue = sdsTopopts.getFieldValue(i, zField).getAsDouble();
-		 * Geometry subGeom = geom.getGeometryN(j); if (subGeom.getDimension() ==
-		 * 0) {
-		 *
+		 * Geometry subGeom = geom.getGeometryN(j); if (subGeom.getDimension()
+		 * == 0) {
+		 * 
 		 * for (int k = 0; k < subGeom.getCoordinates().length; k++) {
-		 *
+		 * 
 		 * Coordinate coord = subGeom.getCoordinates()[k]; gid++; points.add(new
 		 * MyPoint(coord.x, coord.y, zValue, gid)); } } } }
-		 *
-		 *
+		 * 
+		 * 
 		 * sdsTopopts.close();
 		 */
 
@@ -216,27 +216,27 @@ public class Modelisation1Delaunay {
 		delaunay.removeFlatTriangles();
 
 		/*
-		 *
+		 * 
 		 * //sdsditches.open(); /* aMesh.ditchStart();
-		 *
+		 * 
 		 * for (int i = 0; i < sdsditches.getRowCount(); i++) {
-		 *
+		 * 
 		 * Geometry geom = sdsditches.getGeometry(i);
-		 *
-		 * for (int j = 0; j < geom.getNumGeometries(); j++) { Geometry subGeom =
-		 * geom.getGeometryN(j); if (subGeom instanceof LineString) {
-		 *
-		 * LineString line = (LineString) subGeom; LinkedList<MyPoint> pts =
-		 * new LinkedList<MyPoint>(); if (subGeom.isValid()) {
-		 *
+		 * 
+		 * for (int j = 0; j < geom.getNumGeometries(); j++) { Geometry subGeom
+		 * = geom.getGeometryN(j); if (subGeom instanceof LineString) {
+		 * 
+		 * LineString line = (LineString) subGeom; LinkedList<MyPoint> pts = new
+		 * LinkedList<MyPoint>(); if (subGeom.isValid()) {
+		 * 
 		 * if (line.isClosed()){ }
-		 *
+		 * 
 		 * else { LineString lineString = (LineString) subGeom; Coordinate[]
 		 * coords = lineString.getCoordinates(); for (int k = 0; k <
 		 * coords.length; k++) {
-		 *
+		 * 
 		 * MyPoint apoint = new MyPoint(coords[k].x, coords[k].y);
-		 *
+		 * 
 		 * pts.add(apoint); } aMesh.ditchSet(pts); } } } } } sdsditches.close();
 		 */
 
@@ -244,15 +244,15 @@ public class Modelisation1Delaunay {
 		// aMesh.sewerStart();
 		/*
 		 * LinkedList<MyPoint> points; for (LineString lineString : sewers) {
-		 *
+		 * 
 		 * points = new LinkedList<MyPoint>();
-		 *
+		 * 
 		 * points.add(new MyPoint(lineString.getStartPoint().getX(),
 		 * lineString.getStartPoint().getY()));
-		 *
+		 * 
 		 * points.add(new MyPoint(lineString.getEndPoint().getX(), lineString
 		 * .getEndPoint().getY())); aMesh.sewerSet(points); }
-		 *
+		 * 
 		 * aMesh.sewerValidate();
 		 */
 
@@ -355,11 +355,11 @@ public class Modelisation1Delaunay {
 
 	}
 
-	private static ObjectMemoryDriver driverNodes;
+	private static GenericObjectDriver driverNodes;
 
-	private static ObjectMemoryDriver driverEdges;
+	private static GenericObjectDriver driverEdges;
 
-	private static ObjectMemoryDriver driverFaces;
+	private static GenericObjectDriver driverFaces;
 
 	public static void getResults() throws DriverException {
 
@@ -379,7 +379,7 @@ public class Modelisation1Delaunay {
 				"start_n", "end_n", "left_t", "right_t", "type", "the_geom",
 				"slope", "slopedeg", "topo" });
 
-		driverEdges = new ObjectMemoryDriver(metadata);
+		driverEdges = new GenericObjectDriver(metadata);
 
 		GeometryFactory gf = new GeometryFactory();
 
@@ -445,7 +445,7 @@ public class Modelisation1Delaunay {
 						new DimensionConstraint(3) }) }, new String[] { "gid",
 				"type", "the_geom" });
 
-		driverNodes = new ObjectMemoryDriver(metadata);
+		driverNodes = new GenericObjectDriver(metadata);
 
 		for (MyPoint aPoint : points) {
 			int id = points.indexOf(aPoint) + 1;
@@ -473,7 +473,7 @@ public class Modelisation1Delaunay {
 				"type", "the_geom", "edge1", "edge2", "edge3", "slope",
 				"slopedeg" });
 
-		driverFaces = new ObjectMemoryDriver(metadata);
+		driverFaces = new GenericObjectDriver(metadata);
 
 		for (MyTriangle aTriangle : triangles) {
 

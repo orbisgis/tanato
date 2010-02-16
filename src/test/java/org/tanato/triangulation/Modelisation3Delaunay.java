@@ -20,7 +20,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.jdelaunay.delaunay.Delaunay;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
@@ -42,10 +42,10 @@ public class Modelisation3Delaunay {
 
 	public static String pathTopo = "/home/bocher/Bureau/avupur/modelisation1/courbeschezine.shp";
 
-//	public static String pathDitches = "/home/bocher/Bureau/avupur/modelisation1/fosses.shp";
+	// public static String pathDitches =
+	// "/home/bocher/Bureau/avupur/modelisation1/fosses.shp";
 
 	public static String pathsewer = "/tmp/line.shp";
-
 
 	private static MyMesh aMesh;
 
@@ -163,18 +163,18 @@ public class Modelisation3Delaunay {
 				Geometry subGeom = geom.getGeometryN(j);
 				if (subGeom instanceof LineString) {
 
-					if (subGeom.isValid()){
+					if (subGeom.isValid()) {
 
-					LineString lineString = (LineString) subGeom;
-					Coordinate[] coords = lineString.getCoordinates();
-					for (int k = 0; k < coords.length; k++) {
+						LineString lineString = (LineString) subGeom;
+						Coordinate[] coords = lineString.getCoordinates();
+						for (int k = 0; k < coords.length; k++) {
 
-						MyPoint apoint = new MyPoint(coords[k].x, coords[k].y,
-								coords[k].z);
+							MyPoint apoint = new MyPoint(coords[k].x,
+									coords[k].y, coords[k].z);
 
-						pts.add(apoint);
+							pts.add(apoint);
 
-					}
+						}
 					}
 
 				}
@@ -276,11 +276,11 @@ public class Modelisation3Delaunay {
 
 	}
 
-	private static ObjectMemoryDriver driverNodes;
+	private static GenericObjectDriver driverNodes;
 
-	private static ObjectMemoryDriver driverEdges;
+	private static GenericObjectDriver driverEdges;
 
-	private static ObjectMemoryDriver driverFaces;
+	private static GenericObjectDriver driverFaces;
 
 	public static void getResults() throws DriverException {
 
@@ -300,7 +300,7 @@ public class Modelisation3Delaunay {
 				"start_n", "end_n", "left_t", "right_t", "type", "the_geom",
 				"slope", "slopedeg", "topo" });
 
-		driverEdges = new ObjectMemoryDriver(metadata);
+		driverEdges = new GenericObjectDriver(metadata);
 
 		GeometryFactory gf = new GeometryFactory();
 
@@ -366,7 +366,7 @@ public class Modelisation3Delaunay {
 						new DimensionConstraint(3) }) }, new String[] { "gid",
 				"type", "the_geom" });
 
-		driverNodes = new ObjectMemoryDriver(metadata);
+		driverNodes = new GenericObjectDriver(metadata);
 
 		for (MyPoint aPoint : points) {
 			int id = points.indexOf(aPoint) + 1;
@@ -394,7 +394,7 @@ public class Modelisation3Delaunay {
 				"type", "the_geom", "edge1", "edge2", "edge3", "slope",
 				"slopedeg" });
 
-		driverFaces = new ObjectMemoryDriver(metadata);
+		driverFaces = new GenericObjectDriver(metadata);
 
 		for (MyTriangle aTriangle : triangles) {
 

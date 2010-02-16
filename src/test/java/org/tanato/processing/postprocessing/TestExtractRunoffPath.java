@@ -9,12 +9,11 @@ import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.SetUpData;
 import org.tanato.model.ECell;
 import org.tanato.model.NCell;
 import org.tanato.model.TCell;
-import org.tanato.processing.postprocessing.HydroNetworkProcess;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -71,7 +70,7 @@ public class TestExtractRunoffPath {
 
 		Coordinate p = sdsNodes.getGeometry(cell.getGID() - 1).getCoordinates()[0];
 
-		ObjectMemoryDriver driver = hydroNetworkProcess.buildRunOffPath(p, cell);
+		GenericObjectDriver driver = hydroNetworkProcess.buildRunOffPath(p, cell);
 
 		System.out.println("Nombre de lignes  "+ driver.getRowCount());
 

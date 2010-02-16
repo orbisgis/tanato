@@ -15,7 +15,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.gdms.sql.parser.ParseException;
 import org.gdms.sql.strategies.SemanticException;
 import org.tanato.SetUpData;
@@ -77,7 +77,7 @@ public class TestBuildGraph {
 				TypeFactory.createType(Type.INT) }, new String[] { "gid",
 				"the_geom", "peres", "fils" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		sdsEdges.open();
 

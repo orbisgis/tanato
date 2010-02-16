@@ -17,13 +17,13 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.SetUpData;
 import org.tanato.model.ECell;
 import org.tanato.model.HydroCell;
 import org.tanato.model.NCell;
 import org.tanato.model.TCell;
-import org.tanato.processing.postprocessing.HydroNetworkProcess;
+
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
@@ -84,7 +84,7 @@ public class TestWatershed {
 				TypeFactory.createType(Type.GEOMETRY) }, new String[] { "gid",
 				"the_geom" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 
 		sdsFaces.open();

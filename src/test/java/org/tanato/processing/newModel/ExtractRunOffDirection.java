@@ -14,7 +14,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.utilities.MathUtil;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -48,7 +48,7 @@ public class ExtractRunOffDirection {
 				TypeFactory.createType(Type.DOUBLE) }, new String[] { "gid",
 				"the_geom", "slopeindegree" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		GeometryFactory gf = new GeometryFactory();
 

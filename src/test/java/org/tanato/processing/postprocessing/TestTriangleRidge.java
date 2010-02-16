@@ -2,20 +2,18 @@ package org.tanato.processing.postprocessing;
 
 import java.io.File;
 import java.util.ArrayList;
+
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.SetUpData;
 import org.tanato.model.ECell;
-import org.tanato.model.HydroTINModel;
 import org.tanato.model.NCell;
 import org.tanato.model.TCell;
-import org.tanato.processing.postprocessing.HydroNetworkExport;
-import org.tanato.processing.postprocessing.HydroNetworkProcess;
 
 public class TestTriangleRidge {
 
@@ -66,7 +64,7 @@ public class TestTriangleRidge {
 		HydroNetworkExport hydroNetworkExport = new HydroNetworkExport(
 				sdsFaces, sdsEdges, sdsNodes);
 
-		ObjectMemoryDriver driver = hydroNetworkExport
+		GenericObjectDriver driver = hydroNetworkExport
 				.exportRidge(tCells);
 
 		sdsFaces.close();

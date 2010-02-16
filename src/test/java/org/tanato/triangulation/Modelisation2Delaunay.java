@@ -20,7 +20,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.jdelaunay.delaunay.Delaunay;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
@@ -276,11 +276,11 @@ public class Modelisation2Delaunay {
 
 	}
 
-	private static ObjectMemoryDriver driverNodes;
+	private static GenericObjectDriver driverNodes;
 
-	private static ObjectMemoryDriver driverEdges;
+	private static GenericObjectDriver driverEdges;
 
-	private static ObjectMemoryDriver driverFaces;
+	private static GenericObjectDriver driverFaces;
 
 	public static void getResults() throws DriverException {
 
@@ -300,7 +300,7 @@ public class Modelisation2Delaunay {
 				"start_n", "end_n", "left_t", "right_t", "type", "the_geom",
 				"slope", "slopedeg", "topo" });
 
-		driverEdges = new ObjectMemoryDriver(metadata);
+		driverEdges = new GenericObjectDriver(metadata);
 
 		GeometryFactory gf = new GeometryFactory();
 
@@ -366,7 +366,7 @@ public class Modelisation2Delaunay {
 						new DimensionConstraint(3) }) }, new String[] { "gid",
 				"type", "the_geom" });
 
-		driverNodes = new ObjectMemoryDriver(metadata);
+		driverNodes = new GenericObjectDriver(metadata);
 
 		for (MyPoint aPoint : points) {
 			int id = points.indexOf(aPoint) + 1;
@@ -394,7 +394,7 @@ public class Modelisation2Delaunay {
 				"type", "the_geom", "edge1", "edge2", "edge3", "slope",
 				"slopedeg" });
 
-		driverFaces = new ObjectMemoryDriver(metadata);
+		driverFaces = new GenericObjectDriver(metadata);
 
 		for (MyTriangle aTriangle : triangles) {
 

@@ -9,12 +9,12 @@ import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.tanato.SetUpData;
 import org.tanato.model.ECell;
 import org.tanato.model.NCell;
 import org.tanato.model.TCell;
-import org.tanato.processing.postprocessing.HydroNetworkExport;
+
 import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class TestOutlet {
@@ -60,7 +60,7 @@ public class TestOutlet {
 		HydroNetworkExport hydroNetworkExport = new HydroNetworkExport(
 				sdsFaces, sdsEdges, sdsNodes);
 
-		ObjectMemoryDriver driver = hydroNetworkExport.exportOutlet(nCells);
+		GenericObjectDriver driver = hydroNetworkExport.exportOutlet(nCells);
 
 		sdsNodes.close();
 

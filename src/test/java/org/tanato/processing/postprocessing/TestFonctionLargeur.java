@@ -15,7 +15,8 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.memory.ObjectMemoryDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
+
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 
@@ -183,7 +184,7 @@ public class TestFonctionLargeur {
 				TypeFactory.createType(Type.INT),
 				TypeFactory.createType(Type.INT) }, new String[] { "x", "y" });
 
-		ObjectMemoryDriver driver = new ObjectMemoryDriver(metadata);
+		GenericObjectDriver driver = new GenericObjectDriver(metadata);
 
 		for (int i = 0; i < range.length; i++) {
 
