@@ -47,10 +47,12 @@ public class NewSewer {
 			sds2.open();
 			Polygon bati = (Polygon) sds1.getGeometry(i).getGeometryN(0);
 			ProjectedPoint ptdist=sewerIndex(bati,sds2);	
-				Coordinate[] coord = new Coordinate[2];
+			if (ptdist.getPoint()!=null)
+				{Coordinate[] coord = new Coordinate[2];
 				coord[0]=(bati.getCentroid()).getCoordinate();
 				coord[1]=(ptdist.getPoint()).getCoordinate();
 				result.add(gf.createLineString(coord));	
+				}
 			sds2.close();
 		}
 		sds1.close();
@@ -63,14 +65,13 @@ public class NewSewer {
 	public static Point getVectorSlope(Polygon bati)
 	{	
 		Coordinate c= new Coordinate(0.0,0.0);
+		Coordinate[] coord =bati.getCoordinates();
+		
 		for (int i=0;(i<bati.getNumPoints()-2);i++)		
 		{	
-			Point point1 = (Point) bati.getGeometryN(i);
-			Coordinate p1 = point1.getCoordinate();
-			Point point2 = (Point) bati.getGeometryN(i+1);
-			Coordinate p2 = point2.getCoordinate();
-			Point point3 = (Point) bati.getGeometryN(i+2);
-			Coordinate p3 = point3.getCoordinate();
+			Coordinate p1 = coord[i];
+			Coordinate p2 = coord[i+1];
+			Coordinate p3 = coord[i+2];
 			c.x=c.x+ (p2.y-p1.y)*(p3.z-p1.z)-(p2.z-p1.z)*(p3.y-p1.y);
 			c.y=c.y+ (p2.z-p1.z)*(p3.x-p1.x)-(p2.x-p1.x)*(p3.z-p1.z);
 		}
