@@ -44,7 +44,7 @@ public class NewSewer {
 			Coordinate[] coordb = new Coordinate[2];
 			if (sewerdist.getPoint() != null) {
 				coordc[0] = (bati.getCentroid()).getCoordinate();
-				coordc[1] = (sewerdist.getPoint()).getCoordinate();
+				coordc[1]=intersection(bati, sewerdist, sds1);
 			}
 			sds2.close();
 			//calculate the posible habitation
@@ -200,6 +200,23 @@ public class NewSewer {
 	}
 
 	/**
+	 * Calculate if the centroid of the bati1 is higher than the bati2 one
+	 */
+	public static boolean BatiBatiHigher(Polygon bati1,Polygon bati2) {
+		Point s = getVectorSlope(bati1);
+		Coordinate[] c1 = bati1.getCoordinates();
+		Coordinate[] c2 = bati2.getCoordinates();
+		float z1=0;
+		float z2=0;
+		for (int i=0;i<c1.length;i++)
+		{ z1=(float) (z1+c1[i].z);}
+		z1=z1/c1.length;
+		for (int i=0;i<c2.length;i++)
+		{ z2=(float) (z2+c2[i].z);}
+		z2=z2/c2.length;
+		return (z1>=z2);
+	}
+	/**
 	 * Return the nearest Projected point of the habitation on the sewers
 	 */
 	public static ProjectedPoint sewerIndex(Polygon bati,
@@ -235,7 +252,7 @@ public class NewSewer {
 		for (int i = 0; i < sds1.getRowCount(); i++) {
 			Polygon poly = (Polygon) sds1.getGeometry(i).getGeometryN(0);
 			float value = BatiBatiCosAngle(bati,poly)/BatiBatiDistance(bati,poly);
-			if ((value > valuemax))//&&(bati.getCentroid().getCoordinate().z>poly.getCentroid().getCoordinate().z)) 
+			if ((value > valuemax)&&(BatiBatiHigher(bati,poly)))
 			{
 				valuemax = value;
 				indexmin = i;
@@ -246,4 +263,26 @@ public class NewSewer {
 		return result;
 	}
 	
+	
+	public static Coordinate intersection(Polygon bati,ProjectedPoint sewerdist,SpatialDataSourceDecorator sds1) throws DriverException
+	{Coordinate result=null;
+	boolean intersect=false;
+	Coordinate[] coord= new Coordinate[2];
+	coord[0]=bati.getCoordinate();
+	coord[1]=sewerdist.getPoint().getCoordinate();
+	LineString line = gf.createLineString(coord);
+	for (int i = 0; i < sds1.getRowCount(); i++) {
+		Polygon poly = (Polygon) sds1.getGeometry(i).getGeometryN(0);
+		if (line.intersects(poly)&&(!bati.contains(poly)))
+		{	intersect=true;
+			result= poly.getCentroid().getCoordinate();
+			coord[1]=result;
+			line = gf.createLineString(coord);
+		}	
+	}	
+	if (intersect)
+		{return result;}
+		else
+		{return sewerdist.getPoint().getCoordinate();}
+	}
 }
