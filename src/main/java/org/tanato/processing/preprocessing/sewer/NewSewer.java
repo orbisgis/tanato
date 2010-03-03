@@ -235,7 +235,8 @@ public class NewSewer {
 		for (int i = 0; i < sds1.getRowCount(); i++) {
 			Polygon poly = (Polygon) sds1.getGeometry(i).getGeometryN(0);
 			float value = BatiBatiCosAngle(bati,poly)/BatiBatiDistance(bati,poly);
-			if ((value > valuemax)&&(bati.getCentroid().getCoordinate().z>poly.getCentroid().getCoordinate().z)) {
+			if ((value > valuemax))//&&(bati.getCentroid().getCoordinate().z>poly.getCentroid().getCoordinate().z)) 
+			{
 				valuemax = value;
 				indexmin = i;
 				c = sds1.getGeometry(i).getGeometryN(0).getCentroid();
