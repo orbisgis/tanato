@@ -22,6 +22,8 @@ public class NewSewer {
 	public static DataSourceFactory dsf = new DataSourceFactory();
 	public static GeometryFactory gf = new GeometryFactory();
 	public static int MAXVALUE = 10000000;
+	public static float Zepsilon =1.0f;
+	public static float MAXlength =150.0f;
 
 	public static ArrayList<Geometry> getSewer(String buildingDataPath, String sewerDataPath) throws DriverLoadException,
 			DataSourceCreationException, DriverException {
@@ -155,7 +157,7 @@ public class NewSewer {
 			double Sz = p1.getCoordinate().z + coeff
 					* (p2.getCoordinate().z - p1.getCoordinate().z);
 
-			if (intersection && ((c.getCoordinate().z) < Sz)) {
+			if (intersection && ((c.getCoordinate().z) +Zepsilon < Sz)) {
 				intersection = false;
 			}
 
@@ -168,6 +170,7 @@ public class NewSewer {
 				}
 			}
 		}
+		if (minDist>MAXlength) {minDist=MAXVALUE;}
 		ProjectedPoint result = new ProjectedPoint(pfinal, minDist);
 		return result;
 	}
@@ -214,7 +217,7 @@ public class NewSewer {
 		for (int i=0;i<c2.length;i++)
 		{ z2=(float) (z2+c2[i].z);}
 		z2=z2/c2.length;
-		return (z1>=z2);
+		return (z1+Zepsilon>=z2);
 	}
 	/**
 	 * Return the nearest Projected point of the habitation on the sewers
@@ -236,8 +239,10 @@ public class NewSewer {
 				projectionmin = pointdist.getPoint();
 			}
 		}
-		ProjectedPoint result = new ProjectedPoint(projectionmin, distmin,
-				indexmin);
+		ProjectedPoint result = null;
+		
+		if (distmin >= MAXVALUE){projectionmin=null;}
+		result=new ProjectedPoint(projectionmin, distmin,indexmin);
 		return result;
 	}
 
@@ -251,7 +256,9 @@ public class NewSewer {
 		Point c=null;
 		for (int i = 0; i < sds1.getRowCount(); i++) {
 			Polygon poly = (Polygon) sds1.getGeometry(i).getGeometryN(0);
-			float value = BatiBatiCosAngle(bati,poly)/BatiBatiDistance(bati,poly);
+			float batidist=BatiBatiDistance(bati,poly);
+			float value =0;
+			if (batidist<MAXlength) {value = BatiBatiCosAngle(bati,poly)/BatiBatiDistance(bati,poly);}
 			if ((value > valuemax)&&(BatiBatiHigher(bati,poly)))
 			{
 				valuemax = value;
@@ -259,7 +266,8 @@ public class NewSewer {
 				c = sds1.getGeometry(i).getGeometryN(0).getCentroid();
 			}
 		}
-		ProjectedPoint result = new ProjectedPoint(c, valuemax,	indexmin);
+		if (valuemax<0){c=null;}
+		ProjectedPoint result=new ProjectedPoint(c, valuemax,	indexmin);
 		return result;
 	}
 	
