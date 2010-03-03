@@ -33,19 +33,40 @@ public class NewSewer {
 		SpatialDataSourceDecorator sds2 = new SpatialDataSourceDecorator(
 				mydata2);
 
-		// calculation of the nearest sewer
+
 		sds1.open();
 		for (int i = 0; i < sds1.getRowCount(); i++) {
 			sds2.open();
 			Polygon bati = (Polygon) sds1.getGeometry(i).getGeometryN(0);
-			ProjectedPoint ptdist = sewerIndex(bati, sds2);
-			if (ptdist.getPoint() != null) {
-				Coordinate[] coord = new Coordinate[2];
-				coord[0] = (bati.getCentroid()).getCoordinate();
-				coord[1] = (ptdist.getPoint()).getCoordinate();
-				result.add(gf.createLineString(coord));
+			// calculation of the nearest sewer
+			ProjectedPoint sewerdist = sewerIndex(bati, sds2);
+			Coordinate[] coordc = new Coordinate[2];
+			Coordinate[] coordb = new Coordinate[2];
+			if (sewerdist.getPoint() != null) {
+				coordc[0] = (bati.getCentroid()).getCoordinate();
+				coordc[1] = (sewerdist.getPoint()).getCoordinate();
 			}
 			sds2.close();
+			//calculate the posible habitation
+			ProjectedPoint batidist =batiIndex(bati,sds1);
+			if (batidist.getPoint() != null) {
+				coordb[0] = (bati.getCentroid()).getCoordinate();
+				coordb[1] = (batidist.getPoint()).getCoordinate();
+			}
+			//choose between ewer and habitation
+			if ((sewerdist.getPoint() != null)	&& (batidist.getPoint() != null) )
+				{if ((1/sewerdist.getDist())>batidist.getDist())
+				{result.add(gf.createLineString(coordc));}
+				else
+				{result.add(gf.createLineString(coordb));}
+			}
+			else
+			{
+				if (sewerdist.getPoint() != null)	
+				{result.add(gf.createLineString(coordc));}
+				if (batidist.getPoint() != null) 
+				{result.add(gf.createLineString(coordb));}
+			}
 		}
 		sds1.close();
 		return result;
@@ -74,7 +95,7 @@ public class NewSewer {
 	}
 
 	/**
-	 * Return the nearsest projected point of the habitation on the sewer
+	 * Return the nearest projected point of the habitation on the sewer
 	 */
 	public static ProjectedPoint SewerBatiDistance(LineString sewer,
 			Polygon bati) {
@@ -152,6 +173,33 @@ public class NewSewer {
 	}
 
 	/**
+	 * Return the distance between the centroids of 2 habitations
+	 */
+	public static float BatiBatiDistance(Polygon bati1,
+			Polygon bati2) {
+		Point c1 = bati1.getCentroid();
+		Point c2 = bati2.getCentroid();
+		float dist = (float) Math.sqrt((c1.getX() - c2.getX())
+				* (c1.getX() - c2.getX()) + (c1.getY() - c2.getY()) * (c1.getY() - c2.getY()));;
+		return dist;
+	}
+	
+	/**
+	 * Return the cos of te angle between te vector of slope of bati1 nd the vector between the centroids of bati1 and bati2
+	 */
+	public static float BatiBatiCosAngle(Polygon bati1,
+			Polygon bati2) {
+		Point s = getVectorSlope(bati1);
+		Point c1 = bati1.getCentroid();
+		Point c2 = bati2.getCentroid();
+		Point cvector = gf.createPoint(new Coordinate(c2.getX()-c1.getX(),c2.getY()-c1.getY()));
+		float snorm= (float) Math.sqrt(s.getX()*s.getX()+s.getY()*s.getY());
+		float cvectornorm= (float) Math.sqrt(cvector.getX()*cvector.getX()+cvector.getY()*cvector.getY());
+		float cos = (float) (cvector.getX()*s.getX()+cvector.getY()*s.getY())/(snorm*cvectornorm);
+		return cos;
+	}
+
+	/**
 	 * Return the nearest Projected point of the habitation on the sewers
 	 */
 	public static ProjectedPoint sewerIndex(Polygon bati,
@@ -176,4 +224,25 @@ public class NewSewer {
 		return result;
 	}
 
+	/**
+	 * Return the nearest centroid point an habitation of an habitation
+	 */
+	public static ProjectedPoint batiIndex(Polygon bati,
+			SpatialDataSourceDecorator sds1) throws DriverException {
+		int indexmin = 0;
+		float valuemax = 0;
+		Point c=null;
+		for (int i = 0; i < sds1.getRowCount(); i++) {
+			Polygon poly = (Polygon) sds1.getGeometry(i).getGeometryN(0);
+			float value = BatiBatiCosAngle(bati,poly)/BatiBatiDistance(bati,poly);
+			if ((value > valuemax)&&(bati.getCentroid().getCoordinate().z>poly.getCentroid().getCoordinate().z)) {
+				valuemax = value;
+				indexmin = i;
+				c = sds1.getGeometry(i).getGeometryN(0).getCentroid();
+			}
+		}
+		ProjectedPoint result = new ProjectedPoint(c, valuemax,	indexmin);
+		return result;
+	}
+	
 }
