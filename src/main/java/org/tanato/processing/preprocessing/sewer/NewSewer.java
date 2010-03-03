@@ -263,7 +263,9 @@ public class NewSewer {
 		return result;
 	}
 	
-	
+	/** 
+	 * fdeal the case of an habitation on the way between the bati and the sewer
+	 */
 	public static Coordinate intersection(Polygon bati,ProjectedPoint sewerdist,SpatialDataSourceDecorator sds1) throws DriverException
 	{Coordinate result=null;
 	boolean intersect=false;
