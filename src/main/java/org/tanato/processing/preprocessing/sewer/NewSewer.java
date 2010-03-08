@@ -22,11 +22,11 @@ public class NewSewer {
 	public static DataSourceFactory dsf = new DataSourceFactory();
 	public static GeometryFactory gf = new GeometryFactory();
 	public static int MAXVALUE = 10000000;
-	public static float Zepsilon =1.0f;
+	public static float Zepsilon =0.1f;
 	public static float MAXlength =150.0f;
 
 	public static ArrayList<Geometry> getSewer(String buildingDataPath, String sewerDataPath) throws DriverLoadException,
-			DataSourceCreationException, DriverException {
+	DataSourceCreationException, DriverException {
 		ArrayList<Geometry> result = new ArrayList<Geometry>();
 		DataSource mydata1 = dsf.getDataSource(new File(buildingDataPath));
 		DataSource mydata2 = dsf.getDataSource(new File(sewerDataPath));
@@ -48,19 +48,21 @@ public class NewSewer {
 				coordc[0] = (bati.getCentroid()).getCoordinate();
 				coordc[1]=intersection(bati, sewerdist, sds1);
 			}
-			sds2.close();
-			//calculate the posible habitation
+			//sds2.close();
+			//calculate the possible habitation
 			ProjectedPoint batidist =batiIndex(bati,sds1);
 			if (batidist.getPoint() != null) {
 				coordb[0] = (bati.getCentroid()).getCoordinate();
-				coordb[1] = (batidist.getPoint()).getCoordinate();
+				//coordb[1] = (batidist.getPoint()).getCoordinate();
+				coordb[1]=intersectionsewer(bati.getCentroid(), batidist.getPoint(), sds2);
 			}
+			sds2.close();
 			//choose between ewer and habitation
 			if ((sewerdist.getPoint() != null)	&& (batidist.getPoint() != null) )
-				{if ((1/sewerdist.getDist())>batidist.getDist())
-				{result.add(gf.createLineString(coordc));}
-				else
-				{result.add(gf.createLineString(coordb));}
+			{if ((1/sewerdist.getDist())>batidist.getDist())
+			{result.add(gf.createLineString(coordc));}
+			else
+			{result.add(gf.createLineString(coordb));}
 			}
 			else
 			{
@@ -86,9 +88,9 @@ public class NewSewer {
 			Coordinate p2 = coord[i + 1];
 			Coordinate p3 = coord[i + 2];
 			c.x = c.x + (p2.y - p1.y) * (p3.z - p1.z) - (p2.z - p1.z)
-					* (p3.y - p1.y);
+			* (p3.y - p1.y);
 			c.y = c.y + (p2.z - p1.z) * (p3.x - p1.x) - (p2.x - p1.x)
-					* (p3.z - p1.z);
+			* (p3.z - p1.z);
 		}
 		c.x = c.x / (bati.getNumPoints() - 2);
 		c.y = c.y / (bati.getNumPoints() - 2);
@@ -125,13 +127,13 @@ public class NewSewer {
 			} else {
 				if (s.getX() == 0) {
 					double pAB = (p1.getY() - p2.getY())
-							/ (p1.getX() - p2.getX());
+					/ (p1.getX() - p2.getX());
 					Sx = c.getX();
 					Sy = pAB * (c.getX() - p1.getX()) + p1.getY();
 				} else {
 					double pCD = (s.getY()) / (s.getX());
 					double pAB = (p1.getY() - p2.getY())
-							/ (p1.getX() - p2.getX());
+					/ (p1.getX() - p2.getX());
 					double oCD = c.getY() - pCD * c.getX();
 					double oAB = p1.getY() - pAB * p1.getX();
 					Sx = (oAB - oCD) / (pCD - pAB);
@@ -155,7 +157,7 @@ public class NewSewer {
 
 			double coeff = (Sx - p1.getX()) / (p2.getX() - p1.getX());
 			double Sz = p1.getCoordinate().z + coeff
-					* (p2.getCoordinate().z - p1.getCoordinate().z);
+			* (p2.getCoordinate().z - p1.getCoordinate().z);
 
 			if (intersection && ((c.getCoordinate().z) +Zepsilon < Sz)) {
 				intersection = false;
@@ -184,9 +186,9 @@ public class NewSewer {
 		Point c2 = bati2.getCentroid();
 		float dist = (float) Math.sqrt((c1.getX() - c2.getX())
 				* (c1.getX() - c2.getX()) + (c1.getY() - c2.getY()) * (c1.getY() - c2.getY()));;
-		return dist;
+				return dist;
 	}
-	
+
 	/**
 	 * Return the cos of te angle between te vector of slope of bati1 nd the vector between the centroids of bati1 and bati2
 	 */
@@ -206,7 +208,7 @@ public class NewSewer {
 	 * Calculate if the centroid of the bati1 is higher than the bati2 one
 	 */
 	public static boolean BatiBatiHigher(Polygon bati1,Polygon bati2) {
-		Point s = getVectorSlope(bati1);
+		//Point s = getVectorSlope(bati1);
 		Coordinate[] c1 = bati1.getCoordinates();
 		Coordinate[] c2 = bati2.getCoordinates();
 		float z1=0;
@@ -240,7 +242,7 @@ public class NewSewer {
 			}
 		}
 		ProjectedPoint result = null;
-		
+
 		if (distmin >= MAXVALUE){projectionmin=null;}
 		result=new ProjectedPoint(projectionmin, distmin,indexmin);
 		return result;
@@ -270,9 +272,9 @@ public class NewSewer {
 		ProjectedPoint result=new ProjectedPoint(c, valuemax,	indexmin);
 		return result;
 	}
-	
+
 	/** 
-	 * fdeal the case of an habitation on the way between the bati and the sewer
+	 * deal the case of an habitation on the way between the bati and the sewer
 	 */
 	public static Coordinate intersection(Polygon bati,ProjectedPoint sewerdist,SpatialDataSourceDecorator sds1) throws DriverException
 	{Coordinate result=null;
@@ -285,14 +287,95 @@ public class NewSewer {
 		Polygon poly = (Polygon) sds1.getGeometry(i).getGeometryN(0);
 		if (line.intersects(poly)&&(!bati.contains(poly)))
 		{	intersect=true;
-			result= poly.getCentroid().getCoordinate();
-			coord[1]=result;
-			line = gf.createLineString(coord);
+		result= poly.getCentroid().getCoordinate();
+		coord[1]=result;
+		line = gf.createLineString(coord);
 		}	
 	}	
 	if (intersect)
-		{return result;}
+	{return result;}
+	else
+	{return sewerdist.getPoint().getCoordinate();}
+	}
+
+
+	private static Coordinate intersectionsewer(Point bati1, Point bati2,
+			SpatialDataSourceDecorator sds2) throws DriverException {
+		//Coordinate result=null;
+		boolean intersect=false;
+		Coordinate[] coord= new Coordinate[2];
+		coord[0]=bati1.getCoordinate();
+		coord[1]=bati2.getCoordinate();
+		LineString line = gf.createLineString(coord);
+		for (int i = 0; i < sds2.getRowCount(); i++) {
+			LineString sewer = (LineString) sds2.getGeometry(i).getGeometryN(0);
+			for (int j=1;j<sewer.getNumPoints();j++)
+			{	Coordinate[] coordsewer= new Coordinate[2];
+			coordsewer[0]=sewer.getCoordinateN(j-1);
+			coordsewer[1]=sewer.getCoordinateN(j);
+			LineString sewerline = gf.createLineString(coordsewer);
+			if (line.intersects(sewerline))
+			{	intersect=true;
+			coord[1]=milieu(coord[0],coord[1],coordsewer[0],coordsewer[1]);
+			line = gf.createLineString(coord);
+			}
+			}
+		}	
+		if (intersect)
+		{return coord[1];}
 		else
-		{return sewerdist.getPoint().getCoordinate();}
+		{return bati2.getCoordinate();}
+	}
+
+
+	public static Coordinate milieu(Coordinate A,Coordinate B,Coordinate C,Coordinate D)
+	{
+		Coordinate coord= new Coordinate();
+		
+		double Ax = A.x;
+		double Ay = A.y;
+		double Bx = B.x;
+		double By = B.y;
+		double Cx = C.x;
+		double Cy = C.y;
+		double Dx = D.x;
+		double Dy = D.y;
+		double Sx;
+		double Sy;
+ 
+		if(Ax==Bx)
+		{
+			if(Cx==Dx) 
+			{
+				Sx=Ax;Sy=Ay;
+			}
+			else
+			{
+				double pCD = (Cy-Dy)/(Cx-Dx);
+				Sx = Ax;
+				Sy = pCD*(Ax-Cx)+Cy;
+			}
+		}
+		else
+		{
+			if(Cx==Dx)
+			{
+				double pAB = (Ay-By)/(Ax-Bx);
+				Sx = Cx;
+				Sy = pAB*(Cx-Ax)+Ay;
+			}
+			else
+			{
+				double pCD = (Cy-Dy)/(Cx-Dx);
+				double pAB = (Ay-By)/(Ax-Bx);
+				double oCD = Cy-pCD*Cx;
+				double oAB = Ay-pAB*Ax;
+				Sx = (oAB-oCD)/(pCD-pAB);
+				Sy = pCD*Sx+oCD;
+			}
+		}		
+		coord.x=Sx;
+		coord.y=Sy;		
+		return coord;
 	}
 }
