@@ -54,7 +54,8 @@ public class NewSewer {
 			if (batidist.getPoint() != null) {
 				coordb[0] = (bati.getCentroid()).getCoordinate();
 				//coordb[1] = (batidist.getPoint()).getCoordinate();
-				coordb[1]=intersectionsewer(bati.getCentroid(), batidist.getPoint(), sds2);
+				coordb[1]=intersectionsewer(bati.getCentroid(), batidist.getPoint(), sds2,sds1,coordc);
+				if (coordb[1]==null) {batidist.setPoint(null);}
 			}
 			sds2.close();
 			//choose between ewer and habitation
@@ -300,12 +301,15 @@ public class NewSewer {
 
 
 	private static Coordinate intersectionsewer(Point bati1, Point bati2,
-			SpatialDataSourceDecorator sds2) throws DriverException {
+			SpatialDataSourceDecorator sds2,SpatialDataSourceDecorator sds1,Coordinate[] coordc) throws DriverException {
 		//Coordinate result=null;
-		boolean intersect=false;
+		boolean intersectsewer=false;
+		boolean intersectbati=false;
 		Coordinate[] coord= new Coordinate[2];
 		coord[0]=bati1.getCoordinate();
 		coord[1]=bati2.getCoordinate();
+		//Coordinate[] coordbati= new Coordinate[2];
+
 		LineString line = gf.createLineString(coord);
 		for (int i = 0; i < sds2.getRowCount(); i++) {
 			LineString sewer = (LineString) sds2.getGeometry(i).getGeometryN(0);
@@ -315,23 +319,51 @@ public class NewSewer {
 			coordsewer[1]=sewer.getCoordinateN(j);
 			LineString sewerline = gf.createLineString(coordsewer);
 			if (line.intersects(sewerline))
-			{	intersect=true;
+			{	intersectsewer=true;
 			coord[1]=milieu(coord[0],coord[1],coordsewer[0],coordsewer[1]);
 			line = gf.createLineString(coord);
 			}
 			}
-		}	
-		if (intersect)
+		}
+
+		if (intersectsewer)
+		{	if (coordc[0]==null||coordc[1]==null)
+		{coordc=coord;}
+		else{
+			if (Math.abs(coordc[1].x-coordc[0].x)>Math.abs(coord[1].x-coord[0].x))
+			{
+				coordc[1]=coord[1];
+
+			}
+		}
+		}
+
+		for (int i = 0; i < sds1.getRowCount(); i++) {
+			Polygon poly = (Polygon) sds1.getGeometry(i).getGeometryN(0);
+			LineString sewerline = gf.createLineString(coord);
+			if (poly.intersects(sewerline))
+			{	intersectbati=true;
+			coord[1]=poly.getCentroid().getCoordinate();
+			line = gf.createLineString(coord);
+			}
+		}
+
+		if (intersectbati)
 		{return coord[1];}
 		else
-		{return bati2.getCoordinate();}
+		{	
+			if (intersectsewer)
+			{return null;}
+			else
+			{return bati2.getCoordinate();}
+		}
 	}
 
 
 	public static Coordinate milieu(Coordinate A,Coordinate B,Coordinate C,Coordinate D)
 	{
 		Coordinate coord= new Coordinate();
-		
+
 		double Ax = A.x;
 		double Ay = A.y;
 		double Bx = B.x;
@@ -342,7 +374,7 @@ public class NewSewer {
 		double Dy = D.y;
 		double Sx;
 		double Sy;
- 
+
 		if(Ax==Bx)
 		{
 			if(Cx==Dx) 
