@@ -18,6 +18,9 @@ public class ProjectedPoint {
 	   public Point getPoint() {
 	      return this.point;
 	   }
+	   public void setPoint(Point p) {
+		      this.point=p;
+		   }
 	   public float getDist() {
 	      return this.dist;
 	   }
