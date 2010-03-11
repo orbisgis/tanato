@@ -30,8 +30,8 @@ public class BatiConnection {
 		this.gf=gf;
 		this.coordsewer=new Coordinate[2];
 		this.coordbati=new Coordinate[2];
-		coordsewer[0]=bati.getCentroid().getCoordinate();
-		coordbati[0]=bati.getCentroid().getCoordinate();
+		coordsewer[0]=bati.getInteriorPoint().getCoordinate();
+		coordbati[0]=bati.getInteriorPoint().getCoordinate();
 		this.sewervalue=0.0f;
 		this.bativalue=0.0f;
 		this.sewerConnected=false;
