@@ -48,18 +48,16 @@ public class NewSewer {
 				coordc[0] = (bati.getCentroid()).getCoordinate();
 				coordc[1]=intersection(bati, sewerdist, sds1);
 			}
-			//sds2.close();
 			//calculate the possible habitation
 			ProjectedPoint batidist =batiIndex(bati,sds1);
 			if (batidist.getPoint() != null) {
 				coordb[0] = (bati.getCentroid()).getCoordinate();
-				//coordb[1] = (batidist.getPoint()).getCoordinate();
 				coordb[1]=intersectionsewer(bati.getCentroid(), batidist.getPoint(), sds2,sds1,coordc);
 				if (coordb[1]==null) {batidist.setPoint(null);}
 			}
 			sds2.close();
 			//choose between ewer and habitation
-			if ((sewerdist.getPoint() != null)	&& (batidist.getPoint() != null) )
+			if ((sewerdist.getPoint() != null)&(batidist.getPoint() != null) )
 			{if ((1/sewerdist.getDist())>batidist.getDist())
 			{result.add(gf.createLineString(coordc));}
 			else
@@ -308,7 +306,6 @@ public class NewSewer {
 		Coordinate[] coord= new Coordinate[2];
 		coord[0]=bati1.getCoordinate();
 		coord[1]=bati2.getCoordinate();
-		//Coordinate[] coordbati= new Coordinate[2];
 
 		LineString line = gf.createLineString(coord);
 		for (int i = 0; i < sds2.getRowCount(); i++) {

@@ -61,6 +61,9 @@ public class BatiConnection {
 		Point P = gf.createPoint(c);
 		this.direction= P;
 	}
+	/**
+	 * Calculate the best choice to do between a sewer and an habitation
+	 */
 	public Coordinate[] CompareDistances()
 	{
 		if (sewerConnected&batiConnected)
@@ -265,6 +268,9 @@ public class BatiConnection {
 			toBati=gf.createLineString(coordbati);
 		}
 	}
+	/** 
+	* deal the case of an habitation on the way between the object and an other habitation
+	**/
 	public void BatiIntersection(SpatialDataSourceDecorator sds1,SpatialDataSourceDecorator sds2) throws DriverException
 	{
 		for (int i = 0; ((i < sds2.getRowCount())&(batiConnected)); i++) {
@@ -337,10 +343,16 @@ public class BatiConnection {
 		z2=z2/c2.length;
 		return (z1+Zepsilon>=z2);
 	}
+	/**
+	 * Construct the Sewer  Connection LineString of the object
+	 */
 	public void ConstrucSewer()
 	{
 		toSewer=gf.createLineString(coordsewer);
 	}
+	/**
+	 * Construct the habitation Connection LineString of the object
+	 */
 	public void ConstrucBati()
 	{
 		toBati=gf.createLineString(coordbati);
