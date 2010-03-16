@@ -22,7 +22,7 @@ public class SewerTest extends TestCase {
 
 	public static String building = "data/modelisation/chezine/bati_extrait.shp";
 	public static String sewer = "data/modelisation/chezine/sewer.shp";
-	private String ResultdataPath = "/temp/dataconnected_new2.gdms";
+	private String ResultdataPath = "/temp/dataconnected_new4.gdms";
 
 	static DataSourceFactory dsf = new DataSourceFactory();
 
