@@ -22,8 +22,7 @@ public class BatiConnection {
 	private Point direction;
 	private static float MAXVALUE=9999999.9f;
 	private static float MAXlength=100f;
-	private static float Zepsilon=0.5f;
-
+	
 	public BatiConnection(Polygon bati,GeometryFactory gf)
 	{
 		this.bati=bati;
@@ -85,6 +84,52 @@ public class BatiConnection {
 		}
 	}
 	/**
+	 * Calculate the best choice to do between a sewer and an habitation
+	 */
+	public Coordinate[] CompareDistancesgetBati()
+	{
+		if (sewerConnected&batiConnected)
+		{if (sewervalue>bativalue)
+		{return null;}
+		else
+		{return coordbati;}
+		}
+		else
+		{
+			if (sewerConnected)	
+			{return null;}
+			else
+			{
+				if (batiConnected) 
+				{return coordbati;}
+				else {return null;}
+			}
+		}
+	}
+	/**
+	 * Calculate the best choice to do between a sewer and an habitation
+	 */
+	public Coordinate[] CompareDistancesgetSewer()
+	{
+		if (sewerConnected&batiConnected)
+		{if (sewervalue>bativalue)
+		{return coordsewer;}
+		else
+		{return null;}
+		}
+		else
+		{
+			if (sewerConnected)	
+			{return coordsewer;}
+			else
+			{
+				if (batiConnected) 
+				{return null;}
+				else {return null;}
+			}
+		}
+	}
+	/**
 	 * Return the cos of the angle between the vector of slope of bati1 and the vector between the centroids of bati1 and bati2
 	 */
 	public float BatiCosAngle(Polygon bati) {
@@ -104,8 +149,8 @@ public class BatiConnection {
 		Point c1 = this.getBati().getCentroid();
 		Point c2 = bati2.getCentroid();
 		float dist = (float) Math.sqrt((c1.getX() - c2.getX())* (c1.getX() - c2.getX())
-										+ (c1.getY() - c2.getY()) * (c1.getY() - c2.getY())
-										);
+				+ (c1.getY() - c2.getY()) * (c1.getY() - c2.getY())
+		);
 		return new ProjectedPoint(c2,dist);
 	}
 	/**
@@ -150,8 +195,8 @@ public class BatiConnection {
 					Sy = pCD * Sx + oCD;
 				}
 			}
-			
-			
+
+
 			// we check if the projected point is on the segment in the good
 			// direction of the habitation
 			if (intersection
@@ -170,7 +215,7 @@ public class BatiConnection {
 			double Sz = p1.getCoordinate().z + coeff
 			* (p2.getCoordinate().z - p1.getCoordinate().z);
 
-			if (intersection && ((c.getCoordinate().z) +Zepsilon < Sz)) {
+			if (intersection && ((c.getCoordinate().z) < Sz)) {
 				intersection = false;
 			}
 
@@ -219,9 +264,15 @@ public class BatiConnection {
 	{
 		for (int i = 0; ((i < sds1.getRowCount())&(sewerConnected)); i++) {
 			Polygon bati2 = (Polygon) sds1.getGeometry(i).getGeometryN(0);
-			if (toSewer.intersects(bati2)&&(!bati.equals(bati2)))
+			//if (toSewer.intersects(bati2)&&(!bati.equals(bati2)))
+			if (Sewer.Intersect(toSewer,bati2)&&(!bati.equals(bati2)))
 			{	
+				System.out.println("intersection sewer x="+this.coordsewer[0].x+"   and y="+coordsewer[0].y);
+				System.out.println("l'autre point x="+coordsewer[1].x+"   and y="+coordsewer[1].y);
 				sewerConnected=false;
+				sewervalue=0;
+				coordsewer[1]=null;
+				toSewer=null;
 				if (batiConnected)
 				{
 					if (bativalue<1/this.BatiDistance(bati2).getDist())
@@ -254,7 +305,7 @@ public class BatiConnection {
 			ProjectedPoint p =BatiDistance(bati2);
 			float value = this.BatiCosAngle(bati2)/p.getDist();
 			if ((value > valuemax)&&(BatiHigher(bati2)))
-					{
+			{
 				valuemax = value;
 				dist=p.getDist();
 				pmax = p.getPoint();
@@ -269,53 +320,62 @@ public class BatiConnection {
 		}
 	}
 	/** 
-	* deal the case of an habitation on the way between the object and an other habitation
-	**/
+	 * deal the case of an habitation on the way between the object and an other habitation
+	 **/
 	public void BatiIntersection(SpatialDataSourceDecorator sds1,SpatialDataSourceDecorator sds2) throws DriverException
 	{
+		//We first deal the possibility to have a sewer between the two habitation
 		for (int i = 0; ((i < sds2.getRowCount())&(batiConnected)); i++) {
 			LineString sewer = (LineString) sds2.getGeometry(i).getGeometryN(0);
 			for (int j=1;((j<sewer.getNumPoints())&(batiConnected));j++)
-			{	Coordinate[] coords= new Coordinate[2];
-			coords[0]=sewer.getCoordinateN(j-1);
-			coords[1]=sewer.getCoordinateN(j);
-			LineString sewerline = gf.createLineString(coords);
-			if (Sewer.Intersect(toBati, sewerline))
-			{
-				batiConnected=false;
-				Coordinate intersec =milieu(coords[0],coords[1]);
-				float dist = (float) Math.sqrt((bati.getCentroid().getX() - intersec.x)
-						* (bati.getCentroid().getX() - intersec.x) 
-						+ (bati.getCentroid().getY() - intersec.x)*(bati.getCentroid().getY() - intersec.x));
-				if (sewerConnected)
+			{	
+				Coordinate[] coords= new Coordinate[2];
+				coords[0]=sewer.getCoordinateN(j-1);
+				coords[1]=sewer.getCoordinateN(j);
+				LineString sewerline = gf.createLineString(coords);
+				if (Sewer.Intersect(toBati, sewerline))
 				{	
-					if (sewervalue<1/dist)
+					batiConnected=false;
+					bativalue=0;
+					toBati=null;
+					Coordinate intersec =milieu(coords[0],coords[1]);
+					float dist = (float) Math.sqrt((bati.getCentroid().getX() - intersec.x)
+							* (bati.getCentroid().getX() - intersec.x) 
+							+ (bati.getCentroid().getY() - intersec.x)*(bati.getCentroid().getY() - intersec.x));
+					System.out.println("de dist= "+dist);
+					coordbati[1]=null;
+					
+					
+					if (sewerConnected)
+					{	
+						if (sewervalue<1/dist)
+						{
+							coordsewer[1]=intersec;
+							sewervalue=1/dist;
+							toSewer=gf.createLineString(coordsewer);
+							SewerIntersection(sds1);
+						}
+					}
+					else
 					{
+						sewerConnected=true;
 						coordsewer[1]=intersec;
 						sewervalue=1/dist;
-						toSewer=gf.createLineString(coordbati);
+						toSewer=gf.createLineString(coordsewer);
 						SewerIntersection(sds1);
 					}
 				}
-				else
-				{
-					sewerConnected=true;
-					coordsewer[1]=intersec;
-					bativalue=1/dist;
-					toSewer=gf.createLineString(coordbati);
-					SewerIntersection(sds1);
-				}
-			}
 			}
 		}
-		
+
 		boolean batiIsIntercept=false;
-		
+		//We then deal the possibility to have an other habitation between the two first habitations
 		for (int i = 0; ((i < sds1.getRowCount())&(batiConnected)); i++) {
 			Polygon bati2 = (Polygon) sds1.getGeometry(i).getGeometryN(0);
-			if ((Sewer.Intersect(bati2,toBati))&
-					((coordbati[1].x!=bati2.getCentroid().getCoordinate().x)
-							||(coordbati[1].y!=bati2.getCentroid().getCoordinate().y)))
+			if ((Sewer.Intersect(bati2,toBati))&&((coordbati[1].x!=bati2.getCentroid().getCoordinate().x)
+							||(coordbati[1].y!=bati2.getCentroid().getCoordinate().y))
+							&&(!(bati.equals(bati2))))
+							
 			{
 				batiIsIntercept=true;
 				coordbati[1]=bati2.getCentroid().getCoordinate();
@@ -341,7 +401,7 @@ public class BatiConnection {
 		for (int i=0;i<c2.length;i++)
 		{ z2=(float) (z2+c2[i].z);}
 		z2=z2/c2.length;
-		return (z1+Zepsilon>=z2);
+		return (z1>=z2);
 	}
 	/**
 	 * Construct the Sewer  Connection LineString of the object

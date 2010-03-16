@@ -15,18 +15,18 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
-
+//BufferParameters OffsetCurveBuilder;
 public class Sewer {
 
 	public static DataSourceFactory dsf = new DataSourceFactory();
 	public static GeometryFactory gf = new GeometryFactory();
 	public static int MAXVALUE = 10000000;
-	public static float Zepsilon =0.1f;
 	public static float MAXlength =150.0f;
 
 	public static ArrayList<Geometry> getSewer(String buildingDataPath, String sewerDataPath) throws DriverLoadException,
 	DataSourceCreationException, DriverException {
 		ArrayList<Geometry> result = new ArrayList<Geometry>();
+		ArrayList<Geometry> resultsewer = new ArrayList<Geometry>();
 		DataSource mydata1 = dsf.getDataSource(new File(buildingDataPath));
 		DataSource mydata2 = dsf.getDataSource(new File(sewerDataPath));
 		SpatialDataSourceDecorator sds1 = new SpatialDataSourceDecorator(
@@ -47,10 +47,17 @@ public class Sewer {
 			bati.BatiIntersection(sds1, sds2);
 			sds2.close();
 			//choose between ewer and habitation
-			result.add(gf.createLineString(bati.CompareDistances()));
+			Coordinate[] sewerlink=(bati.CompareDistancesgetSewer());
+			Coordinate[] batilink=bati.CompareDistancesgetBati();
+			if (sewerlink!=null)
+			{resultsewer.add(gf.createLineString(sewerlink));}
+			if (batilink!=null)
+			{result.add(gf.createLineString(batilink));}
+			
 		}
 		sds1.close();		
 		System.out.println("delete crossed");
+		result.addAll(resultsewer);
 		deleteCrossedLink(result);
 		return result;
 	}
@@ -68,7 +75,7 @@ public class Sewer {
 			{
 				LineString s2=(LineString)arcs.get(j);
 				if (Intersect(s1,s2))
-				{	System.out.println("croisement en i="+i+" et j="+j);
+				{
 				Coordinate[] coord = new Coordinate[2]; 
 				//coord[0]=(s1.getCoordinates())[0];
 				//coord[1]=milieu((s1.getCoordinates())[0],(s1.getCoordinates())[1],(s2.getCoordinates())[0],(s2.getCoordinates())[1]);
@@ -142,10 +149,10 @@ public class Sewer {
 			int j=1;
 			while((!result)&(j<g2.getGeometryN(0).getCoordinates().length))
 			{
-				result=Intersect(g1.getGeometryN(0).getCoordinates()[0],
-						g1.getGeometryN(0).getCoordinates()[1],
-						g2.getGeometryN(0).getCoordinates()[0],
-						g2.getGeometryN(0).getCoordinates()[1]);
+				result=result||Intersect(g1.getGeometryN(0).getCoordinates()[i-1],
+						g1.getGeometryN(0).getCoordinates()[i],
+						g2.getGeometryN(0).getCoordinates()[j-1],
+						g2.getGeometryN(0).getCoordinates()[j]);
 				
 				j++;
 			}
