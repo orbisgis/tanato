@@ -16,17 +16,19 @@ import org.tanato.processing.preprocessing.sewer.Sewer;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.operation.buffer.BufferParameters;
 
 public class RoadBuilderTest extends TestCase {
 
 	public static String sewer = "data/modelisation/chezine/sewer.shp";
-	private String ResultdataPath = "/temp/dataroad1.gdms";
+	private String ResultdataPath = "/temp/dataroad2.gdms";
 
 	static DataSourceFactory dsf = new DataSourceFactory();
 
 	public void testsewer() throws Exception {
 		RoadBuilder s = new RoadBuilder();
-		ArrayList<Geometry> geoms = s.getRoad(sewer);
+		BufferParameters b =new BufferParameters();
+		ArrayList<Geometry> geoms = s.getRoad(sewer,5.0,b);
 		System.out.println(geoms.size());
 
 		DefaultMetadata metadata = new DefaultMetadata(new Type[] {

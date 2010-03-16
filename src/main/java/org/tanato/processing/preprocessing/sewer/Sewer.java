@@ -54,7 +54,9 @@ public class Sewer {
 		deleteCrossedLink(result);
 		return result;
 	}
-
+	/**
+	 * Deal the problem of the crossed links
+	 */
 	public static void deleteCrossedLink(ArrayList<Geometry> arcs)
 	{	
 		int i=0;
@@ -72,7 +74,7 @@ public class Sewer {
 				//coord[1]=milieu((s1.getCoordinates())[0],(s1.getCoordinates())[1],(s2.getCoordinates())[0],(s2.getCoordinates())[1]);
 				//arcs.set(i, gf.createLineString(coord));
 				coord[0]=(s2.getCoordinates())[0];
-				coord[1]=milieu((s1.getCoordinates())[0],(s1.getCoordinates())[1],(s2.getCoordinates())[0],(s2.getCoordinates())[1]);
+				coord[1]=middle((s1.getCoordinates())[0],(s1.getCoordinates())[1],(s2.getCoordinates())[0],(s2.getCoordinates())[1]);
 				arcs.set(j, gf.createLineString(coord));
 				}
 				j++;
@@ -81,7 +83,7 @@ public class Sewer {
 		}
 
 	}
-	public static Coordinate milieu(Coordinate A,Coordinate B,Coordinate C,Coordinate D)
+	public static Coordinate middle(Coordinate A,Coordinate B,Coordinate C,Coordinate D)
 	{
 		Coordinate coord= new Coordinate();
 
