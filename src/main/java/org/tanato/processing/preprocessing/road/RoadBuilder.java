@@ -34,15 +34,7 @@ public class RoadBuilder {
 		sds1.open();
 		for (int i = 0; i < sds1.getRowCount(); i++) {
 			LineString g = (LineString) sds1.getGeometry(i).getGeometryN(0);
-			for (int j=1;j<g.getNumPoints();j++)
-			{
-				Coordinate[] coords= new Coordinate[2];
-				coords[0]=g.getCoordinateN(j-1);
-				coords[1]=g.getCoordinateN(j);
-				LineString gline = gf.createLineString(coords);
-				result.add(buildCurveSet(gline,dist,bufParams));
-			}
-
+			result.add(buildCurveSet(g,dist,bufParams));
 		}
 		sds1.close();
 		return result;
@@ -54,30 +46,15 @@ public class RoadBuilder {
 	{
 		Coordinate a=g.getCoordinates()[0];
 		Coordinate b=g.getCoordinates()[1];
-		// --- now construct curve
-		OffsetCurveBuilder ocb = new OffsetCurveBuilder(
+		OffsetCurveBuilder3D ocb = new OffsetCurveBuilder3D(
 				g.getFactory().getPrecisionModel(),
 				bufParams);
-		OffsetCurveSetBuilder ocsb = new OffsetCurveSetBuilder(g, dist, ocb);
+		OffsetCurveSetBuilder3D ocsb = new OffsetCurveSetBuilder3D(g, dist, ocb);
 		List curves = ocsb.getCurves();
 		List lines = new ArrayList();
 		for (Iterator i = curves.iterator(); i.hasNext(); ) {
 			SegmentString ss = (SegmentString) i.next();
 			Coordinate[] pts = ss.getCoordinates();
-			for (int j=0;j<pts.length;j++)
-			{
-				Coordinate c = pts[j];
-				double coef =0.0;
-				if (a.x!=b.x)
-				{
-					coef=(c.x-a.x)/(b.x-a.x);}
-				else {
-					if (a.y!=b.y)
-					{
-						coef=(c.y-a.y)/(b.y-a.y);}
-				}
-				c.z=a.z+coef*(b.z-a.z);
-			}
 			lines.add(g.getFactory().createLineString(pts));
 		}
 		Geometry curve = g.getFactory().buildGeometry(lines);
