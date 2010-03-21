@@ -145,7 +145,6 @@ public class OffsetCurveBuilder3D
     List lineList = new ArrayList();
     // a zero or negative width buffer of a line/point is empty
     if (distance <= 0.0) return lineList;
-
     init(distance);
     if (inputPts.length <= 1) {
       switch (bufParams.getEndCapStyle()) {
@@ -160,8 +159,6 @@ public class OffsetCurveBuilder3D
     }
     else
       computeLineBufferCurve(inputPts);
-    
-//System.out.println(vertexList);
     
     Coordinate[] lineCoord = vertexList.getCoordinates();
     lineList.add(lineCoord);
@@ -269,7 +266,6 @@ public class OffsetCurveBuilder3D
     addLastSegment();
     // add line cap for start of line
     addLineEndCap(simp2[1], simp2[0]);
-
     vertexList.closeRing();
   }
 
@@ -318,10 +314,10 @@ public class OffsetCurveBuilder3D
   }
 
   private Coordinate s0, s1, s2;
-  private LineSegment seg0 = new LineSegment();
-  private LineSegment seg1 = new LineSegment();
-  private LineSegment offset0 = new LineSegment();
-  private LineSegment offset1 = new LineSegment();
+  private LineSegment3D seg0 = new LineSegment3D();
+  private LineSegment3D seg1 = new LineSegment3D();
+  private LineSegment3D offset0 = new LineSegment3D();
+  private LineSegment3D offset1 = new LineSegment3D();
   private int side = 0;
 
   private void initSideSegments(Coordinate s1, Coordinate s2, int side)
@@ -527,7 +523,7 @@ public class OffsetCurveBuilder3D
    * @param distance the offset distance
    * @param offset the points computed for the offset segment
    */
-  private void computeOffsetSegment(LineSegment seg, int side, double distance, LineSegment offset)
+  private void computeOffsetSegment(LineSegment3D seg, int side, double distance, LineSegment3D offset)
   {
     int sideSign = side == Position.LEFT ? 1 : -1;
     double dx = seg.p1.x - seg.p0.x;
@@ -549,11 +545,11 @@ public class OffsetCurveBuilder3D
    */
   private void addLineEndCap(Coordinate p0, Coordinate p1)
   {
-    LineSegment seg = new LineSegment(p0, p1);
+    LineSegment3D seg = new LineSegment3D(p0, p1);
 
-    LineSegment offsetL = new LineSegment();
+    LineSegment3D offsetL = new LineSegment3D();
     computeOffsetSegment(seg, Position.LEFT, distance, offsetL);
-    LineSegment offsetR = new LineSegment();
+    LineSegment3D offsetR = new LineSegment3D();
     computeOffsetSegment(seg, Position.RIGHT, distance, offsetR);
 
     double dx = p1.x - p0.x;
@@ -625,8 +621,8 @@ public class OffsetCurveBuilder3D
    * @param distance the offset distance
    */
   private void addMitreJoin(Coordinate p, 
-  		LineSegment offset0, 
-  		LineSegment offset1,
+  		LineSegment3D offset0, 
+  		LineSegment3D offset1,
   		double distance)
   {
   	boolean isMitreWithinLimit = true;
@@ -673,8 +669,8 @@ public class OffsetCurveBuilder3D
    * @param mitreLimit the mitre limit ratio
    */
   private void addLimitedMitreJoin( 
-  		LineSegment offset0, 
-  		LineSegment offset1,
+  		LineSegment3D offset0, 
+  		LineSegment3D offset1,
   		double distance,
   		double mitreLimit)
   {
@@ -707,7 +703,7 @@ public class OffsetCurveBuilder3D
   	Coordinate bevelMidPt = new Coordinate(bevelMidX, bevelMidY,bevelMidZ);
   	
   	// compute the mitre midline segment from the corner point to the bevel segment midpoint
-  	LineSegment mitreMidLine = new LineSegment(basePt, bevelMidPt);
+  	LineSegment3D mitreMidLine = new LineSegment3D(basePt, bevelMidPt);
   	
   	// finally the bevel segment endpoints are computed as offsets from 
     // the mitre midline
@@ -732,8 +728,8 @@ public class OffsetCurveBuilder3D
    * @param offset1 the second offset segment
    */
   private void addBevelJoin( 
-  		LineSegment offset0, 
-  		LineSegment offset1)
+  		LineSegment3D offset0, 
+  		LineSegment3D offset1)
   {
 		 vertexList.addPt(offset0.p1);
      vertexList.addPt(offset1.p0);				
