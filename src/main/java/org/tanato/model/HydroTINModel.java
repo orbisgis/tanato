@@ -3,10 +3,10 @@ package org.tanato.model;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.ListIterator;
+
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
-import org.jdelaunay.delaunay.ConstraintType;
-import org.jdelaunay.delaunay.TopoType;
+import org.jhydrocell.hydronetwork.HydroProperties;
 import org.tanato.utilities.MathUtil;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -47,10 +47,10 @@ public class HydroTINModel {
 	 * datasources noeud, arc et triangle. Un champ nommé type est ajouté pour
 	 * qualifier les objets du TIN. Obstacle, collecteur... des triangles :
 	 * rural, urbain des noeuds : connecteur
-	 *
+	 * 
 	 * Une seconde qualification est réalisée automatiquement en construisant le
 	 * graph. Le graph est ordonné et valué.
-	 *
+	 * 
 	 * @param ds
 	 */
 
@@ -119,8 +119,8 @@ public class HydroTINModel {
 	 * Construction du graphe à partir des 3 datasources nodes, edges et faces.
 	 * Note : Nous considerons que les identifiants (GID) du graphe commemcent
 	 * tous à 1.
-	 *
-	 *
+	 * 
+	 * 
 	 */
 	public void buildTINGraph() {
 
@@ -162,7 +162,7 @@ public class HydroTINModel {
 
 				int edgeGID = sdsEdges.getFieldValue(i, gidField).getAsInt();
 
-				if (edgeGID==206) {
+				if (edgeGID == 206) {
 					System.out.println("Stop");
 				}
 
@@ -181,7 +181,7 @@ public class HydroTINModel {
 						sdsEdges.getFieldIndexByName("slope")).getAsGeometry()
 						.getCoordinate();
 
-				 int edgeTopoType = sdsEdges.getFieldValue(i,
+				int edgeTopoType = sdsEdges.getFieldValue(i,
 						sdsEdges.getFieldIndexByName("topo")).getAsInt();
 
 				// Recupere la geom de l'edge
@@ -261,9 +261,12 @@ public class HydroTINModel {
 				}
 
 				boolean constraint = false;
-				if (edgeType.equalsIgnoreCase(ConstraintType.DITCH)
-						|| (edgeType.equalsIgnoreCase(ConstraintType.RIVER))
-						|| (edgeType.equalsIgnoreCase(ConstraintType.SEWER))) {
+				if (edgeType.equalsIgnoreCase(HydroProperties
+						.toString(HydroProperties.DITCH))
+						|| (edgeType.equalsIgnoreCase(HydroProperties
+								.toString(HydroProperties.RIVER)))
+						|| (edgeType.equalsIgnoreCase(HydroProperties
+								.toString(HydroProperties.SEWER)))) {
 
 					constraint = true;
 
@@ -318,7 +321,7 @@ public class HydroTINModel {
 				 */
 
 				// Cas des talwegs simple
-				if (edgeTopoType == TopoType.TALWEG) {
+				if (edgeTopoType == HydroProperties.TALWEG) {
 					eCell.setTalweg(true);
 					basNCell.setTalweg(true);
 					hautNCell.setTalweg(true);
@@ -336,7 +339,7 @@ public class HydroTINModel {
 				}
 
 				// Talweg colineaire à droite
-				else if (edgeTopoType == TopoType.RIGHTCOLINEAR) {
+				else if (edgeTopoType == HydroProperties.RIGHTCOLINEAR) {
 
 					eCell.setTalweg(true);
 					basNCell.setTalweg(true);
@@ -355,7 +358,7 @@ public class HydroTINModel {
 				}
 
 				// Talweg colinéaire à gauche
-				else if (edgeTopoType == TopoType.LEFTCOLINEAR) {
+				else if (edgeTopoType == HydroProperties.LEFTCOLINEAR) {
 
 					eCell.setTalweg(true);
 					basNCell.setTalweg(true);
@@ -374,7 +377,7 @@ public class HydroTINModel {
 
 				// Double talweg colineaire
 
-				else if (edgeTopoType == TopoType.DOUBLECOLINEAR) {
+				else if (edgeTopoType == HydroProperties.DOUBLECOLINEAR) {
 
 					eCell.setTalweg(true);
 					basNCell.setTalweg(true);
@@ -392,7 +395,7 @@ public class HydroTINModel {
 				 * Traitement des ridges
 				 */
 
-				else if (edgeTopoType == TopoType.RIDGE) {
+				else if (edgeTopoType == HydroProperties.RIDGE) {
 
 					if (constraint) {
 
@@ -437,7 +440,7 @@ public class HydroTINModel {
 				 * Traitement des pentes à droite
 				 */
 
-				else if (edgeTopoType == TopoType.RIGHTSLOPE) {
+				else if (edgeTopoType == HydroProperties.RIGHTSLOPE) {
 
 					if (constraint) {
 
@@ -469,7 +472,7 @@ public class HydroTINModel {
 				 * Traitement des pentes à gauche
 				 */
 
-				else if (edgeTopoType == TopoType.LEFTTSLOPE) {
+				else if (edgeTopoType == HydroProperties.LEFTTSLOPE) {
 
 					if (constraint) {
 
@@ -505,17 +508,16 @@ public class HydroTINModel {
 				 * connecté au rebord
 				 */
 				/*
-				 *
+				 * 
 				 * else if (edgeTopoType.equals(TopoType.RIGHTSIDE)) { // Graph
-				 *
+				 * 
 				 * hautNCell.setFilsCells(dTCell);
 				 * dTCell.setPeresCells(hautNCell); }
-				 *
 				 *//**
-					 * Traitement du rebord gauche
-					 */
+				 * Traitement du rebord gauche
+				 */
 				/*
-				 *
+				 * 
 				 * else if (edgeTopoType.equals(TopoType.LEFTSIDE)) { // Graph
 				 * hautNCell.setFilsCells(gTCell);
 				 * gTCell.setPeresCells(hautNCell); }
@@ -525,7 +527,7 @@ public class HydroTINModel {
 				 * Traitement du fond droit
 				 */
 
-				else if (edgeTopoType == TopoType.RIGHTWELL) {
+				else if (edgeTopoType == HydroProperties.RIGHTWELL) {
 
 					if (constraint) {
 
@@ -556,7 +558,7 @@ public class HydroTINModel {
 				 * Traitement du fond gauche
 				 */
 
-				else if (edgeTopoType == TopoType.LEFTWELL) {
+				else if (edgeTopoType == HydroProperties.LEFTWELL) {
 
 					if (constraint) {
 
@@ -595,8 +597,6 @@ public class HydroTINModel {
 		}
 
 	}
-
-
 
 	public void linkTalweg() {
 
