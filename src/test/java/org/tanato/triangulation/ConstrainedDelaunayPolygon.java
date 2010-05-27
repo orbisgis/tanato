@@ -15,7 +15,6 @@ import org.jdelaunay.delaunay.MyDrawing;
 import org.jdelaunay.delaunay.MyMesh;
 import org.jdelaunay.delaunay.MyPoint;
 import org.jdelaunay.delaunay.MyPolygon;
-import org.tanato.SetUpData;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -27,7 +26,7 @@ public class ConstrainedDelaunayPolygon {
 
 	public static DataSourceFactory dsf = new DataSourceFactory();
 
-	public static String path = "/home/ebocher/Documents/devs/orbisgis/datas2tests/shp/smallshape2D/polygon2d.shp";
+	public static String path = "src/test/resources/data/source/polygon/polygon2d.shp";
 
 	public static void main(String[] args) throws DriverLoadException,
 			DataSourceCreationException, DriverException, DelaunayError,
