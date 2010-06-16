@@ -12,6 +12,7 @@ import org.gdms.driver.driverManager.DriverLoadException;
 import org.grap.utilities.EnvelopeUtil;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
+import org.jdelaunay.delaunay.MyEdge;
 import org.jdelaunay.delaunay.MyMesh;
 import org.jdelaunay.delaunay.MyPoint;
 import org.jdelaunay.delaunay.MyPolygon;
@@ -33,6 +34,7 @@ public class ConstrainedDelaunayPolygon {
 			ParseException {
 
 		MyMesh aMesh = new MyMesh();
+		aMesh.setVerbose(true);
 		DataSource mydata = dsf.getDataSource(new File(path));
 
 		SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(mydata);
@@ -46,14 +48,19 @@ public class ConstrainedDelaunayPolygon {
 
 		ArrayList<MyPoint> points = new ArrayList<MyPoint>();
 
+		MyPoint aPoint;
 		for (int i = 0; i < coords.length - 1; i++) {
-			points.add(new MyPoint(coords[i]));
+			aPoint=new MyPoint(coords[i]);
+			aPoint.setZ(30);
+			points.add(aPoint);
 
 		}
 
 		aMesh.setPoints(points);
+		aMesh.addLevelEdge(new MyEdge(new MyPoint(100, -10, 60),new MyPoint(700, 900, 60)));
 
-		for (int i = 0; i < 1; i++) {
+		MyPolygon aPolygon;
+		for (int i = 0; i < 3; i++) {
 
 			Geometry geom = sds.getGeometry(i);
 
@@ -61,15 +68,34 @@ public class ConstrainedDelaunayPolygon {
 				Geometry subGeom = geom.getGeometryN(j);
 
 				if (subGeom instanceof Polygon) {
-					aMesh.addPolygon(new MyPolygon((Polygon) subGeom));
+					aPolygon=new MyPolygon((Polygon) subGeom, 2500);
+					aPolygon.setUsePolygonZ(true);
+//					aPolygon.setEmpty(true);
+					aPolygon.setMustBeTriangulated(true);
+					aMesh.addPolygon(aPolygon);
+					
 				}
 			}
 		}
 
 		sds.close();
 
-		aMesh.processDelaunay();
 
+
+			
+		
+		
+		aMesh.processDelaunay();
+		 points=aMesh.getPoints();
+			for(MyPoint aPoint2:points)
+				if(aPoint2.getZ()!=30)
+					aPoint2.setZ(0);
+			
+			
+			aMesh.setPoints(points);
+		System.out.println(aMesh.getPoints());
+		
+aMesh.VRMLexport("poly.wrl");
 		MyDrawing aff2 = new MyDrawing();
 		aff2.add(aMesh);
 		aMesh.setAffiche(aff2);

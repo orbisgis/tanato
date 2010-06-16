@@ -16,12 +16,15 @@ import org.jdelaunay.delaunay.MyDrawing;
 import org.jdelaunay.delaunay.MyEdge;
 import org.jdelaunay.delaunay.MyMesh;
 import org.jdelaunay.delaunay.MyPoint;
+import org.jdelaunay.delaunay.MyPolygon;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
 
 public class ConstrainedDelaunayLevelEdge {
 
@@ -37,6 +40,8 @@ public class ConstrainedDelaunayLevelEdge {
 		
 		MyMesh aMesh = new MyMesh();
 		aMesh.setVerbose(true);
+		
+		
 		DataSource mydata = dsf.getDataSource(new File(path));
 
 		SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(mydata);
@@ -54,6 +59,7 @@ public class ConstrainedDelaunayLevelEdge {
 			coords[i].z = 0;
 			points.add(new MyPoint(coords[i]));
 		}
+		aMesh.setPoints(points);
 
 		int z;
 		for (long i = 0; i < sds.getRowCount(); i++) {
@@ -81,8 +87,38 @@ public class ConstrainedDelaunayLevelEdge {
 		}
 
 		sds.close();
+		
 
+		
+		mydata = dsf.getDataSource(new File("src/test/resources/data/source/chezine/bati_extrait.shp"));
+
+		sds = new SpatialDataSourceDecorator(mydata);
+		sds.open();
+		MyPolygon aPolygon;
+		
+		for (int i = 0; i < sds.getRowCount(); i++) {
+			Geometry geom = sds.getGeometry(i);
+
+			for (int j = 0; j < geom.getNumGeometries(); j++) {
+				Geometry subGeom = geom.getGeometryN(j);
+
+				if (subGeom instanceof Polygon) {
+					aPolygon=new MyPolygon((Polygon) subGeom);
+					aPolygon.setEmpty(true);
+					aPolygon.setUsePolygonZ(true);
+//					aPolygon.setMustBeTriangulated(true);
+					aMesh.addPolygon(aPolygon);
+				}
+			}
+		}
+
+		sds.close();
+		
+		
 		aMesh.processDelaunay();
+
+		
+//		aMesh.checkTriangularization();//Exception in thread "main" org.jdelaunay.delaunay.DelaunayError: one point is not inserted in the triangularization
 		
 		System.out.println("\npoint : "+aMesh.getNbPoints()+"\nedges : "+aMesh.getNbEdges()+"\ntriangles : "+aMesh.getNbTriangles());
 		
@@ -91,13 +127,12 @@ public class ConstrainedDelaunayLevelEdge {
 
 		
 		long end = System.currentTimeMillis();
-		System.out.println("Duration " + (end-start)+"ms soit "+((end-start)/60000)+"min");
+		System.out.println("Duration " + (end-start)+"ms ==> ~ "+((end-start)/60000)+"min");
 		
 		MyDrawing aff2 = new MyDrawing();
 		aff2.add(aMesh);
 		aMesh.setAffiche(aff2);
-//		aMesh.VRMLexport();
-
+		aMesh.VRMLexport();
 		
 
 
