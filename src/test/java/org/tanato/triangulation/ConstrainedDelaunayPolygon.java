@@ -12,7 +12,6 @@ import org.gdms.driver.driverManager.DriverLoadException;
 import org.grap.utilities.EnvelopeUtil;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
-import org.jdelaunay.delaunay.MyEdge;
 import org.jdelaunay.delaunay.MyMesh;
 import org.jdelaunay.delaunay.MyPoint;
 import org.jdelaunay.delaunay.MyPolygon;
@@ -51,14 +50,19 @@ public class ConstrainedDelaunayPolygon {
 		MyPoint aPoint;
 		for (int i = 0; i < coords.length - 1; i++) {
 			aPoint=new MyPoint(coords[i]);
-			aPoint.setZ(30);
+			aPoint.setZ(-30);
 			points.add(aPoint);
 
 		}
 
+		
 		aMesh.setPoints(points);
-		aMesh.addLevelEdge(new MyEdge(new MyPoint(100, -10, 60),new MyPoint(700, 900, 60)));
+//		aMesh.addLevelEdge(new MyEdge(new MyPoint(100, -10, 60),new MyPoint(700, 900, 60)));
+//		aMesh.createEdge(new MyPoint(100, -10, 60), new MyPoint(700, 900, 60));
 
+		aMesh.processDelaunay();
+		
+		
 		MyPolygon aPolygon;
 		for (int i = 0; i < 3; i++) {
 
@@ -70,8 +74,8 @@ public class ConstrainedDelaunayPolygon {
 				if (subGeom instanceof Polygon) {
 					aPolygon=new MyPolygon((Polygon) subGeom, 2500);
 					aPolygon.setUsePolygonZ(true);
-//					aPolygon.setEmpty(true);
-					aPolygon.setMustBeTriangulated(true);
+					aPolygon.setEmpty(true);
+//					aPolygon.setMustBeTriangulated(true);
 					aMesh.addPolygon(aPolygon);
 					
 				}
@@ -81,24 +85,26 @@ public class ConstrainedDelaunayPolygon {
 		sds.close();
 
 
-
-			
+//		aMesh.processDelaunay();			
 		
 		
-		aMesh.processDelaunay();
-		 points=aMesh.getPoints();
-			for(MyPoint aPoint2:points)
-				if(aPoint2.getZ()!=30)
-					aPoint2.setZ(0);
+		// Set Z coordinate because polygon2d.shp don't have Z coordinate and VRMLexport don't like it.
+		points=aMesh.getPoints();
+		for(MyPoint aPoint2:points)
+		{
+			if((aPoint2.getZ()+"").equals("NaN"))
+				aPoint2.setZ(0);
+		}
+		aMesh.setPoints(points);
 			
-			
-			aMesh.setPoints(points);
-		System.out.println(aMesh.getPoints());
+		aMesh.checkTriangularization();
 		
-aMesh.VRMLexport("poly.wrl");
+		aMesh.VRMLexport("poly.wrl");
 		MyDrawing aff2 = new MyDrawing();
 		aff2.add(aMesh);
 		aMesh.setAffiche(aff2);
+		
+
 	}
 
 }
