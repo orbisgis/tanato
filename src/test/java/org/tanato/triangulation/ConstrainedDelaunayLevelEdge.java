@@ -2,6 +2,7 @@ package org.tanato.triangulation;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
@@ -9,6 +10,7 @@ import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
+import org.grap.utilities.EnvelopeUtil;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
 import org.jdelaunay.delaunay.MyEdge;
@@ -17,6 +19,7 @@ import org.jdelaunay.delaunay.MyPoint;
 import org.jdelaunay.delaunay.MyPolygon;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
@@ -43,20 +46,17 @@ public class ConstrainedDelaunayLevelEdge {
 		SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(mydata);
 		sds.open();
 
-//		Envelope env = sds.getFullExtent();
-//
-//		Geometry geomEnv = EnvelopeUtil.toGeometry(env);
-//
-//		Coordinate[] coords = geomEnv.getCoordinates();
-//
-//		ArrayList<MyPoint> points = new ArrayList<MyPoint>();
-//
-//		for (int i = 0; i < coords.length - 1; i++) {
-//			coords[i].z = 0;
-//			points.add(new MyPoint(coords[i]));
-//		}
-//		aMesh.setPoints(points);
-
+		
+		Envelope env = sds.getFullExtent();
+		Geometry geomEnv = EnvelopeUtil.toGeometry(env);
+		Coordinate[] coords = geomEnv.getCoordinates();
+		ArrayList<MyPoint> points = new ArrayList<MyPoint>();
+		for (int i = 0; i < coords.length - 1; i++) {
+			coords[i].z = 0;
+			points.add(new MyPoint(coords[i]));
+		}
+		aMesh.init(points);
+		
 		int z;
 		for (long i = 0; i < sds.getRowCount(); i++) {
 			Geometry geom = sds.getGeometry(i);
@@ -86,17 +86,18 @@ public class ConstrainedDelaunayLevelEdge {
 		
 		// Uncomment it for adding polygons after triangularization.
 		// (Don't forget to comment the same function after adding polygons!)
-		aMesh.processDelaunay(); 
+		aMesh.processDelaunay();
+		
 		
 		// adding polygons
-		mydata = dsf.getDataSource(new File("src/test/resources/data/source/chezine/bati_extrait.shp"));
-
+		mydata = dsf.getDataSource(new File("src/test/resources/data/source/chezine/bati_extrait.shp"));// 1707 buildings
 		sds = new SpatialDataSourceDecorator(mydata);
 		sds.open();
 		MyPolygon aPolygon;
 
-		for (int i = 0; i < 20; i++) { // take 2 minutes
-//		for (int i = 0; i < sds.getRowCount(); i++) {// can take more (or lot of more) than 2 minutes
+		long max;
+		max=sds.getRowCount();
+		for (long i = 0; i < max; i++) {
 			Geometry geom = sds.getGeometry(i);
 
 			for (int j = 0; j < geom.getNumGeometries(); j++) {
@@ -107,6 +108,8 @@ public class ConstrainedDelaunayLevelEdge {
 					aPolygon.setEmpty(true);
 					aPolygon.setUsePolygonZ(false);
 //					aPolygon.setMustBeTriangulated(true);
+					
+					System.out.println("adding polygon "+i+" / "+(max-1));
 					aMesh.addPolygon(aPolygon);
 				}
 			}
@@ -119,22 +122,31 @@ public class ConstrainedDelaunayLevelEdge {
 //		aMesh.processDelaunay();
 
 		System.out.println("\npoint : "+aMesh.getNbPoints()+"\nedges : "+aMesh.getNbEdges()+"\ntriangles : "+aMesh.getNbTriangles());
-		System.out.println("Check triangularization...");
-		aMesh.checkTriangularization();
-
-		
-		aMesh.removeFlatTriangles();//FIXME very very too long!
-
 		
 		long end = System.currentTimeMillis();
 		System.out.println("Duration " + (end-start)+"ms ==> ~ "+((end-start)/60000)+"min");
+		
 		
 		MyDrawing aff2 = new MyDrawing();
 		aff2.add(aMesh);
 		aMesh.setAffiche(aff2);
 		
+		System.out.println("Save...");
 		aMesh.VRMLexport();// save mesh in Mesh.wrl
 		
+		System.out.println("Check triangularization...");
+		aMesh.checkTriangularization();
+		
+		
+		
+//		aMesh.removeFlatTriangles();//FIXME very very too long!
+
+		
+		end = System.currentTimeMillis();
+		System.out.println("Duration " + (end-start)+"ms ==> ~ "+((end-start)/60000)+"min");
+		
+
+		System.out.println("Finish");
 	}
 
 }
