@@ -49,8 +49,8 @@ public class ConstrainedDelaunayPolygon {
 
 		MyPoint aPoint;
 		for (int i = 0; i < coords.length - 1; i++) {
+			coords[i].z=-30;
 			aPoint=new MyPoint(coords[i]);
-			aPoint.setZ(-30);
 			points.add(aPoint);
 
 		}
@@ -72,6 +72,11 @@ public class ConstrainedDelaunayPolygon {
 				Geometry subGeom = geom.getGeometryN(j);
 
 				if (subGeom instanceof Polygon) {
+					System.out.println("adding polygon "+i);
+					
+					for(Coordinate c :((Polygon) subGeom).getCoordinates())
+						c.z=0;
+					
 					aPolygon=new MyPolygon((Polygon) subGeom, 2500);
 					aPolygon.setUsePolygonZ(true);
 					aPolygon.setEmpty(true);
@@ -87,16 +92,22 @@ public class ConstrainedDelaunayPolygon {
 
 //		aMesh.processDelaunay();			
 		
-		
+		System.out.println("\n\n");
 		// Set Z coordinate because polygon2d.shp don't have Z coordinate and VRMLexport don't like it.
 		points=aMesh.getPoints();
 		for(MyPoint aPoint2:points)
 		{
-			if((aPoint2.getZ()+"").equals("NaN"))
+			if( Double.isNaN(aPoint2.getZ()))
+//			if((aPoint2.getZ()+"").equals("NaN"))
 				aPoint2.setZ(0);
 		}
 		aMesh.setPoints(points);
 			
+//		aMesh.edgesQuadTree.getAllStruc();
+		
+//System.out.println(aMesh.getPoints());
+//		System.out.println(aMesh.getEdges());
+//		aMesh.edgesQuadTree.checkQuadtree();
 		aMesh.checkTriangularization();
 		
 		aMesh.VRMLexport("poly.wrl");
@@ -104,7 +115,6 @@ public class ConstrainedDelaunayPolygon {
 		aff2.add(aMesh);
 		aMesh.setAffiche(aff2);
 		
-
 	}
 
 }

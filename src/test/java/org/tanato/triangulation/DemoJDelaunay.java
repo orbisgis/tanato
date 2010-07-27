@@ -18,6 +18,7 @@ import org.jdelaunay.delaunay.MyEdge;
 import org.jdelaunay.delaunay.MyMesh;
 import org.jdelaunay.delaunay.MyPoint;
 import org.jdelaunay.delaunay.MyPolygon;
+import org.tanato.processing.postprocessing.JdelaunayExport;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -29,8 +30,8 @@ import com.vividsolutions.jts.io.ParseException;
 /**
  * Demo of JDelaunay library.
  * @author Adelin PIAU
- * @date 2010-07-22
- * @version 1.0
+ * @date 2010-07-27
+ * @version 1.3
  */
 public class DemoJDelaunay {
 	public static DataSourceFactory dsf = new DataSourceFactory();
@@ -42,7 +43,7 @@ public class DemoJDelaunay {
 			ParseException, IOException {
 
 		
-	String help="Demo 1.0\n" +
+	String help="Demo 1.3\n" +
 			"Parameter : [-v] [-c <path level edges>] [-p <path buildings>]\n" +
 			"-v : verbose\n" +
 			"-e : level edges\n" +
@@ -254,6 +255,10 @@ public class DemoJDelaunay {
 				System.out.println("Save in Mesh.wrl ...");
 				aMesh.VRMLexport();// save mesh in Mesh.wrl
 				
+				System.out.println("Save in mesh*.gdms");
+				JdelaunayExport.exportGDMS(aMesh, "mesh");
+				
+				
 				System.out.println("Check triangularization...");
 				aMesh.checkTriangularization();
 		
@@ -261,6 +266,10 @@ public class DemoJDelaunay {
 				end = System.currentTimeMillis();
 				System.out.println("Duration " + (end-start)+"ms ==> ~ "+((end-start)/60000)+"min");
 				System.out.println("Finish");
+				
+				
+				
+				
 			}
 		}
 	}

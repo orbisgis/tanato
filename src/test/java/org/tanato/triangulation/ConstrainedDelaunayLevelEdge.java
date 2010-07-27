@@ -134,12 +134,12 @@ public class ConstrainedDelaunayLevelEdge {
 		System.out.println("Save...");
 		aMesh.VRMLexport();// save mesh in Mesh.wrl
 		
-		System.out.println("Check triangularization...");
-		aMesh.checkTriangularization();
+//		System.out.println("Check triangularization...");
+//		aMesh.checkTriangularization();
 		
 		
-		
-//		aMesh.removeFlatTriangles();//FIXME very very too long!
+		System.out.println("remove flat");
+		aMesh.removeFlatTriangles();//FIXME very very too long!
 
 		
 		end = System.currentTimeMillis();
