@@ -88,6 +88,8 @@ public class ConstrainedDelaunayLevelEdge {
 		// (Don't forget to comment the same function after adding polygons!)
 		aMesh.processDelaunay();
 		
+//		System.out.println("remove flat");
+//		aMesh.removeFlatTriangles();//very very too long!
 		
 		// adding polygons
 		mydata = dsf.getDataSource(new File("src/test/resources/data/source/chezine/bati_extrait.shp"));// 1707 buildings
@@ -138,8 +140,8 @@ public class ConstrainedDelaunayLevelEdge {
 //		aMesh.checkTriangularization();
 		
 		
-		System.out.println("remove flat");
-		aMesh.removeFlatTriangles();//FIXME very very too long!
+//		System.out.println("remove flat");
+//		aMesh.removeFlatTriangles();//very very too long!
 
 		
 		end = System.currentTimeMillis();

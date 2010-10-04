@@ -14,19 +14,29 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.generic.GenericObjectDriver;
+import org.gdms.sql.strategies.DiskBufferDriver;
 import org.jdelaunay.delaunay.MyEdge;
 import org.jdelaunay.delaunay.MyMesh;
 import org.jdelaunay.delaunay.MyPoint;
 import org.jdelaunay.delaunay.MyTriangle;
+import org.jhydrocell.utilities.HydroTriangleUtil;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Polygon;
 
-
+/**
+ * postprocessing Package.
+ * 
+ * @author Adelin PIAU
+ * @date 2010-07-27
+ * @revision 2010-10-04
+ * @version 1.0
+ */
 public class JdelaunayExport {
 
+	static DataSourceFactory dsf = new DataSourceFactory();
 	
 	public static void exportGDMS(MyMesh aMesh, String path) throws DriverException
 	{
@@ -37,7 +47,7 @@ public class JdelaunayExport {
 				TypeFactory.createType(Type.INT) }, new String[] {
 				"the_geom",  "gid", "type" });
 
-		GenericObjectDriver driver = new GenericObjectDriver(metadata);
+		DiskBufferDriver driver = new DiskBufferDriver(dsf, metadata);
 		
 		for(MyPoint aPoint:aMesh.getPoints())
 		{
@@ -60,9 +70,9 @@ public class JdelaunayExport {
 				TypeFactory.createType(Type.SHORT),
 				TypeFactory.createType(Type.BOOLEAN),
 				TypeFactory.createType(Type.BOOLEAN)}, new String[] {
-				"the_geom",  "gid", "type", "N_start", "N_end", "Triangle_L", "Triangle_R", "topo_L", "topo_R" });//FIXME change name
+				"the_geom",  "gid", "type", "N_start", "N_end", "Triangle_L", "Triangle_R", "topo_L", "topo_R" });//TODO check name
 
-		driver = new GenericObjectDriver(metadata);
+		driver = new DiskBufferDriver(dsf, metadata);
 		
 		for(MyEdge anEdge:aMesh.getEdges())
 		{
@@ -85,8 +95,8 @@ public class JdelaunayExport {
 			ValueFactory.createValue(anEdge.getEndPoint().getGID()),
 			ValueFactory.createValue( (anEdge.getLeft()==null?-1:anEdge.getLeft().getGID())),
 			ValueFactory.createValue( (anEdge.getRight()==null?-1:anEdge.getRight().getGID())),
-			ValueFactory.createValue(false), 
-			ValueFactory.createValue(false)
+			ValueFactory.createValue((anEdge.getLeft()==null?false:HydroTriangleUtil.isLeftTriangleGoToEdge(anEdge))), 
+			ValueFactory.createValue((anEdge.getRight()==null?false:HydroTriangleUtil.isRightTriangleGoToEdge(anEdge)))
 			});
 		}
 		
@@ -103,37 +113,29 @@ public class JdelaunayExport {
 				TypeFactory.createType(Type.DOUBLE)}, new String[] {
 				"the_geom",  "gid", "type", "slope", "direction" });
 
-		driver = new GenericObjectDriver(metadata);
+		driver = new DiskBufferDriver(dsf, metadata);
 		
 		for(MyTriangle aTriangle:aMesh.getTriangles())
 		{
-			
-			Collection<LineString> lineStrings = new ArrayList<LineString>();
-			lineStrings.add(	new GeometryFactory().createLineString(
-														new Coordinate[]{aTriangle.getEdge(0).getStartPoint().getCoordinate(), aTriangle.getEdge(0).getEndPoint().getCoordinate()}
-														)
-			);
-			lineStrings.add(	new GeometryFactory().createLineString(
-					new Coordinate[]{aTriangle.getEdge(1).getStartPoint().getCoordinate(), aTriangle.getEdge(1).getEndPoint().getCoordinate()}
-					)
-);
-			lineStrings.add(	new GeometryFactory().createLineString(
-					new Coordinate[]{aTriangle.getEdge(2).getStartPoint().getCoordinate(), aTriangle.getEdge(2).getEndPoint().getCoordinate()}
-					)
-);
-			
+			Collection<Polygon> polygons = new ArrayList<Polygon>();
+			polygons.add(new GeometryFactory().createPolygon(
+					new GeometryFactory().createLinearRing(new Coordinate[] {
+							aTriangle.getPoint(0).getCoordinate(),
+							aTriangle.getPoint(1).getCoordinate(),
+							aTriangle.getPoint(2).getCoordinate(),
+							aTriangle.getPoint(0).getCoordinate() }), null));
+
 			new GeometryFactory();
-			driver.addValues(new Value[] { ValueFactory.createValue(
-																		new GeometryFactory().createMultiLineString(
-																				GeometryFactory.toLineStringArray(lineStrings
-																						)
-																		)
-																	),
-			ValueFactory.createValue(aTriangle.getGID()),
-			ValueFactory.createValue(aTriangle.getProperty()),
-			ValueFactory.createValue(0),
-			ValueFactory.createValue(0)
-			});
+			driver.addValues(new Value[] {
+					ValueFactory.createValue(new GeometryFactory()
+							.createMultiPolygon(GeometryFactory
+									.toPolygonArray(polygons))),
+					ValueFactory.createValue(aTriangle.getGID()),
+					ValueFactory.createValue(aTriangle.getProperty()),
+					ValueFactory.createValue(HydroTriangleUtil
+							.getSlopeInPourcent(aTriangle)),
+					ValueFactory.createValue(HydroTriangleUtil
+							.getSlopeAzimut(aTriangle)) });
 		}
 		
 		saveDriver(path+"Triangles.gdms", driver);
@@ -152,4 +154,25 @@ public class JdelaunayExport {
 				dsf.saveContents(name, ds);
 			ds.close();
 	}
+	
+	
+	
+//	public static void recomputeEdgeProperties(String pathEdge, String pathTriangle)
+//	{
+//		 DataSourceFactory dsf = new DataSourceFactory();
+//		DataSource mydata;
+//		SpatialDataSourceDecorator sds;
+//		
+//		mydata = dsf.getDataSource(new File(pathBuilding));
+//		sds = new SpatialDataSourceDecorator(mydata);
+//		sds.open();
+//		Envelope env = sds.getFullExtent();
+//		Geometry geomEnv = EnvelopeUtil.toGeometry(env);
+//		Coordinate[] coords = geomEnv.getCoordinates();
+//	
+//		
+//		
+//		
+//	}
+
 }

@@ -31,6 +31,7 @@ import com.vividsolutions.jts.io.ParseException;
  * Demo of JDelaunay library.
  * @author Adelin PIAU
  * @date 2010-07-27
+ * @revision 2010-10-04
  * @version 1.3
  */
 public class DemoJDelaunay {
@@ -44,7 +45,7 @@ public class DemoJDelaunay {
 
 		
 	String help="Demo 1.3\n" +
-			"Parameter : [-v] [-c <path level edges>] [-p <path buildings>]\n" +
+			"Parameter : [-v] [-e <path level edges>] [-p <path buildings>]\n" +
 			"-v : verbose\n" +
 			"-e : level edges\n" +
 			"-p : polygons\n" +
@@ -236,16 +237,23 @@ public class DemoJDelaunay {
 						aMesh.processDelaunay();
 					}
 				}
+
+				
+		//		aMesh.removeFlatTriangles();
 				
 				
 				// Uncomment it for triangulate polygons and level edge in the same time.
 				// (Don't forget to comment the same function befor adding polygons!)
-		//		aMesh.processDelaunay();
+				//aMesh.processDelaunay();
 		
 				System.out.println("\npoint : "+aMesh.getNbPoints()+"\nedges : "+aMesh.getNbEdges()+"\ntriangles : "+aMesh.getNbTriangles());
 				
 				long end = System.currentTimeMillis();
 				System.out.println("Duration " + (end-start)+"ms ==> ~ "+((end-start)/60000)+"min");
+				
+				
+				
+				
 				
 				
 				MyDrawing aff2 = new MyDrawing();
