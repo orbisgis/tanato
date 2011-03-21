@@ -14,11 +14,11 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
-import org.gdms.sql.strategies.DiskBufferDriver;
-import org.jdelaunay.delaunay.MyEdge;
-import org.jdelaunay.delaunay.MyMesh;
-import org.jdelaunay.delaunay.MyPoint;
-import org.jdelaunay.delaunay.MyTriangle;
+import org.gdms.driver.DiskBufferDriver;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DTriangle;
 import org.jhydrocell.utilities.HydroTriangleUtil;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -38,7 +38,7 @@ public class JdelaunayExport {
 
 	static DataSourceFactory dsf = new DataSourceFactory();
 	
-	public static void exportGDMS(MyMesh aMesh, String path) throws DriverException
+	public static void exportGDMS(ConstrainedMesh aMesh, String path) throws DriverException
 	{
 		// save points
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -49,7 +49,7 @@ public class JdelaunayExport {
 
 		DiskBufferDriver driver = new DiskBufferDriver(dsf, metadata);
 		
-		for(MyPoint aPoint:aMesh.getPoints())
+		for(DPoint aPoint:aMesh.getPoints())
 		{
 			driver.addValues(new Value[] { ValueFactory.createValue(new GeometryFactory().createPoint(aPoint.getCoordinate())),
 			ValueFactory.createValue(aPoint.getGID()),
@@ -74,7 +74,7 @@ public class JdelaunayExport {
 
 		driver = new DiskBufferDriver(dsf, metadata);
 		
-		for(MyEdge anEdge:aMesh.getEdges())
+		for(DEdge anEdge:aMesh.getEdges())
 		{
 			Collection<LineString> lineStrings = new ArrayList<LineString>();
 			lineStrings.add(	new GeometryFactory().createLineString(
@@ -115,7 +115,7 @@ public class JdelaunayExport {
 
 		driver = new DiskBufferDriver(dsf, metadata);
 		
-		for(MyTriangle aTriangle:aMesh.getTriangles())
+		for(DTriangle aTriangle:aMesh.getTriangleList())
 		{
 			Collection<Polygon> polygons = new ArrayList<Polygon>();
 			polygons.add(new GeometryFactory().createPolygon(

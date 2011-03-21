@@ -23,11 +23,11 @@ import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.driver.generic.GenericObjectDriver;
 import org.jdelaunay.delaunay.Delaunay;
 import org.jdelaunay.delaunay.DelaunayError;
-import org.jdelaunay.delaunay.MyDrawing;
-import org.jdelaunay.delaunay.MyEdge;
-import org.jdelaunay.delaunay.MyMesh;
-import org.jdelaunay.delaunay.MyPoint;
-import org.jdelaunay.delaunay.MyTriangle;
+import org.jdelaunay.delaunay.display.MeshDrawer;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DTriangle;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -35,6 +35,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import java.util.List;
 
 public class ConstrainedDelaunayDitches {
 
@@ -42,11 +43,11 @@ public class ConstrainedDelaunayDitches {
 
 	public static String path = "data/small_courbes.shp";
 
-	private static MyMesh aMesh;
+	private static ConstrainedMesh aMesh;
 
-	private static ArrayList<MyPoint> points;
+	private static ArrayList<DPoint> points;
 
-	private static LinkedList<MyEdge> breaklines;
+	private static LinkedList<DEdge> breaklines;
 	private static int gid;
 
 	private static String pathditches = "data/small_network.shp";
@@ -64,9 +65,9 @@ public class ConstrainedDelaunayDitches {
 
 		long startComputation = Calendar.getInstance().getTime().getTime();
 
-		points = new ArrayList<MyPoint>();
+		points = new ArrayList<DPoint>();
 
-		breaklines = new LinkedList<MyEdge>();
+		breaklines = new LinkedList<DEdge>();
 
 		DataSource mydata = dsf.getDataSource(new File(path));
 
@@ -92,8 +93,7 @@ public class ConstrainedDelaunayDitches {
 					for (int k = 0; k < subGeom.getCoordinates().length; k++) {
 
 						Coordinate coord = subGeom.getCoordinates()[k];
-						gid++;
-						points.add(new MyPoint(coord.x, coord.y, zValue, gid));
+						points.add(new DPoint(coord.x, coord.y, zValue));
 					}
 
 				}
@@ -130,17 +130,17 @@ public class ConstrainedDelaunayDitches {
 
 		System.out.println("Nombre de breaklines : " + breaklines.size());
 
-		aMesh = new MyMesh();
-		aMesh.setPointsRef(points);
+		aMesh = new ConstrainedMesh();
+		aMesh.setPoints(points);
 		aMesh.setEdges(breaklines);
 
-		Delaunay delaunay = new Delaunay(aMesh);
+//		Delaunay delaunay = new Delaunay(aMesh);
 
-		delaunay.setVerbose(true);
-		aMesh.setStart();
+//		delaunay.setVerbose(true);
+//		aMesh.setStart();
 
 		// process triangularization
-		delaunay.processDelaunay();
+		aMesh.processDelaunay();
 
 		delaunay.removeFlatTriangles();
 
@@ -154,7 +154,7 @@ public class ConstrainedDelaunayDitches {
 
 		delaunay.morphologicalQualification();
 
-		MyDrawing aff = new MyDrawing();
+		MeshDrawer aff = new MeshDrawer();
 		aff.setTitle("Mesh");
 		aff.add(aMesh);
 		aMesh.setAffiche(aff);
@@ -163,24 +163,23 @@ public class ConstrainedDelaunayDitches {
 
 		// aMesh.saveMesh();
 
-		aMesh.setEnd();
 		System.out.println("Temps de triangulation " + aMesh.getDuration());
 
 	}
 
-	private static void getBreaklines(LineString lineString, double zValue) {
+	private static void getBreaklines(LineString lineString, double zValue) throws DelaunayError {
 		Coordinate[] coords = lineString.getCoordinates();
 
-		MyPoint p1 = new MyPoint(coords[0].x, coords[0].y, zValue, gid);
-		MyPoint p0;
+		DPoint p1 = new DPoint(coords[0].x, coords[0].y, zValue);
+		DPoint p0;
 		points.add(p1);
 		for (int k = 1; k < coords.length; k++) {
 
 			p0 = p1;
 			gid++;
-			p1 = new MyPoint(coords[k].x, coords[k].y, zValue, gid);
+			p1 = new DPoint(coords[k].x, coords[k].y, zValue);
 			points.add(p1);
-			MyEdge edge = new MyEdge(p0, p1, gid);
+			DEdge edge = new DEdge(p0, p1);
 			breaklines.add(edge);
 		}
 
@@ -248,18 +247,18 @@ public class ConstrainedDelaunayDitches {
 
 		GeometryFactory gf = new GeometryFactory();
 
-		ArrayList<MyPoint> points = aMesh.getPoints();
+		List<DPoint> points = aMesh.getPoints();
 
-		ArrayList<MyEdge> edges = aMesh.getEdges();
+		List<DEdge> edges = aMesh.getEdges();
 
-		LinkedList<MyTriangle> triangles = aMesh.getTriangles();
+		List<DTriangle> triangles = aMesh.getTriangleList();
 
-		for (MyEdge edge : edges) {
+		for (DEdge edge : edges) {
 
 			int gidEdge = edges.indexOf(edge) + 1;
 
-			MyPoint p1 = edge.point(0);
-			MyPoint p2 = edge.point(1);
+			DPoint p1 = edge.getStartPoint();
+			DPoint p2 = edge.getEndPoint();
 
 			int gidstart = points.indexOf(p1) + 1;
 
@@ -312,11 +311,11 @@ public class ConstrainedDelaunayDitches {
 
 		driverNodes = new GenericObjectDriver(metadata);
 
-		for (MyPoint aPoint : points) {
+		for (DPoint aPoint : points) {
 			int id = points.indexOf(aPoint) + 1;
 
-			Point point = gf.createPoint(new Coordinate(aPoint.x, aPoint.y,
-					aPoint.z));
+			Point point = gf.createPoint(new Coordinate(aPoint.getX(), aPoint.getY(),
+					aPoint.getZ()));
 
 			driverNodes.addValues(new Value[] { ValueFactory.createValue(id),
 					ValueFactory.createValue(aPoint.type),
@@ -340,15 +339,15 @@ public class ConstrainedDelaunayDitches {
 
 		driverFaces = new GenericObjectDriver(metadata);
 
-		for (MyTriangle aTriangle : triangles) {
+		for (DTriangle aTriangle : triangles) {
 
-			MyPoint[] pts = aTriangle.points;
+			List<DPoint> pts = aTriangle.getPoints();
 
 			Coordinate[] coords = new Coordinate[] {
-					new Coordinate(pts[0].x, pts[0].y, pts[0].z),
-					new Coordinate(pts[1].x, pts[1].y, pts[1].z),
-					new Coordinate(pts[2].x, pts[2].y, pts[2].z),
-					new Coordinate(pts[0].x, pts[0].y, pts[0].z) };
+					new Coordinate(pts.get(0).getX(), pts.get(0).getY(), pts.get(0).getZ()),
+					new Coordinate(pts.get(1).getX(), pts.get(1).getY(), pts.get(1).getZ()),
+					new Coordinate(pts.get(2).getX(), pts.get(2).getY(), pts.get(2).getZ()),
+					new Coordinate(pts.get(0).getX(), pts.get(0).getY(), pts.get(0).getZ()) };
 
 			Polygon polygon = gf.createPolygon(gf.createLinearRing(coords),
 					null);
@@ -360,9 +359,9 @@ public class ConstrainedDelaunayDitches {
 			driverFaces.addValues(new Value[] { ValueFactory.createValue(id),
 					ValueFactory.createValue(""),
 					ValueFactory.createValue(polygon),
-					ValueFactory.createValue(aTriangle.edge(0).getGid()),
-					ValueFactory.createValue(aTriangle.edge(1).getGid()),
-					ValueFactory.createValue(aTriangle.edge(2).getGid()),
+					ValueFactory.createValue(aTriangle.getEdge(0).getGID()),
+					ValueFactory.createValue(aTriangle.getEdge(1).getGID()),
+					ValueFactory.createValue(aTriangle.getEdge(2).getGID()),
 					ValueFactory.createValue(slope),
 					ValueFactory.createValue(aTriangle.getSlopeInDegree()) });
 

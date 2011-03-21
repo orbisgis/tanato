@@ -14,10 +14,10 @@ import org.gdms.driver.generic.GenericObjectDriver;
 import org.jdelaunay.delaunay.Delaunay;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
-import org.jdelaunay.delaunay.MyEdge;
-import org.jdelaunay.delaunay.MyMesh;
-import org.jdelaunay.delaunay.MyPoint;
-import org.jdelaunay.delaunay.MyTriangle;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DTriangle;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -25,12 +25,13 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import java.util.List;
 
 public class Delaunay2D {
 
 	private SpatialDataSourceDecorator sds;
 	private Delaunay delaunay;
-	private ArrayList<MyPoint> points;
+	private ArrayList<DPoint> points;
 
 	public Delaunay2D(SpatialDataSourceDecorator sds) {
 		this.sds = sds;
@@ -45,7 +46,7 @@ public class Delaunay2D {
 		try {
 			sds.open();
 
-			ArrayList<MyPoint> points = new ArrayList<MyPoint>();
+			ArrayList<DPoint> points = new ArrayList<DPoint>();
 			int gid = 0;
 			for (int i = 0; i < sds.getRowCount(); i++) {
 
@@ -56,9 +57,9 @@ public class Delaunay2D {
 					gid++;
 					Coordinate coord = coords[k];
 					if (Double.isNaN(coord.z)) {
-						points.add(new MyPoint(coord.x, coord.y, 0, gid));
+						points.add(new DPoint(coord.x, coord.y, 0, gid));
 					} else {
-						points.add(new MyPoint(coord.x, coord.y, coord.z, gid));
+						points.add(new DPoint(coord.x, coord.y, coord.z, gid));
 					}
 
 				}
@@ -66,7 +67,7 @@ public class Delaunay2D {
 
 			sds.close();
 
-			MyMesh aMesh = new MyMesh();
+			ConstrainedMesh aMesh = new ConstrainedMesh();
 
 			aMesh.setPoints(points);
 
@@ -98,11 +99,11 @@ public class Delaunay2D {
 
 			GeometryFactory gf = new GeometryFactory();
 
-			for (MyPoint aPoint : points) {
-				int id = aPoint.getGid();
+			for (DPoint aPoint : points) {
+				int id = aPoint.getGID();
 
-				Point point = gf.createPoint(new Coordinate(aPoint.x, aPoint.y,
-						aPoint.z));
+				Point point = gf.createPoint(new Coordinate(aPoint.getX(), aPoint.getY(),
+						aPoint.getZ()));
 
 				driverNodes.addValues(new Value[] {
 						ValueFactory.createValue(id),
@@ -129,21 +130,21 @@ public class Delaunay2D {
 
 			GeometryFactory gf = new GeometryFactory();
 
-			for (MyEdge edge : edges) {
+			for (DEdge edge : edges) {
 
-				MyPoint pts_start = edge.getStart();
+				DPoint pts_start = edge.getStartPoint();
 
-				MyPoint pts_end = edge.getEnd();
+				DPoint pts_end = edge.getEndPoint();
 
-				Coordinate c1 = new Coordinate(pts_start.x, pts_start.y,
-						pts_start.z);
-				Coordinate c2 = new Coordinate(pts_end.x, pts_end.y, pts_end.z);
+				Coordinate c1 = new Coordinate(pts_start.getX(), pts_start.getY(),
+						pts_start.getZ());
+				Coordinate c2 = new Coordinate(pts_end.getX(), pts_end.getY(), pts_end.getZ());
 
 				LineString line = gf
 						.createLineString(new Coordinate[] { c1, c2 });
 
 				driverFaces.addValues(new Value[] {
-						ValueFactory.createValue(edge.getGid()),
+						ValueFactory.createValue(edge.getGID()),
 						ValueFactory.createValue(""),
 						ValueFactory.createValue(line) });
 
@@ -167,31 +168,31 @@ public class Delaunay2D {
 					"type", "the_geom", "edge1", "edge2", "edge3" });
 
 			GenericObjectDriver driverFaces = new GenericObjectDriver(metadata);
-			LinkedList<MyTriangle> triangles = delaunay.getMesh()
+			LinkedList<DTriangle> triangles = delaunay.getMesh()
 					.getTriangles();
 
 			GeometryFactory gf = new GeometryFactory();
 
-			for (MyTriangle aTriangle : triangles) {
+			for (DTriangle aTriangle : triangles) {
 
-				MyPoint[] pts = aTriangle.points;
+				List<DPoint> pts = aTriangle.getPoints();
 
 				Coordinate[] coords = new Coordinate[] {
-						new Coordinate(pts[0].x, pts[0].y, pts[0].z),
-						new Coordinate(pts[1].x, pts[1].y, pts[1].z),
-						new Coordinate(pts[2].x, pts[2].y, pts[2].z),
-						new Coordinate(pts[0].x, pts[0].y, pts[0].z) };
+						new Coordinate(pts.get(0).getX(), pts.get(0).getY(), pts.get(0).getZ()),
+						new Coordinate(pts.get(1).getX(), pts.get(1).getY(), pts.get(1).getZ()),
+						new Coordinate(pts.get(2).getX(), pts.get(2).getY(), pts.get(2).getZ()),
+						new Coordinate(pts.get(0).getX(), pts.get(0).getY(), pts.get(0).getZ()) };
 
 				Polygon polygon = gf.createPolygon(gf.createLinearRing(coords),
 						null);
 
 				driverFaces.addValues(new Value[] {
-						ValueFactory.createValue(aTriangle.getGid()),
+						ValueFactory.createValue(aTriangle.getGID()),
 						ValueFactory.createValue(""),
 						ValueFactory.createValue(polygon),
-						ValueFactory.createValue(aTriangle.edge(0).getGid()),
-						ValueFactory.createValue(aTriangle.edge(1).getGid()),
-						ValueFactory.createValue(aTriangle.edge(2).getGid()) });
+						ValueFactory.createValue(aTriangle.getEdge(0).getGID()),
+						ValueFactory.createValue(aTriangle.getEdge(1).getGID()),
+						ValueFactory.createValue(aTriangle.getEdge(2).getGID()) });
 
 			}
 			return driverFaces;

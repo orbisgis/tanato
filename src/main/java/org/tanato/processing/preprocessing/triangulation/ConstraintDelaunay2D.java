@@ -12,14 +12,13 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
-import org.gdms.sql.strategies.DiskBufferDriver;
-import org.jdelaunay.delaunay.Delaunay;
+import org.gdms.driver.DiskBufferDriver;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
-import org.jdelaunay.delaunay.MyEdge;
-import org.jdelaunay.delaunay.MyMesh;
-import org.jdelaunay.delaunay.MyPoint;
-import org.jdelaunay.delaunay.MyTriangle;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DTriangle;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -28,13 +27,14 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import java.util.List;
 
 public class ConstraintDelaunay2D {
 
 	private SpatialDataSourceDecorator sds;
 	private Delaunay delaunay;
-	private ArrayList<MyPoint> points;
-	private LinkedList<MyEdge> breaklines;
+	private ArrayList<DPoint> points;
+	private LinkedList<DEdge> breaklines;
 	private DataSourceFactory dsf;
 	private boolean verbose = false;
 	private boolean morphologicalQualification = false;
@@ -53,8 +53,8 @@ public class ConstraintDelaunay2D {
 		try {
 			sds.open();
 
-			points = new ArrayList<MyPoint>();
-			breaklines = new LinkedList<MyEdge>();
+			points = new ArrayList<DPoint>();
+			breaklines = new LinkedList<DEdge>();
 			for (int i = 0; i < sds.getRowCount(); i++) {
 
 				Geometry geom = sds.getGeometry(i);
@@ -64,7 +64,7 @@ public class ConstraintDelaunay2D {
 
 			sds.close();
 
-			MyMesh aMesh = new MyMesh();
+			ConstrainedMesh aMesh = new ConstrainedMesh();
 
 			aMesh.setPoints(points);
 
@@ -93,8 +93,8 @@ public class ConstraintDelaunay2D {
 		this.morphologicalQualification = morphologicalQualification;
 	}
 
-	private void addConstraint(Geometry geometry, ArrayList<MyPoint> points,
-			LinkedList<MyEdge> breakLineList) {
+	private void addConstraint(Geometry geometry, ArrayList<DPoint> points,
+			LinkedList<DEdge> breakLineList) {
 		if (geometry instanceof Point) {
 			points.add(toMyPoint(geometry.getCoordinate()));
 		} else if (geometry instanceof LineString) {
@@ -115,28 +115,28 @@ public class ConstraintDelaunay2D {
 	}
 
 	private void addConstraint(LineString lineString,
-			ArrayList<MyPoint> points, LinkedList<MyEdge> breakLineList) {
+			ArrayList<DPoint> points, LinkedList<DEdge> breakLineList) {
 		Coordinate[] coords = lineString.getCoordinates();
 
-		MyPoint p1 = toMyPoint(coords[0]);
-		MyPoint p0;
+		DPoint p1 = toMyPoint(coords[0]);
+		DPoint p0;
 		points.add(p1);
 		for (int k = 1; k < coords.length; k++) {
 
 			p0 = p1;
 			p1 = toMyPoint(coords[k]);
 			points.add(p1);
-			MyEdge edge = new MyEdge(p0, p1);
+			DEdge edge = new DEdge(p0, p1);
 			breaklines.add(edge);
 		}
 	}
 
-	public MyPoint toMyPoint(Coordinate coord) {
+	public DPoint toMyPoint(Coordinate coord) throws DelaunayError {
 
 		if (Double.isNaN(coord.z)) {
-			return new MyPoint(coord.x, coord.y, 0);
+			return new DPoint(coord.x, coord.y, 0);
 		} else {
-			return new MyPoint(coord.x, coord.y, coord.z);
+			return new DPoint(coord.x, coord.y, coord.z);
 		}
 
 	}
@@ -155,8 +155,8 @@ public class ConstraintDelaunay2D {
 
 			GeometryFactory gf = new GeometryFactory();
 
-			for (MyPoint aPoint : points) {
-				int id = aPoint.getGid();
+			for (DPoint aPoint : points) {
+				int id = aPoint.getGID();
 
 				Point point = gf.createPoint(new Coordinate(aPoint.x, aPoint.y,
 						aPoint.z));
@@ -186,21 +186,21 @@ public class ConstraintDelaunay2D {
 
 			GeometryFactory gf = new GeometryFactory();
 
-			for (MyEdge edge : edges) {
+			for (DEdge edge : edges) {
 
-				MyPoint pts_start = edge.getStart();
+				DPoint pts_start = edge.getStart();
 
-				MyPoint pts_end = edge.getEnd();
+				DPoint pts_end = edge.getEnd();
 
-				Coordinate c1 = new Coordinate(pts_start.x, pts_start.y,
-						pts_start.z);
-				Coordinate c2 = new Coordinate(pts_end.x, pts_end.y, pts_end.z);
+				Coordinate c1 = new Coordinate(pts_start.getX(), pts_start.getY(),
+						pts_start.getZ());
+				Coordinate c2 = new Coordinate(pts_end.getX(), pts_end.getY(), pts_end.getZ());
 
 				LineString line = gf
 						.createLineString(new Coordinate[] { c1, c2 });
 
 				driverFaces.addValues(new Value[] {
-						ValueFactory.createValue(edge.getGid()),
+						ValueFactory.createValue(edge.getGID()),
 						ValueFactory.createValue(""),
 						ValueFactory.createValue(line) });
 
@@ -224,31 +224,31 @@ public class ConstraintDelaunay2D {
 					"type", "the_geom", "edge1", "edge2", "edge3" });
 
 			DiskBufferDriver driverFaces = new DiskBufferDriver(dsf, metadata);
-			LinkedList<MyTriangle> triangles = delaunay.getMesh()
+			List<DTriangle> triangles = delaunay.getMesh()
 					.getTriangles();
 
 			GeometryFactory gf = new GeometryFactory();
 
-			for (MyTriangle aTriangle : triangles) {
+			for (DTriangle aTriangle : triangles) {
 
-				MyPoint[] pts = aTriangle.points;
+				List<DPoint> pts = aTriangle.getPoints();
 
 				Coordinate[] coords = new Coordinate[] {
-						new Coordinate(pts[0].x, pts[0].y, pts[0].z),
-						new Coordinate(pts[1].x, pts[1].y, pts[1].z),
-						new Coordinate(pts[2].x, pts[2].y, pts[2].z),
-						new Coordinate(pts[0].x, pts[0].y, pts[0].z) };
+					new Coordinate(pts.get(0).getX(), pts.get(0).getY(), pts.get(0).getZ()),
+					new Coordinate(pts.get(1).getX(), pts.get(1).getY(), pts.get(1).getZ()),
+					new Coordinate(pts.get(2).getX(), pts.get(2).getY(), pts.get(2).getZ()),
+					new Coordinate(pts.get(0).getX(), pts.get(0).getY(), pts.get(0).getZ()) };
 
 				Polygon polygon = gf.createPolygon(gf.createLinearRing(coords),
 						null);
 
 				driverFaces.addValues(new Value[] {
-						ValueFactory.createValue(aTriangle.getGid()),
+						ValueFactory.createValue(aTriangle.getGID()),
 						ValueFactory.createValue(""),
 						ValueFactory.createValue(polygon),
-						ValueFactory.createValue(aTriangle.edge(0).getGid()),
-						ValueFactory.createValue(aTriangle.edge(1).getGid()),
-						ValueFactory.createValue(aTriangle.edge(2).getGid()) });
+						ValueFactory.createValue(aTriangle.getEdge(0).getGID()),
+						ValueFactory.createValue(aTriangle.getEdge(1).getGID()),
+						ValueFactory.createValue(aTriangle.getEdge(2).getGID()) });
 
 			}
 			return driverFaces;

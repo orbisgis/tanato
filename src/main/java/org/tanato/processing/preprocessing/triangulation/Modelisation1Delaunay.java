@@ -25,10 +25,10 @@ import org.jdelaunay.delaunay.ConstraintType;
 import org.jdelaunay.delaunay.Delaunay;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.MyDrawing;
-import org.jdelaunay.delaunay.MyEdge;
-import org.jdelaunay.delaunay.MyMesh;
-import org.jdelaunay.delaunay.MyPoint;
-import org.jdelaunay.delaunay.MyTriangle;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DTriangle;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
@@ -54,11 +54,11 @@ public class Modelisation1Delaunay {
 
 	public static String pathDitches = "/home/bocher/Bureau/avupur/modelisation1/fosses.shp";
 
-	private static MyMesh aMesh;
+	private static ConstrainedMesh aMesh;
 
-	private static ArrayList<MyPoint> points;
+	private static ArrayList<DPoint> points;
 
-	private static LinkedList<MyEdge> breaklines;
+	private static LinkedList<DEdge> breaklines;
 	private static int gid;
 
 	/**
@@ -73,9 +73,9 @@ public class Modelisation1Delaunay {
 
 		long startComputation = Calendar.getInstance().getTime().getTime();
 
-		points = new ArrayList<MyPoint>();
+		points = new ArrayList<DPoint>();
 
-		breaklines = new LinkedList<MyEdge>();
+		breaklines = new LinkedList<DEdge>();
 
 		DataSource mydata = dsf.getDataSource(new File(pathTopo));
 
@@ -114,8 +114,8 @@ public class Modelisation1Delaunay {
 					for (int k = 0; k < subGeom.getCoordinates().length; k++) {
 
 						Coordinate coord = subGeom.getCoordinates()[k];
-						gid++;
-						points.add(new MyPoint(coord.x, coord.y, zValue, gid));
+//						gid++;
+						points.add(new DPoint(coord.x, coord.y, zValue));
 					}
 
 				}
@@ -200,7 +200,7 @@ public class Modelisation1Delaunay {
 
 		System.out.println("Nombre de breaklines : " + breaklines.size());
 
-		aMesh = new MyMesh();
+		aMesh = new ConstrainedMesh();
 		aMesh.setPointsRef(points);
 		aMesh.setEdges(breaklines);
 
@@ -450,7 +450,7 @@ public class Modelisation1Delaunay {
 		for (MyPoint aPoint : points) {
 			int id = points.indexOf(aPoint) + 1;
 
-			Point point = gf.createPoint(new Coordinate(aPoint.x, aPoint.y,
+			DPoint point = gf.createPoint(new Coordinate(aPoint.x, aPoint.y,
 					aPoint.z));
 
 			driverNodes.addValues(new Value[] { ValueFactory.createValue(id),
