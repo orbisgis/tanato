@@ -36,7 +36,9 @@ public class HydroTINModel {
 	private static final String START_NODE = "start_n";
 
 	private static final String END_NODE = "end_n";
-	private static final String TYPE_FIELD = "type";
+	private static final String PROPERTY_FIELD = "property";
+        private static final String HEIGHT = "height";
+        private static final String GID_SOURCE = "gid_source";
 
 	GeometryFactory gf = new GeometryFactory();
 	private boolean ditche = false;
@@ -55,7 +57,7 @@ public class HydroTINModel {
 
 	public HydroTINModel(SpatialDataSourceDecorator sdsFaces,
 			SpatialDataSourceDecorator sdsEdges,
-			SpatialDataSourceDecorator sdsNodes) {
+			SpatialDataSourceDecorator sdsNodes) throws DriverException {
 		this.sdsFaces = sdsFaces;
 		this.sdsEdges = sdsEdges;
 		this.sdsNodes = sdsNodes;
@@ -68,46 +70,80 @@ public class HydroTINModel {
 
 	// Etape 1 initialisation des structures de données pour le stockage
 	// non-redondant des hydrocells du graphe
-	public void createHydroCells() {
+	public void createHydroCells() throws DriverException{
 		tcells = new ArrayList<TCell>();
 		ecells = new ArrayList<ECell>();
 		ncells = new ArrayList<NCell>();
 
-		try {
-			sdsFaces.open();
-			sdsEdges.open();
-			sdsNodes.open();
+                sdsFaces.open();
+                sdsEdges.open();
+                sdsNodes.open();
 
-			sdsEdgesCount = sdsEdges.getRowCount();
+                sdsEdgesCount = sdsEdges.getRowCount();
 
-			sdsFacesCount = sdsFaces.getRowCount();
+                sdsFacesCount = sdsFaces.getRowCount();
 
-			sdsNodesCount = sdsNodes.getRowCount();
+                sdsNodesCount = sdsNodes.getRowCount();
 
-			// Création des structures de données vides
+                int gidField = sdsEdges.getFieldIndexByName(ID);
+                int rightFace = sdsEdges.getFieldIndexByName(RIGHT_FACE);
+                int leftFace = sdsEdges.getFieldIndexByName(LEFT_FACE);
+                int propertyIndex = sdsEdges.getFieldIndexByName(PROPERTY_FIELD);
+                int startNodeFieldIndex = sdsEdges.getFieldIndexByName(START_NODE);
+                int endNodeFieldIndex = sdsEdges.getFieldIndexByName(END_NODE);
+                int heightIndex = sdsEdges.getFieldIndexByName(HEIGHT);
+                int gidSourceIndex = sdsEdges.getFieldIndexByName(GID_SOURCE);
+                // Création des structures de données vides
+                ECell ec;
+                for (int i = 0; i < sdsEdgesCount; i++) {
+                        //We fill the list with the desired values.
+                        ec = new ECell();
+                        ec.setGID(sdsEdges.getInt(i, gidField));
+                        ec.setHeight(sdsEdges.getDouble(i, heightIndex));
+                        ec.setProperty(sdsEdges.getInt(i, propertyIndex));
+                        ec.setGidSource(sdsEdges.getInt(i, gidSourceIndex));
+                        ec.setLeftGID(sdsEdges.getInt(i, leftFace));
+                        ec.setRightGID(sdsEdges.getInt(i, rightFace));
+                        ec.setStartNodeGID(sdsEdges.getInt(i, startNodeFieldIndex));
+                        ec.setEndNodeGID(sdsEdges.getInt(i, endNodeFieldIndex));
+                        ecells.add(ec);
+                }
 
-			for (int i = 0; i < sdsEdgesCount; i++) {
+                sdsEdges.close();
 
-				ecells.add(new ECell());
-			}
+                gidField = sdsFaces.getFieldIndexByName(ID);
+                propertyIndex = sdsFaces.getFieldIndexByName(PROPERTY_FIELD);
+                heightIndex = sdsFaces.getFieldIndexByName(HEIGHT);
+                gidSourceIndex = sdsFaces.getFieldIndexByName(GID_SOURCE);
+                TCell tc;
+                for (int i = 0; i < sdsFacesCount; i++) {
+                        tc = new TCell();
+                        tc.setGID(sdsFaces.getInt(i, gidField));
+                        tc.setHeight(sdsFaces.getDouble(i, heightIndex));
+                        tc.setProperty(sdsFaces.getInt(i, propertyIndex));
+                        tc.setGidSource(sdsFaces.getInt(i, gidSourceIndex));
 
-			for (int i = 0; i < sdsFacesCount; i++) {
+                        tcells.add(tc);
+                }
+                sdsFaces.close();
 
-				tcells.add(new TCell());
-			}
+                gidField = sdsNodes.getFieldIndexByName(ID);
+                propertyIndex = sdsNodes.getFieldIndexByName(PROPERTY_FIELD);
+                heightIndex = sdsNodes.getFieldIndexByName(HEIGHT);
+                gidSourceIndex = sdsNodes.getFieldIndexByName(GID_SOURCE);
+                NCell nc;
+                for (int i = 0; i < sdsNodesCount; i++) {
+                        nc = new NCell();
+                        nc.setGID(sdsFaces.getInt(i, gidField));
+                        nc.setHeight(sdsFaces.getDouble(i, heightIndex));
+                        nc.setProperty(sdsFaces.getInt(i, propertyIndex));
+                        nc.setGidSource(sdsFaces.getInt(i, gidSourceIndex));
 
-			for (int i = 0; i < sdsNodesCount; i++) {
+                        ncells.add(nc);
+                }
+                sdsNodes.close();
 
-				ncells.add(new NCell());
-			}
 
-			sdsEdges.close();
-			sdsFaces.close();
-			sdsNodes.close();
-
-		} catch (DriverException e) {
-			e.printStackTrace();
-		}
 
 	}
 
@@ -128,7 +164,7 @@ public class HydroTINModel {
 			int gidField = sdsEdges.getFieldIndexByName(ID);
 			int rightFace = sdsEdges.getFieldIndexByName(RIGHT_FACE);
 			int leftFace = sdsEdges.getFieldIndexByName(LEFT_FACE);
-			int fieldTypeIndex = sdsEdges.getFieldIndexByName(TYPE_FIELD);
+			int fieldTypeIndex = sdsEdges.getFieldIndexByName(PROPERTY_FIELD);
 			int startNodeFieldIndex = sdsEdges.getFieldIndexByName(START_NODE);
 			int endNodeFieldIndex = sdsEdges.getFieldIndexByName(END_NODE);
 
