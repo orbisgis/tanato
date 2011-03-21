@@ -34,33 +34,33 @@ public class HydroNetworkStrategy {
 
 		for (NCell cell : nCells) {
 
-			if (cell.getPeresCells().size() == 0) {
+			if (cell.getParent().size() == 0) {
 
 				hydrocellList.add(cell);
 			}
 
-			cell.setNbPeresVisited(cell.getPeresCells().size());
+			cell.setNbParentsVisited(cell.getParent().size());
 
 		}
 
 		for (ECell cell : eCells) {
-			if (cell.getPeresCells().size() == 0) {
+			if (cell.getParent().size() == 0) {
 
 				hydrocellList.add(cell);
 			}
 
-			cell.setNbPeresVisited(cell.getPeresCells().size());
+			cell.setNbParentsVisited(cell.getParent().size());
 		}
 
 		for (TCell cell : tCells) {
-			if (cell.getPeresCells().size() == 0) {
+			if (cell.getParent().size() == 0) {
 
 				hydrocellList.add(cell);
 			}
 
 			cell.setAccumulationArea(cell.getArea());
 
-			cell.setNbPeresVisited(cell.getPeresCells().size());
+			cell.setNbParentsVisited(cell.getParent().size());
 		}
 
 		maxAccumulation = Double.NaN;
@@ -73,7 +73,7 @@ public class HydroNetworkStrategy {
 
 				double area = cell.getAccumulation();
 
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 					double contrib = fcell.getContribution();
 
@@ -88,9 +88,9 @@ public class HydroNetworkStrategy {
 						}
 					}
 
-					fcell.getHydroCell().decrementPeres();
+					fcell.getHydroCell().decrementParents();
 
-					if (fcell.getHydroCell().getNbPeresToBeVisited() == 0) {
+					if (fcell.getHydroCell().getNbParentsToBeVisited() == 0) {
 						hydrocellList.add(fcell.getHydroCell());
 					}
 
@@ -102,7 +102,7 @@ public class HydroNetworkStrategy {
 			TCell tCellRestart = null;
 
 			for (TCell cell : tCells) {
-				int nbPeres = cell.getNbPeresToBeVisited();
+				int nbPeres = cell.getNbParentsToBeVisited();
 				if (nbPeres > 0) {
 
 					if (tCellRestart == null) {
@@ -125,7 +125,7 @@ public class HydroNetworkStrategy {
 
 			if (tCellRestart != null) {
 				hydrocellList.add(tCellRestart);
-				tCellRestart.setNbPeresVisited(0);
+				tCellRestart.setNbParentsVisited(0);
 			}
 
 		}
@@ -145,7 +145,7 @@ public class HydroNetworkStrategy {
 		for (NCell cell : nCells) {
 
 			if (cell.isTalweg()) {
-				for (HydroCellValued fCell : cell.getFilsCells()) {
+				for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 					if (fCell.isEcell()) {
 						networkList.add(fCell.getHydroCell());
@@ -159,7 +159,7 @@ public class HydroNetworkStrategy {
 		for (ECell cell : eCells) {
 
 			if (cell.isTalweg()) {
-				for (HydroCellValued fCell : cell.getFilsCells()) {
+				for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 					if (fCell.isNcell()) {
 						if (networkList.contains(fCell.getHydroCell())){

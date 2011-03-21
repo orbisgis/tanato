@@ -20,9 +20,9 @@ import com.vividsolutions.jts.geom.Geometry;
 
 public class SewerTest extends TestCase {
 
-	public static String building = "data/modelisation/chezine/bati_extrait.shp";
-	public static String sewer = "data/modelisation/chezine/sewer.shp";
-	private String ResultdataPath = "/temp/dataconnected_new5.gdms";
+	public static String building = "/home/ebocher/NetBeansProjects/tanato/src/test/resources/data/source/chezine/bati_extrait.shp";
+	public static String sewer = "/home/ebocher/Documents/projets/ANR/anr_avupur/data_modelisation/sewer_chezine.shp";
+	private String ResultdataPath = "/tmp/dataconnected.gdms";
 
 	static DataSourceFactory dsf = new DataSourceFactory();
 
@@ -37,7 +37,6 @@ public class SewerTest extends TestCase {
 				"the_geom" });
 
 		GenericObjectDriver data = new GenericObjectDriver(metadata);
-
 		int i = 0;
 		for (Geometry geometry : geoms) {
 			i++;
@@ -45,10 +44,7 @@ public class SewerTest extends TestCase {
 					.createValue(geometry));
 
 		}
-		//for (int j=0;j<geoms.size();j++)
-		//{
-		//System.out.println(geoms.get(j).toString())	;
-		//}
+		
 
 		File gdmsFile = new File(ResultdataPath);
 		gdmsFile.delete();

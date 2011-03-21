@@ -60,7 +60,7 @@ public class HydroNetworkExport {
 			Geometry tcellGeom = sdsFaces.getGeometry(tCell.getGID() - 1);
 			Coordinate interiorPoint = tcellGeom.getInteriorPoint()
 					.getCoordinate();
-			Iterator<HydroCellValued> iterator = tCell.getFilsCells()
+			Iterator<HydroCellValued> iterator = tCell.getChildrenCells()
 					.iterator();
 
 			Coordinate coord = null;
@@ -127,7 +127,7 @@ public class HydroNetworkExport {
 			Geometry tcellGeom = sdsFaces.getGeometry(tCell.getGID() - 1);
 			Coordinate interiorPoint = tcellGeom.getInteriorPoint()
 					.getCoordinate();
-			Iterator<HydroCellValued> iterator = tCell.getFilsCells()
+			Iterator<HydroCellValued> iterator = tCell.getChildrenCells()
 					.iterator();
 
 			Coordinate coord = null;
@@ -286,7 +286,7 @@ public class HydroNetworkExport {
 
 			Coordinate coordCell = sdsFaces.getGeometry(cell.getGID() - 1)
 					.getCentroid().getCoordinate();
-			for (HydroCellValued fCell : cell.getFilsCells()) {
+			for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 				k++;
 
@@ -310,7 +310,7 @@ public class HydroNetworkExport {
 											.getContribution()) });
 
 					for (HydroCellValued ffcell : fCell.getHydroCell()
-							.getFilsCells()) {
+							.getChildrenCells()) {
 
 						Geometry geomNode = sdsNodes.getGeometry(ffcell
 								.getHydroCell().getGID() - 1);
@@ -326,7 +326,7 @@ public class HydroNetworkExport {
 				} else {
 
 					for (HydroCellValued ffcell : fCell.getHydroCell()
-							.getFilsCells()) {
+							.getChildrenCells()) {
 
 						if (ffcell.isTcell()) {
 
@@ -355,7 +355,7 @@ public class HydroNetworkExport {
 			if (cell.getGID() != -1) {
 				Coordinate coordCell = sdsNodes.getGeometry(cell.getGID() - 1)
 						.getCentroid().getCoordinate();
-				for (HydroCellValued fCell : cell.getFilsCells()) {
+				for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 					k++;
 
@@ -407,7 +407,7 @@ public class HydroNetworkExport {
 
 		for (NCell cell : ncells) {
 
-			if (cell.isTalweg() && cell.getFilsCells().size() == 0) {
+			if (cell.isTalweg() && cell.getChildrenCells().size() == 0) {
 				Geometry geom = sdsNodes.getGeometry(cell.getGID() - 1);
 				driver.addValues(new Value[] { ValueFactory.createValue(k),
 						ValueFactory.createValue(geom) });

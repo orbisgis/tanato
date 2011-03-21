@@ -80,7 +80,7 @@ public class GraphModelTest extends TestCase {
 
 		for (NCell cell : ncells) {
 
-			for (HydroCell fcell : cell.getPeresCells()) {
+			for (HydroCell fcell : cell.getParent()) {
 
 				assertFalse(fcell instanceof TCell);
 
@@ -101,7 +101,7 @@ public class GraphModelTest extends TestCase {
 
 		for (TCell cell : tcells) {
 
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				assertTrue(fcell.isEcell());
 
@@ -123,7 +123,7 @@ public class GraphModelTest extends TestCase {
 		for (TCell cell : tcells) {
 
 			float sumContribution = 0;
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution();
 				sumContribution = sumContribution + contribution;
@@ -148,7 +148,7 @@ public class GraphModelTest extends TestCase {
 
 		for (TCell cell : tcells) {
 
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution();
 
@@ -164,7 +164,7 @@ public class GraphModelTest extends TestCase {
 
 		for (ECell cell : ecells) {
 
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution();
 
@@ -180,7 +180,7 @@ public class GraphModelTest extends TestCase {
 
 		for (NCell cell : ncells) {
 
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution();
 
@@ -209,7 +209,7 @@ public class GraphModelTest extends TestCase {
 
 		for (NCell cell : ncells) {
 
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 
 				if (fcell.isEcell()){
@@ -248,7 +248,7 @@ public class GraphModelTest extends TestCase {
 			if (cell.isTalweg()) {
 
 				int k = 0;
-				for (HydroCellValued fCell : cell.getFilsCells()) {
+				for (HydroCellValued fCell : cell.getChildrenCells()) {
 					k++;
 					if (fCell.isNcell()) {
 						assertTrue(false);

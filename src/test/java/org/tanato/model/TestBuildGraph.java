@@ -87,9 +87,9 @@ public class TestBuildGraph {
 						ValueFactory.createValue(hydroCell.getGID()),
 						ValueFactory.createValue(sdsEdges.getGeometry(hydroCell
 								.getGID() - 1)),
-						ValueFactory.createValue(hydroCell.getPeresCells()
+						ValueFactory.createValue(hydroCell.getParent()
 								.size()),
-						ValueFactory.createValue(hydroCell.getFilsCells()
+						ValueFactory.createValue(hydroCell.getChildrenCells()
 								.size()) });
 
 
@@ -108,9 +108,9 @@ public class TestBuildGraph {
 								ValueFactory.createValue(ncell.getGID()),
 								ValueFactory.createValue(sdsNodes
 										.getGeometry(ncell.getGID() - 1)),
-								ValueFactory.createValue(ncell.getPeresCells()
+								ValueFactory.createValue(ncell.getParent()
 										.size()),
-								ValueFactory.createValue(ncell.getFilsCells()
+								ValueFactory.createValue(ncell.getChildrenCells()
 										.size()) });
 
 		}
@@ -127,9 +127,9 @@ public class TestBuildGraph {
 								ValueFactory.createValue(tcell.getGID()),
 								ValueFactory.createValue(sdsFaces
 										.getGeometry(tcell.getGID() - 1)),
-								ValueFactory.createValue(tcell.getPeresCells()
+								ValueFactory.createValue(tcell.getParent()
 										.size()),
-								ValueFactory.createValue(tcell.getFilsCells()
+								ValueFactory.createValue(tcell.getChildrenCells()
 										.size()) });
 
 			}

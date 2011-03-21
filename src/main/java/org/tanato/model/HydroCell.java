@@ -28,7 +28,7 @@ public abstract class HydroCell {
 		filsCells = new LinkedList<HydroCellValued>();
 	}
 
-	void setPeresCells(HydroCell hydroCell) {
+	void setParent(HydroCell hydroCell) {
 		if (!peresCells.contains(hydroCell))
 			peresCells.add(hydroCell);
 	}
@@ -39,17 +39,17 @@ public abstract class HydroCell {
 
 	}
 
-	void setFilsCells(HydroCell hydroCell) {
+	void setChildren(HydroCell hydroCell) {
 
 		HydroCellValued hydroCellValued = null;
-		if (!filsExist(hydroCell)) {
+		if (!childExist(hydroCell)) {
 			hydroCellValued = new HydroCellValued();
 			hydroCellValued.setHydroCell(hydroCell);
 			filsCells.add(hydroCellValued);
 		}
 	}
 
-	boolean filsExist(HydroCell hydroCell){
+	boolean childExist(HydroCell hydroCell){
 		boolean exist = false;
 
 		ListIterator<HydroCellValued> iter = filsCells.listIterator();
@@ -70,15 +70,15 @@ public abstract class HydroCell {
 	}
 
 
-	void updateFilsCells(LinkedList<HydroCellValued> filsCells) {
+	void updateChildren(LinkedList<HydroCellValued> filsCells) {
 		this.filsCells = filsCells;
 	}
 
-	public LinkedList<HydroCell> getPeresCells() {
+	public LinkedList<HydroCell> getParent() {
 		return peresCells;
 	}
 
-	public LinkedList<HydroCellValued> getFilsCells() {
+	public LinkedList<HydroCellValued> getChildrenCells() {
 		return filsCells;
 	}
 
@@ -115,11 +115,11 @@ public abstract class HydroCell {
 		this.type = type;
 	}
 
-	public void cleanFils() {
+	public void cleanChildren() {
 		filsCells = new LinkedList<HydroCellValued>();
 	}
 
-	public void removePere(HydroCell cell){
+	public void removeParent(HydroCell cell){
 
 		peresCells.remove(cell);
 
@@ -141,15 +141,15 @@ public abstract class HydroCell {
 		this.isVisited = isVisited;
 	}
 
-	public int getNbPeresToBeVisited() {
+	public int getNbParentsToBeVisited() {
 		return nbPeresVisited;
 	}
 
-	public void setNbPeresVisited(int nbPeresVisited) {
+	public void setNbParentsVisited(int nbPeresVisited) {
 		this.nbPeresVisited = nbPeresVisited;
 	}
 
-	public void decrementPeres() {
+	public void decrementParents() {
 		this.nbPeresVisited--;
 
 	}

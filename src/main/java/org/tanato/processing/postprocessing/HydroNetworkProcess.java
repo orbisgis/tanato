@@ -315,7 +315,7 @@ public class HydroNetworkProcess {
 				// On ne fait le calcul sur le triangle
 				TCell tCell = (TCell) cell;
 
-				for (HydroCellValued fCell : cell.getFilsCells()) {
+				for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 					if (fCell.getHydroCell() instanceof ECell) {
 
@@ -374,7 +374,7 @@ public class HydroNetworkProcess {
 			else if (cell instanceof ECell) {
 
 				if (!cell.isTalweg()) {
-					for (HydroCellValued fCell : cell.getFilsCells()) {
+					for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 						if (fCell.getHydroCell() instanceof TCell) {
 							findRunOffPath(p, fCell.getHydroCell(),
@@ -404,7 +404,7 @@ public class HydroNetworkProcess {
 
 			else if (cell instanceof NCell) {
 
-				for (HydroCellValued fCell : cell.getFilsCells()) {
+				for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 					if (fCell.getHydroCell() instanceof ECell) {
 
@@ -463,7 +463,7 @@ public class HydroNetworkProcess {
 			// On ne fait le calcul sur le triangle
 			TCell tCell = (TCell) cell;
 
-			for (HydroCellValued hydroCellValue : cell.getFilsCells()) {
+			for (HydroCellValued hydroCellValue : cell.getChildrenCells()) {
 
 				fCell = hydroCellValue.getHydroCell();
 
@@ -518,7 +518,7 @@ public class HydroNetworkProcess {
 
 		else if (cell instanceof ECell) {
 
-			for (HydroCellValued hydroCellValued : cell.getFilsCells()) {
+			for (HydroCellValued hydroCellValued : cell.getChildrenCells()) {
 
 				fCell = hydroCellValued.getHydroCell();
 				if (fCell instanceof TCell) {
@@ -542,7 +542,7 @@ public class HydroNetworkProcess {
 
 		else if (cell instanceof NCell) {
 
-			for (HydroCellValued hydroCellValued : cell.getFilsCells()) {
+			for (HydroCellValued hydroCellValued : cell.getChildrenCells()) {
 
 				fCell = hydroCellValued.getHydroCell();
 				if (fCell instanceof ECell) {
@@ -567,7 +567,7 @@ public class HydroNetworkProcess {
 	 */
 	public LinkedList getWatershed(HydroCell cell) {
 
-		ListIterator<HydroCell> iter = cell.getPeresCells().listIterator();
+		ListIterator<HydroCell> iter = cell.getParent().listIterator();
 
 		while (iter.hasNext()) {
 
@@ -586,7 +586,7 @@ public class HydroNetworkProcess {
 
 	public LinkedList<LineString> getWatershed(ECell ecell) {
 
-		for (HydroCell peCell : ecell.getPeresCells()) {
+		for (HydroCell peCell : ecell.getParent()) {
 
 			if (peCell instanceof NCell) {
 

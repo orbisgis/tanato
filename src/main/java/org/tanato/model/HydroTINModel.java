@@ -6,7 +6,6 @@ import java.util.ListIterator;
 
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.driver.DriverException;
-import org.jhydrocell.hydronetwork.HydroProperties;
 import org.tanato.utilities.MathUtil;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -64,9 +63,6 @@ public class HydroTINModel {
 		createHydroCells();
 		buildTINGraph();
 		linkTalweg();
-		// if (ditche) {
-		// /ditcheIntegration();
-		// }
 		buildProportion();
 	}
 
@@ -162,10 +158,7 @@ public class HydroTINModel {
 
 				int edgeGID = sdsEdges.getFieldValue(i, gidField).getAsInt();
 
-				if (edgeGID == 206) {
-					System.out.println("Stop");
-				}
-
+				
 				String edgeType = sdsEdges.getFieldValue(i, fieldTypeIndex)
 						.getAsString();
 
@@ -269,7 +262,6 @@ public class HydroTINModel {
 								.toString(HydroProperties.SEWER)))) {
 
 					constraint = true;
-
 					hautNCell = ncells.get(gidStartNode - 1);
 					hautNCell.setGID(gidStartNode);
 					basNCell = ncells.get(gidEndNode - 1);
@@ -327,15 +319,15 @@ public class HydroTINModel {
 					hautNCell.setTalweg(true);
 
 					// Graph
-					eCell.setPeresCells(hautNCell);
-					hautNCell.setFilsCells(eCell);
-					basNCell.setPeresCells(eCell);
-					eCell.setFilsCells(basNCell);
+					eCell.setParent(hautNCell);
+					hautNCell.setChildren(eCell);
+					basNCell.setParent(eCell);
+					eCell.setChildren(basNCell);
 
-					eCell.setPeresCells(dTCell);
-					eCell.setPeresCells(gTCell);
-					dTCell.setFilsCells(eCell);
-					gTCell.setFilsCells(eCell);
+					eCell.setParent(dTCell);
+					eCell.setParent(gTCell);
+					dTCell.setChildren(eCell);
+					gTCell.setChildren(eCell);
 				}
 
 				// Talweg colineaire à droite
@@ -347,13 +339,13 @@ public class HydroTINModel {
 
 					// Graph
 
-					eCell.setPeresCells(hautNCell);
-					hautNCell.setFilsCells(eCell);
-					basNCell.setPeresCells(eCell);
-					eCell.setFilsCells(basNCell);
+					eCell.setParent(hautNCell);
+					hautNCell.setChildren(eCell);
+					basNCell.setParent(eCell);
+					eCell.setChildren(basNCell);
 
-					eCell.setPeresCells(gTCell);
-					gTCell.setFilsCells(eCell);
+					eCell.setParent(gTCell);
+					gTCell.setChildren(eCell);
 
 				}
 
@@ -365,13 +357,13 @@ public class HydroTINModel {
 					hautNCell.setTalweg(true);
 
 					// Graph
-					eCell.setPeresCells(hautNCell);
-					hautNCell.setFilsCells(eCell);
-					basNCell.setPeresCells(eCell);
-					eCell.setFilsCells(basNCell);
+					eCell.setParent(hautNCell);
+					hautNCell.setChildren(eCell);
+					basNCell.setParent(eCell);
+					eCell.setChildren(basNCell);
 
-					eCell.setPeresCells(dTCell);
-					dTCell.setFilsCells(eCell);
+					eCell.setParent(dTCell);
+					dTCell.setChildren(eCell);
 
 				}
 
@@ -384,10 +376,10 @@ public class HydroTINModel {
 					hautNCell.setTalweg(true);
 
 					// Graph
-					eCell.setPeresCells(hautNCell);
-					hautNCell.setFilsCells(eCell);
-					basNCell.setPeresCells(eCell);
-					eCell.setFilsCells(basNCell);
+					eCell.setParent(hautNCell);
+					hautNCell.setChildren(eCell);
+					basNCell.setParent(eCell);
+					eCell.setChildren(basNCell);
 
 				}
 
@@ -404,29 +396,29 @@ public class HydroTINModel {
 						hautNCell.setTalweg(true);
 
 						// Graph
-						eCell.setPeresCells(hautNCell);
-						hautNCell.setFilsCells(eCell);
-						basNCell.setPeresCells(eCell);
-						eCell.setFilsCells(basNCell);
+						eCell.setParent(hautNCell);
+						hautNCell.setChildren(eCell);
+						basNCell.setParent(eCell);
+						eCell.setChildren(basNCell);
 
 					} else {
 						eCell.setRidge(true);
 
 						// Graph
-						eCell.setPeresCells(hautNCell);
-						hautNCell.setFilsCells(eCell);
-						basNCell.setPeresCells(eCell);
-						eCell.setFilsCells(basNCell);
+						eCell.setParent(hautNCell);
+						hautNCell.setChildren(eCell);
+						basNCell.setParent(eCell);
+						eCell.setChildren(basNCell);
 
 						if (dTCell.getSlopeInDegree() > gTCell
 								.getSlopeInDegree()) {
 
-							hautNCell.setFilsCells(dTCell);
-							dTCell.setPeresCells(hautNCell);
+							hautNCell.setChildren(dTCell);
+							dTCell.setParent(hautNCell);
 						} else if (dTCell.getSlopeInDegree() < gTCell
 								.getSlopeInDegree()) {
-							hautNCell.setFilsCells(gTCell);
-							gTCell.setPeresCells(hautNCell);
+							hautNCell.setChildren(gTCell);
+							gTCell.setParent(hautNCell);
 						}
 
 						else {
@@ -449,22 +441,22 @@ public class HydroTINModel {
 						hautNCell.setTalweg(true);
 
 						// Graph
-						eCell.setPeresCells(hautNCell);
-						hautNCell.setFilsCells(eCell);
-						basNCell.setPeresCells(eCell);
-						eCell.setFilsCells(basNCell);
-						eCell.setPeresCells(gTCell);
-						gTCell.setFilsCells(eCell);
+						eCell.setParent(hautNCell);
+						hautNCell.setChildren(eCell);
+						basNCell.setParent(eCell);
+						eCell.setChildren(basNCell);
+						eCell.setParent(gTCell);
+						gTCell.setChildren(eCell);
 
 					} else {
 						eCell.setTransfluent(true);
 
-						hautNCell.setFilsCells(dTCell);
-						dTCell.setPeresCells(hautNCell);
-						dTCell.setPeresCells(eCell);
-						eCell.setFilsCells(dTCell);
-						eCell.setPeresCells(gTCell);
-						gTCell.setFilsCells(eCell);
+						hautNCell.setChildren(dTCell);
+						dTCell.setParent(hautNCell);
+						dTCell.setParent(eCell);
+						eCell.setChildren(dTCell);
+						eCell.setParent(gTCell);
+						gTCell.setChildren(eCell);
 					}
 				}
 
@@ -481,24 +473,24 @@ public class HydroTINModel {
 						hautNCell.setTalweg(true);
 
 						// Graph
-						eCell.setPeresCells(hautNCell);
-						hautNCell.setFilsCells(eCell);
-						basNCell.setPeresCells(eCell);
-						eCell.setFilsCells(basNCell);
-						eCell.setPeresCells(dTCell);
-						dTCell.setFilsCells(eCell);
+						eCell.setParent(hautNCell);
+						hautNCell.setChildren(eCell);
+						basNCell.setParent(eCell);
+						eCell.setChildren(basNCell);
+						eCell.setParent(dTCell);
+						dTCell.setChildren(eCell);
 
 					} else {
 						eCell.setTransfluent(true);
 
 						// Graph
 
-						hautNCell.setFilsCells(gTCell);
-						gTCell.setPeresCells(hautNCell);
-						gTCell.setPeresCells(eCell);
-						eCell.setFilsCells(gTCell);
-						eCell.setPeresCells(dTCell);
-						dTCell.setFilsCells(eCell);
+						hautNCell.setChildren(gTCell);
+						gTCell.setParent(hautNCell);
+						gTCell.setParent(eCell);
+						eCell.setChildren(gTCell);
+						eCell.setParent(dTCell);
+						dTCell.setChildren(eCell);
 
 					}
 				}
@@ -536,21 +528,21 @@ public class HydroTINModel {
 						hautNCell.setTalweg(true);
 
 						// Graph
-						eCell.setPeresCells(hautNCell);
-						hautNCell.setFilsCells(eCell);
-						basNCell.setPeresCells(eCell);
-						eCell.setFilsCells(basNCell);
-						eCell.setPeresCells(dTCell);
-						dTCell.setFilsCells(eCell);
+						eCell.setParent(hautNCell);
+						hautNCell.setChildren(eCell);
+						basNCell.setParent(eCell);
+						eCell.setChildren(basNCell);
+						eCell.setParent(dTCell);
+						dTCell.setChildren(eCell);
 
 					} else {
 						eCell.setTransfluent(true);
 						// Graph
 
-						gTCell.setFilsCells(eCell);
-						eCell.setPeresCells(gTCell);
-						eCell.setFilsCells(dTCell);
-						dTCell.setPeresCells(eCell);
+						gTCell.setChildren(eCell);
+						eCell.setParent(gTCell);
+						eCell.setChildren(dTCell);
+						dTCell.setParent(eCell);
 					}
 				}
 
@@ -567,21 +559,21 @@ public class HydroTINModel {
 						hautNCell.setTalweg(true);
 
 						// Graph
-						eCell.setPeresCells(hautNCell);
-						hautNCell.setFilsCells(eCell);
-						basNCell.setPeresCells(eCell);
-						eCell.setFilsCells(basNCell);
-						eCell.setPeresCells(dTCell);
-						dTCell.setFilsCells(eCell);
+						eCell.setParent(hautNCell);
+						hautNCell.setChildren(eCell);
+						basNCell.setParent(eCell);
+						eCell.setChildren(basNCell);
+						eCell.setParent(dTCell);
+						dTCell.setChildren(eCell);
 
 					} else {
 						eCell.setTransfluent(true);
 
 						// Graph
-						dTCell.setFilsCells(eCell);
-						eCell.setPeresCells(dTCell);
-						eCell.setFilsCells(dTCell);
-						dTCell.setPeresCells(eCell);
+						dTCell.setChildren(eCell);
+						eCell.setParent(dTCell);
+						eCell.setChildren(dTCell);
+						dTCell.setParent(eCell);
 
 					}
 				}
@@ -609,7 +601,7 @@ public class HydroTINModel {
 
 				boolean existFilsTalweg = false;
 
-				for (HydroCellValued hydrocell : ecell.getFilsCells()) {
+				for (HydroCellValued hydrocell : ecell.getChildrenCells()) {
 
 					if (hydrocell.getHydroCell().isTalweg()) {
 						existFilsTalweg = true;
@@ -618,12 +610,12 @@ public class HydroTINModel {
 
 				if (!existFilsTalweg) {
 
-					for (HydroCellValued hydrocell : ecell.getFilsCells()) {
+					for (HydroCellValued hydrocell : ecell.getChildrenCells()) {
 
 						if (hydrocell.getHydroCell() instanceof TCell) {
 							TCell tCell = (TCell) hydrocell.getHydroCell();
-							hautNCell.setFilsCells(tCell);
-							tCell.setPeresCells(hautNCell);
+							hautNCell.setChildren(tCell);
+							tCell.setParent(hautNCell);
 
 						}
 					}
@@ -641,7 +633,7 @@ public class HydroTINModel {
 
 				LinkedList<HydroCell> cellsList = new LinkedList<HydroCell>();
 
-				for (HydroCellValued fCell : nCell.getFilsCells()) {
+				for (HydroCellValued fCell : nCell.getChildrenCells()) {
 
 					if (fCell.getHydroCell() instanceof TCell) {
 
@@ -660,7 +652,7 @@ public class HydroTINModel {
 
 					HydroCell cell = iter.next();
 
-					for (HydroCellValued hydroCell2 : cell.getFilsCells()) {
+					for (HydroCellValued hydroCell2 : cell.getChildrenCells()) {
 
 						if (hydroCell2.getHydroCell() instanceof ECell) {
 							ECell eFMaCell = (ECell) hydroCell2.getHydroCell();
@@ -699,7 +691,7 @@ public class HydroTINModel {
 
 				boolean talweg = false;
 
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 					if (fcell.getHydroCell().isTalweg()) {
 						talweg = true;
@@ -710,7 +702,7 @@ public class HydroTINModel {
 
 				if (talweg) {
 
-					ListIterator<HydroCellValued> iter = cell.getFilsCells()
+					ListIterator<HydroCellValued> iter = cell.getChildrenCells()
 							.listIterator();
 
 					while (iter.hasNext()) {
@@ -719,7 +711,7 @@ public class HydroTINModel {
 						HydroCell fCell = hydroCellValued.getHydroCell();
 
 						if (!fCell.isTalweg()) {
-							fCell.removePere(cell);
+							fCell.removeParent(cell);
 							iter.remove();
 						}
 
@@ -740,18 +732,18 @@ public class HydroTINModel {
 			sdsNodes.open();
 			for (TCell cell : tcells) {
 
-				if (cell.getFilsCells().size() == 2) {
+				if (cell.getChildrenCells().size() == 2) {
 
 					Polygon polygon = (Polygon) sdsFaces.getGeometry(
 							cell.getGID() - 1).getGeometryN(0);
 
-					ECell e1 = (ECell) cell.getFilsCells().get(0)
+					ECell e1 = (ECell) cell.getChildrenCells().get(0)
 							.getHydroCell();
 
 					NCell nCell1 = e1.getHautNcell();
 					NCell nCell2 = e1.getBasNcell();
 
-					ECell e2 = (ECell) cell.getFilsCells().get(1)
+					ECell e2 = (ECell) cell.getChildrenCells().get(1)
 							.getHydroCell();
 
 					NCell nCell3 = e2.getBasNcell();
@@ -811,17 +803,17 @@ public class HydroTINModel {
 					if (contribution > 1) {
 						contribution = 1;
 					}
-					cell.getFilsCells().get(0).setContribution(
+					cell.getChildrenCells().get(0).setContribution(
 							(float) contribution);
 
-					cell.getFilsCells().get(1).setContribution(
+					cell.getChildrenCells().get(1).setContribution(
 							1 - (float) contribution);
 
 				}
 
-				else if (cell.getFilsCells().size() == 1) {
+				else if (cell.getChildrenCells().size() == 1) {
 
-					cell.getFilsCells().getFirst().setContribution(1.0f);
+					cell.getChildrenCells().getFirst().setContribution(1.0f);
 
 				}
 
@@ -829,9 +821,9 @@ public class HydroTINModel {
 
 			for (NCell cell : ncells) {
 
-				int nb = cell.getFilsCells().size();
+				int nb = cell.getChildrenCells().size();
 
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 					fcell.setContribution(1.f / nb);
 				}
 			}
@@ -852,14 +844,14 @@ public class HydroTINModel {
 		for (TCell cell : tcells) {
 
 			float sumContribution = 0;
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution();
 
 				sumContribution = sumContribution + contribution;
 			}
 
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution() / sumContribution;
 
@@ -872,7 +864,7 @@ public class HydroTINModel {
 		for (NCell cell : ncells) {
 
 			float sumContribution = 0;
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution();
 
@@ -883,7 +875,7 @@ public class HydroTINModel {
 			}
 
 			if (sumContribution > 0) {
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 					if (fcell.isTcell()) {
 						float contribution = fcell.getContribution()
@@ -897,14 +889,14 @@ public class HydroTINModel {
 
 			} else {
 
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 					float contribution = fcell.getContribution();
 					sumContribution = sumContribution + contribution;
 
 				}
 
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 					float contribution = fcell.getContribution()
 							/ sumContribution;
 					fcell.setContribution(contribution);
@@ -917,7 +909,7 @@ public class HydroTINModel {
 		for (ECell cell : ecells) {
 
 			float sumContribution = 0;
-			for (HydroCellValued fcell : cell.getFilsCells()) {
+			for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 				float contribution = fcell.getContribution();
 
@@ -928,7 +920,7 @@ public class HydroTINModel {
 			}
 
 			if (sumContribution > 0) {
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 					if (fcell.isTcell()) {
 						float contribution = fcell.getContribution()
@@ -942,14 +934,14 @@ public class HydroTINModel {
 
 			} else {
 
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 
 					float contribution = fcell.getContribution();
 					sumContribution = sumContribution + contribution;
 
 				}
 
-				for (HydroCellValued fcell : cell.getFilsCells()) {
+				for (HydroCellValued fcell : cell.getChildrenCells()) {
 					float contribution = fcell.getContribution()
 							/ sumContribution;
 					fcell.setContribution(contribution);
@@ -970,7 +962,7 @@ public class HydroTINModel {
 				cell.setTalweg(true);
 				cell.setTransfluent(false);
 
-				ListIterator<HydroCellValued> iter = cell.getFilsCells()
+				ListIterator<HydroCellValued> iter = cell.getChildrenCells()
 						.listIterator();
 
 				while (iter.hasNext()) {
@@ -979,14 +971,14 @@ public class HydroTINModel {
 
 					if (fCell.isTcell()) {
 						iter.remove();
-						fCell.getHydroCell().getPeresCells().remove(cell);
+						fCell.getHydroCell().getParent().remove(cell);
 
 					}
 
 				}
 
-				cell.setFilsCells(cell.getBasNcell());
-				cell.getBasNcell().setPeresCells(cell);
+				cell.setChildren(cell.getBasNcell());
+				cell.getBasNcell().setParent(cell);
 
 			}
 
@@ -995,7 +987,7 @@ public class HydroTINModel {
 		for (NCell cell : ncells) {
 
 			boolean isConnectWithADitche = false;
-			for (HydroCellValued fCell : cell.getFilsCells()) {
+			for (HydroCellValued fCell : cell.getChildrenCells()) {
 
 				if (fCell.isEcell()) {
 
@@ -1010,7 +1002,7 @@ public class HydroTINModel {
 			}
 			if (isConnectWithADitche) {
 
-				ListIterator<HydroCellValued> iter = cell.getFilsCells()
+				ListIterator<HydroCellValued> iter = cell.getChildrenCells()
 						.listIterator();
 
 				while (iter.hasNext()) {
@@ -1021,13 +1013,13 @@ public class HydroTINModel {
 
 						if (!fCell.getHydroCell().getType().equals("ditche")) {
 							iter.remove();
-							fCell.getHydroCell().getPeresCells().remove(cell);
+							fCell.getHydroCell().getParent().remove(cell);
 						}
 					}
 
 					else {
 						iter.remove();
-						fCell.getHydroCell().getPeresCells().remove(cell);
+						fCell.getHydroCell().getParent().remove(cell);
 					}
 				}
 
@@ -1041,7 +1033,7 @@ public class HydroTINModel {
 
 		boolean answer = false;
 
-		for (HydroCellValued nCellFils : nCell.getFilsCells()) {
+		for (HydroCellValued nCellFils : nCell.getChildrenCells()) {
 
 			if (nCellFils.isEcell()) {
 
