@@ -7,9 +7,9 @@ public abstract class HydroCell {
 
 	private int gid = -1;
 
-	private LinkedList<HydroCell> peresCells;
+	private LinkedList<HydroCell> parentsCells;
 
-	private LinkedList<HydroCellValued> filsCells;
+	private LinkedList<HydroCellValued> childrenCells;
 
 	private boolean talweg = false;
 
@@ -21,16 +21,25 @@ public abstract class HydroCell {
 
 	boolean isVisited = false;
 
-	int nbPeresVisited = 0;
+        private int property;
+
+        private double height;
+
+        private int gidSource;
+
+	int nbParentsVisited = 0;
 
 	public HydroCell() {
-		peresCells = new LinkedList<HydroCell>();
-		filsCells = new LinkedList<HydroCellValued>();
+                property = -1;
+                height = 0;
+                gidSource = -1;
+		parentsCells = new LinkedList<HydroCell>();
+		childrenCells = new LinkedList<HydroCellValued>();
 	}
 
 	void setParent(HydroCell hydroCell) {
-		if (!peresCells.contains(hydroCell))
-			peresCells.add(hydroCell);
+		if (!parentsCells.contains(hydroCell))
+			parentsCells.add(hydroCell);
 	}
 
 	public String getHydroCellType(){
@@ -45,14 +54,14 @@ public abstract class HydroCell {
 		if (!childExist(hydroCell)) {
 			hydroCellValued = new HydroCellValued();
 			hydroCellValued.setHydroCell(hydroCell);
-			filsCells.add(hydroCellValued);
+			childrenCells.add(hydroCellValued);
 		}
 	}
 
 	boolean childExist(HydroCell hydroCell){
 		boolean exist = false;
 
-		ListIterator<HydroCellValued> iter = filsCells.listIterator();
+		ListIterator<HydroCellValued> iter = childrenCells.listIterator();
 
 		while (iter.hasNext()&& !exist) {
 			HydroCellValued hydroCellValued = (HydroCellValued) iter.next();
@@ -69,17 +78,66 @@ public abstract class HydroCell {
 
 	}
 
+        /**
+         * Property associated to the cell.
+         * @return
+         */
+        public int getProperty() {
+                return property;
+        }
 
-	void updateChildren(LinkedList<HydroCellValued> filsCells) {
-		this.filsCells = filsCells;
+        /**
+         * Set the property associated to the cell.
+         * @return
+         */
+        public void setProperty(int property) {
+                this.property = property;
+        }
+
+        /**
+         * Get the gid of the source
+         * @return
+         */
+        public int getGidSource() {
+                return gidSource;
+        }
+
+        /**
+         * Set the gid of the source
+         * @return
+         */
+        public void setGidSource(int gidSource) {
+                this.gidSource = gidSource;
+        }
+
+        /**
+         * Get the height of the object.
+         * @return
+         */
+        public double getHeight() {
+                return height;
+        }
+
+        /**
+         * set the height of the object.
+         * @return
+         */
+        public void setHeight(double height) {
+                this.height = height;
+        }
+
+
+
+        void updateChildren(LinkedList<HydroCellValued> filsCells) {
+		this.childrenCells = filsCells;
 	}
 
 	public LinkedList<HydroCell> getParent() {
-		return peresCells;
+		return parentsCells;
 	}
 
 	public LinkedList<HydroCellValued> getChildrenCells() {
-		return filsCells;
+		return childrenCells;
 	}
 
 	public void setTalweg(boolean talweg) {
@@ -116,12 +174,12 @@ public abstract class HydroCell {
 	}
 
 	public void cleanChildren() {
-		filsCells = new LinkedList<HydroCellValued>();
+		childrenCells = new LinkedList<HydroCellValued>();
 	}
 
 	public void removeParent(HydroCell cell){
 
-		peresCells.remove(cell);
+		parentsCells.remove(cell);
 
 	}
 
@@ -142,15 +200,15 @@ public abstract class HydroCell {
 	}
 
 	public int getNbParentsToBeVisited() {
-		return nbPeresVisited;
+		return nbParentsVisited;
 	}
 
 	public void setNbParentsVisited(int nbPeresVisited) {
-		this.nbPeresVisited = nbPeresVisited;
+		this.nbParentsVisited = nbPeresVisited;
 	}
 
 	public void decrementParents() {
-		this.nbPeresVisited--;
+		this.nbParentsVisited--;
 
 	}
 
