@@ -19,12 +19,12 @@ import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DTriangle;
-import org.jhydrocell.utilities.HydroTriangleUtil;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import org.jdelaunay.delaunay.DelaunayError;
 
 /**
  * postprocessing Package.
@@ -38,7 +38,7 @@ public class JdelaunayExport {
 
 	static DataSourceFactory dsf = new DataSourceFactory();
 	
-	public static void exportGDMS(ConstrainedMesh aMesh, String path) throws DriverException
+	public static void exportGDMS(ConstrainedMesh aMesh, String path) throws DriverException, DelaunayError
 	{
 		// save points
 		Metadata metadata = new DefaultMetadata(new Type[] {
@@ -78,25 +78,23 @@ public class JdelaunayExport {
 		{
 			Collection<LineString> lineStrings = new ArrayList<LineString>();
 			lineStrings.add(	new GeometryFactory().createLineString(
-														new Coordinate[]{anEdge.getStartPoint().getCoordinate(), anEdge.getEndPoint().getCoordinate()}
+				new Coordinate[]{anEdge.getStartPoint().getCoordinate(), anEdge.getEndPoint().getCoordinate()}
 														)
 			);
 			
 			new GeometryFactory();
 			driver.addValues(new Value[] { ValueFactory.createValue(
-																		new GeometryFactory().createMultiLineString(
-																				GeometryFactory.toLineStringArray(lineStrings
-																						)
-																		)
-																	),
+					new GeometryFactory().createMultiLineString(
+					GeometryFactory.toLineStringArray(lineStrings))
+				),
 			ValueFactory.createValue(anEdge.getGID()),
 			ValueFactory.createValue(anEdge.getProperty()),
 			ValueFactory.createValue(anEdge.getStartPoint().getGID()),
 			ValueFactory.createValue(anEdge.getEndPoint().getGID()),
 			ValueFactory.createValue( (anEdge.getLeft()==null?-1:anEdge.getLeft().getGID())),
 			ValueFactory.createValue( (anEdge.getRight()==null?-1:anEdge.getRight().getGID())),
-			ValueFactory.createValue((anEdge.getLeft()==null?false:HydroTriangleUtil.isLeftTriangleGoToEdge(anEdge))), 
-			ValueFactory.createValue((anEdge.getRight()==null?false:HydroTriangleUtil.isRightTriangleGoToEdge(anEdge)))
+			ValueFactory.createValue( anEdge.getLeft()==null?false:anEdge.getLeft().isTopoOrientedToEdge(anEdge)),
+			ValueFactory.createValue((anEdge.getRight()==null?false:anEdge.getRight().isTopoOrientedToEdge(anEdge)))
 			});
 		}
 		
@@ -132,10 +130,8 @@ public class JdelaunayExport {
 									.toPolygonArray(polygons))),
 					ValueFactory.createValue(aTriangle.getGID()),
 					ValueFactory.createValue(aTriangle.getProperty()),
-					ValueFactory.createValue(HydroTriangleUtil
-							.getSlopeInPourcent(aTriangle)),
-					ValueFactory.createValue(HydroTriangleUtil
-							.getSlopeAzimut(aTriangle)) });
+					ValueFactory.createValue(aTriangle.getSlopeInPercent()),
+					ValueFactory.createValue(aTriangle.getSlopeAspect()) });
 		}
 		
 		saveDriver(path+"Triangles.gdms", driver);
