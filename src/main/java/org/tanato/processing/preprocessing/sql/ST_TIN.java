@@ -63,11 +63,14 @@ public class ST_TIN implements CustomQuery {
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
 			Value[] values, IProgressMonitor pm) throws ExecutionException {
 		DataSource ds = tables[0];
+		//We need to read our source.
 		SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
 		long count = 0;
+		//We retrieve the values to know how we are supposed to proceed.
 		boolean inter = values[0].getAsBoolean();
 		boolean flat = values[1].getAsBoolean();
 		String name = values[2].getAsString();
+		//We open the source
 		if(!sds.isOpen()){
 			try {
 				sds.open();
@@ -77,8 +80,10 @@ public class ST_TIN implements CustomQuery {
 			}
 		}
 		Geometry geom = null;
+		//We prepare our input structures.
 		List<DPoint> pointsToAdd = new ArrayList<DPoint>();
 		ArrayList<DEdge> edges = new ArrayList<DEdge>();
+		//We fill the input structures with our table.
 		for(long i=0; i<count;i++){
 			try {
 				geom = sds.getGeometry(i);
@@ -96,6 +101,7 @@ public class ST_TIN implements CustomQuery {
 				addGeometry(edges, (Geometry) geom);
 			}
 		}
+		//We have filled the input of our mesh. We can close our source.
 		try {
 			sds.close();
 		} catch (DriverException ex) {
@@ -107,18 +113,23 @@ public class ST_TIN implements CustomQuery {
 
 		ConstrainedMesh mesh = new ConstrainedMesh();
 		try {
+			//We actually fill the mesh
 			mesh.setPoints(pointsToAdd);
 			mesh.setConstraintEdges(edges);
 			if(inter){
+				//If needed, we use the intersection algorithm
 				mesh.forceConstraintIntegrity();
 			}
+			//we process delaunay
 			mesh.processDelaunay();
 			if(flat){
+				//If needed, we remove flat triangles.
 				mesh.removeFlatTriangles();
 			}
 		} catch (DelaunayError ex) {
 				logger.log(Level.SEVERE, "Generation of the mesh failed.\n",ex);
 		}
+		//And we write and register our results.
 		String edgesOut = name+"_edges";
 		String pointsOut = name+"_points";
 		String trianglesOut = name+"_triangles";
@@ -132,9 +143,16 @@ public class ST_TIN implements CustomQuery {
 		try {
 			registerPoints(pointsOut, dsf, mesh);
 		} catch (IOException ex) {
-				logger.log(Level.SEVERE, "Failed to write the file containing the edges.\n",ex);
+				logger.log(Level.SEVERE, "Failed to write the file containing the points.\n",ex);
 		} catch (DriverException ex) {
-				logger.log(Level.SEVERE, "Driver failure while saving the edges.\n",ex);
+				logger.log(Level.SEVERE, "Driver failure while saving the points.\n",ex);
+		}
+		try {
+			registerTriangles(trianglesOut, dsf, mesh);
+		} catch (IOException ex) {
+				logger.log(Level.SEVERE, "Failed to write the file containing the triangles.\n",ex);
+		} catch (DriverException ex) {
+				logger.log(Level.SEVERE, "Driver failure while saving the triangles.\n",ex);
 		}
 
 		throw new UnsupportedOperationException("Not supported yet.");
