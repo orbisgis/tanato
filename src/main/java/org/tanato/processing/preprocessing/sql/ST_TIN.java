@@ -5,16 +5,48 @@
 
 package org.tanato.processing.preprocessing.sql;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.CoordinateSequence;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.geom.MultiPoint;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.gdms.data.AlreadyClosedException;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.ExecutionException;
+import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.metadata.DefaultMetadata;
 import org.gdms.data.metadata.Metadata;
+import org.gdms.data.types.Type;
+import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
+import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.gdms.GdmsWriter;
 import org.gdms.sql.customQuery.CustomQuery;
 import org.gdms.sql.customQuery.TableDefinition;
+import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.Arguments;
+import org.jdelaunay.delaunay.ConstrainedMesh;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DTriangle;
+import org.jdelaunay.delaunay.DelaunayError;
 import org.orbisgis.progress.IProgressMonitor;
 
 /**
@@ -25,9 +57,86 @@ import org.orbisgis.progress.IProgressMonitor;
  * @author alexis
  */
 public class ST_TIN implements CustomQuery {
+	private static final Logger logger = Logger.getLogger(ST_TIN.class.getName());
 
 	@Override
-	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
+			Value[] values, IProgressMonitor pm) throws ExecutionException {
+		DataSource ds = tables[0];
+		SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
+		long count = 0;
+		boolean inter = values[0].getAsBoolean();
+		boolean flat = values[1].getAsBoolean();
+		String name = values[2].getAsString();
+		if(!sds.isOpen()){
+			try {
+				sds.open();
+				count = sds.getRowCount();
+			} catch (DriverException ex) {
+				logger.log(Level.SEVERE, "There has been an error while opening the table, or counting its lines.\n",ex);
+			}
+		}
+		Geometry geom = null;
+		List<DPoint> pointsToAdd = new ArrayList<DPoint>();
+		ArrayList<DEdge> edges = new ArrayList<DEdge>();
+		for(long i=0; i<count;i++){
+			try {
+				geom = sds.getGeometry(i);
+			} catch (DriverException ex) {
+				logger.log(Level.SEVERE, "Can't retrieve the  geometry.\n",ex);
+				break;
+			}
+			if(geom instanceof Point){
+				addPoint(pointsToAdd, (Point) geom);
+			} else if(geom instanceof MultiPoint){
+				addMultiPoint(pointsToAdd, (MultiPoint) geom);
+			} else if (geom instanceof GeometryCollection) {
+				addGeometryCollection(edges, (GeometryCollection) geom);
+			} else if(geom instanceof Geometry){
+				addGeometry(edges, (Geometry) geom);
+			}
+		}
+		try {
+			sds.close();
+		} catch (DriverException ex) {
+				logger.log(Level.SEVERE, "The driver failed during the closure.\n",ex);
+		} catch (AlreadyClosedException ex) {
+				logger.log(Level.SEVERE, "The source seems to have been closed externally\n",ex);
+		}
+		Collections.sort(edges);
+
+		ConstrainedMesh mesh = new ConstrainedMesh();
+		try {
+			mesh.setPoints(pointsToAdd);
+			mesh.setConstraintEdges(edges);
+			if(inter){
+				mesh.forceConstraintIntegrity();
+			}
+			mesh.processDelaunay();
+			if(flat){
+				mesh.removeFlatTriangles();
+			}
+		} catch (DelaunayError ex) {
+				logger.log(Level.SEVERE, "Generation of the mesh failed.\n",ex);
+		}
+		String edgesOut = name+"_edges";
+		String pointsOut = name+"_points";
+		String trianglesOut = name+"_triangles";
+		try {
+			registerEdges(edgesOut, dsf, mesh);
+		} catch (IOException ex) {
+				logger.log(Level.SEVERE, "Failed to write the file containing the edges.\n",ex);
+		} catch (DriverException ex) {
+				logger.log(Level.SEVERE, "Driver failure while saving the edges.\n",ex);
+		}
+		try {
+			registerPoints(pointsOut, dsf, mesh);
+		} catch (IOException ex) {
+				logger.log(Level.SEVERE, "Failed to write the file containing the edges.\n",ex);
+		} catch (DriverException ex) {
+				logger.log(Level.SEVERE, "Driver failure while saving the edges.\n",ex);
+		}
+
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
@@ -51,16 +160,233 @@ public class ST_TIN implements CustomQuery {
 		return null;
 	}
 
+	/**
+	 * The tables we need after the clause FROM in the query.
+	 * @return
+	 */
 	@Override
 	public TableDefinition[] getTablesDefinitions() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return new TableDefinition[] {TableDefinition.GEOMETRY};
 	}
 
+	/**
+	 * Retrieve the arguments this function can take. We always need five arguments<br/><br/>
+	 *
+	 * BOOLEAN : Flat triangles removal or not.<br/>
+	 * BOOLEAN : Intersection processing <br/>
+	 * STRING : Name of the table of points<br/>
+	 * STRING : Name of the table of edges<br/>
+	 * STRINGE : Name of the table of triangles.
+	 * @return
+	 */
 	@Override
 	public Arguments[] getFunctionArguments() {
-		Arguments[] arg = new Arguments[5];
-		
-		return arg;
+		return new Arguments[] {new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.STRING)};
 	}
 
+	/**
+	 * We add a point to the given list
+	 * @param points
+	 * @param geom
+	 */
+	private void addPoint(List<DPoint> points, Point geom){
+		Coordinate pt = geom.getCoordinate();
+		double z = Double.isNaN(pt.z) ? 0 : pt.z;
+		try {
+			points.add(new DPoint(pt.x, pt.y, z));
+		} catch (DelaunayError ex) {
+			logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n",ex);
+		}
+
+	}
+
+	/**
+	 * Add a MultiPoint geometry.
+	 * @param points
+	 * @param pts
+	 */
+	private void addMultiPoint(List<DPoint> points, MultiPoint pts ){
+		Coordinate[] coords = pts.getCoordinates();
+		for(int i=0; i<coords.length; i++){
+			try {
+				points.add(new DPoint(coords[i].x, coords[i].y, coords[i].z));
+			} catch (DelaunayError ex) {
+				logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n",ex);
+			}
+		}
+	}
+
+	/**
+	 * add a geometry to the input.
+	 * @param edges
+	 * @param geom
+	 */
+	private void addGeometry(List<DEdge> edges, Geometry geom){
+		for (int j = 0; j < geom.getNumGeometries(); j++) {
+			Geometry subGeom = geom.getGeometryN(j);
+			if (geom.isValid()){
+				Coordinate c1 = subGeom.getCoordinates()[0];
+				c1.z = Double.isNaN(c1.z)  ? 0 : c1.z;
+				Coordinate c2;
+				for (int k = 1; k < subGeom.getCoordinates().length; k++) {
+					c2 = subGeom.getCoordinates()[k];
+					c2.z = Double.isNaN(c2.z) ? 0 : c2.z;
+					try{
+						edges.add(new DEdge(new DPoint(c1), new DPoint(c2)));
+					} catch(DelaunayError d){
+						logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n",d);
+					}
+					c1 = c2;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Add a GeometryCollection
+	 * @param edges
+	 * @param geomcol
+	 */
+	private void addGeometryCollection(List<DEdge> edges, GeometryCollection geomcol){
+		int num = geomcol.getNumGeometries();
+		for(int i=0; i<num; i++){
+			addGeometry(edges, geomcol.getGeometryN(i));
+		}
+	}
+
+	/**
+	 * Saves the edges in a file, and register them with the dsf.
+	 * @param name
+	 * @param dsf
+	 * @param mesh
+	 * @throws IOException
+	 * @throws DriverException
+	 */
+	private void registerEdges(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException{
+		File out =new File(name);
+		GdmsWriter writer = new GdmsWriter(out);
+		Metadata md = new DefaultMetadata(
+			new Type[] {TypeFactory.createType(Type.GEOMETRY),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.FLOAT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),},
+			new String[] {"the_geom","GID","StartPoint_GID","EndPoint_GID","LeftTriangle_GID","RightTriangle_GID",
+					"Height","Property","Source_GID"});
+		int triangleCount = mesh.getEdges().size();
+		writer.writeMetadata(triangleCount, md);
+		GeometryFactory gf = new GeometryFactory();
+		for(DEdge dt : mesh.getEdges()){
+			Coordinate[] coords = new Coordinate[2];
+			coords[0] = dt.getPointLeft().getCoordinate();
+			coords[1] = dt.getPointRight().getCoordinate();
+			CoordinateSequence cs = new CoordinateArraySequence(coords);
+
+			LineString mp = new LineString(cs, gf);
+			writer.addValues(new Value[] {ValueFactory.createValue(mp),
+						ValueFactory.createValue(dt.getGID()),
+						ValueFactory.createValue(dt.getStartPoint().getGID()),
+						ValueFactory.createValue(dt.getEndPoint().getGID()),
+						ValueFactory.createValue(dt.getLeft().getGID()),
+						ValueFactory.createValue(dt.getRight().getGID()),
+						ValueFactory.createValue(dt.getHeight()),
+						ValueFactory.createValue(dt.getProperty()),
+						ValueFactory.createValue(dt.getExternalGID()),});
+		}
+
+		// write the row indexes
+		writer.writeRowIndexes();
+		// write envelope
+		writer.writeExtent();
+		writer.close();
+		dsf.getSourceManager().register(name, out);
+	}
+
+	private void registerPoints(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException{
+		File out =new File(name);
+		GdmsWriter writer = new GdmsWriter(out);
+		Metadata md = new DefaultMetadata(
+			new Type[] {TypeFactory.createType(Type.GEOMETRY),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.FLOAT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),},
+			new String[] {"the_geom","GID","StartPoint_GID","EndPoint_GID","LeftTriangle_GID","RightTriangle_GID",
+					"Height","Property","Source_GID"});
+		int triangleCount = mesh.getPoints().size();
+		writer.writeMetadata(triangleCount, md);
+		GeometryFactory gf = new GeometryFactory();
+		for(DPoint dt : mesh.getPoints()){
+			Coordinate[] coords = new Coordinate[1];
+			coords[0] = dt.getCoordinate();
+			CoordinateSequence cs = new CoordinateArraySequence(coords);
+
+			Point mp = new Point(cs, gf);
+
+			writer.addValues(new Value[] {ValueFactory.createValue(mp),
+						ValueFactory.createValue(dt.getGID()),
+						ValueFactory.createValue(dt.getHeight()),
+						ValueFactory.createValue(dt.getProperty()),
+						ValueFactory.createValue(dt.getExternalGID()),});
+		}
+
+		// write the row indexes
+		writer.writeRowIndexes();
+		// write envelope
+		writer.writeExtent();
+		writer.close();
+		dsf.getSourceManager().register(name, out);
+	}
+
+	private void registerTriangles(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException{
+		File out =new File(name);
+		GdmsWriter writer = new GdmsWriter(out);
+		Metadata md = new DefaultMetadata(
+			new Type[] {TypeFactory.createType(Type.GEOMETRY),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.FLOAT),
+				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),},
+			new String[] {"the_geom","GID","StartPoint_GID","EndPoint_GID","LeftTriangle_GID","RightTriangle_GID",
+					"Height","Property","Source_GID"});
+		int triangleCount = mesh.getTriangleList().size();
+		writer.writeMetadata(triangleCount, md);
+		GeometryFactory gf = new GeometryFactory();
+		for(DTriangle dt : mesh.getTriangleList()){
+			Coordinate[] coords = new Coordinate[4];
+			coords[0] = dt.getPoint(0).getCoordinate();
+			coords[1] = dt.getPoint(1).getCoordinate();
+			coords[2] = dt.getPoint(2).getCoordinate();
+			coords[3] = dt.getPoint(0).getCoordinate();
+			CoordinateSequence cs = new CoordinateArraySequence(coords);
+			LinearRing lr = new LinearRing(cs, gf);
+			Polygon poly = new Polygon(lr, null, gf);
+			MultiPolygon mp = new MultiPolygon(new Polygon[] {poly}, gf);
+
+			writer.addValues(new Value[] {ValueFactory.createValue(mp),
+						ValueFactory.createValue(dt.getGID()),
+						ValueFactory.createValue(dt.getHeight()),
+						ValueFactory.createValue(dt.getProperty()),
+						ValueFactory.createValue(dt.getExternalGID()),});
+		}
+
+		// write the row indexes
+		writer.writeRowIndexes();
+		// write envelope
+		writer.writeExtent();
+		writer.close();
+		dsf.getSourceManager().register(name, out);
+	}
 }
