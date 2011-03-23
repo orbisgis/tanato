@@ -13,6 +13,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
+import org.jhydrocell.hydronetwork.HydroProperties;
 
 public class HydroTINModel {
 
@@ -70,7 +71,7 @@ public class HydroTINModel {
 
 	// Etape 1 initialisation des structures de données pour le stockage
 	// non-redondant des hydrocells du graphe
-	public void createHydroCells() throws DriverException{
+	public final void createHydroCells() throws DriverException{
 		tcells = new ArrayList<TCell>();
 		ecells = new ArrayList<ECell>();
 		ncells = new ArrayList<NCell>();
@@ -154,7 +155,7 @@ public class HydroTINModel {
 	 * 
 	 * 
 	 */
-	public void buildTINGraph() {
+	public final void buildTINGraph() {
 
 		try {
 			sdsFaces.open();
@@ -626,7 +627,7 @@ public class HydroTINModel {
 
 	}
 
-	public void linkTalweg() {
+	public final void linkTalweg() {
 
 		// Traitement des lignes de crêtes
 		for (ECell ecell : ecells) {
