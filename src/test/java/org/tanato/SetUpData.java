@@ -199,33 +199,33 @@ public class SetUpData extends TestCase {
 	}
 
 	private static void buildHydrologicalGraph() {
-		try {
-			DataSource dsFaces = dsf.getDataSource(new File(pathFaces));
-
-			sdsFaces = new SpatialDataSourceDecorator(dsFaces);
-
-			DataSource dsEdges = dsf.getDataSource(new File(pathEdges));
-
-			sdsEdges = new SpatialDataSourceDecorator(dsEdges);
-
-			DataSource dsNodes = dsf.getDataSource(new File(pathNodes));
-
-			sdsNodes = new SpatialDataSourceDecorator(dsNodes);
-
-			HydroTINModel hydrotinModel = new HydroTINModel(sdsFaces, sdsEdges,
-					sdsNodes);
-			// Obtient le graph hydrologique avec l'ensemble des connexions
-			ecells = hydrotinModel.getEcells();
-			tcells = hydrotinModel.getTcells();
-			ncells = hydrotinModel.getNcells();
-
-		} catch (DriverLoadException e) {
-			e.printStackTrace();
-		} catch (DataSourceCreationException e) {
-			e.printStackTrace();
-		} catch (DriverException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			DataSource dsFaces = dsf.getDataSource(new File(pathFaces));
+//
+//			sdsFaces = new SpatialDataSourceDecorator(dsFaces);
+//
+//			DataSource dsEdges = dsf.getDataSource(new File(pathEdges));
+//
+//			sdsEdges = new SpatialDataSourceDecorator(dsEdges);
+//
+//			DataSource dsNodes = dsf.getDataSource(new File(pathNodes));
+//
+//			sdsNodes = new SpatialDataSourceDecorator(dsNodes);
+//
+//			HydroTINModel hydrotinModel = new HydroTINModel(sdsFaces, sdsEdges,
+//					sdsNodes);
+//			// Obtient le graph hydrologique avec l'ensemble des connexions
+//			ecells = hydrotinModel.getEcells();
+//			tcells = hydrotinModel.getTcells();
+//			ncells = hydrotinModel.getNcells();
+//
+//		} catch (DriverLoadException e) {
+//			e.printStackTrace();
+//		} catch (DataSourceCreationException e) {
+//			e.printStackTrace();
+//		} catch (DriverException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	public static ArrayList<ECell> getEcells() {

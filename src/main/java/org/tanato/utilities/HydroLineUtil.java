@@ -23,12 +23,22 @@ public class HydroLineUtil {
 		this.geom = geom;
 	}
 
+
+        /**
+	 * Check if the linestring is flat or not
+	 *
+	 * @return isFlat
+	 */
+	public final boolean isFlatSlope() {
+		return !(Math.abs(geom.getStartPoint().getCoordinate().z - geom.getEndPoint().getCoordinate().z) > MathUtil.EPSILON);
+	}
+
 	/**
 	 *
 	 * @return pente de l'edge (dz/distance horizontale)
 	 */
-	public double getSlope() {
-		if (valeurPente == -1.) {
+	public final double getSlope() {
+		if (Math.abs(valeurPente+1.0)<MathUtil.EPSILON) {
 			Coordinate c1 = this.geom.getCoordinates()[0];
 			Coordinate c2 = this.geom.getCoordinates()[this.geom.getNumPoints() - 1];
 			// l'ordre des coordonnees correspond a l'orientation de l'arc
@@ -43,11 +53,11 @@ public class HydroLineUtil {
 	}
 
 	/**
-	 * Pente topographique exprimée en degrées
+	 * Topographic slop, in degrees
 	 *
 	 * @return
 	 */
-	public double getSlopeInDegree() {
+	public final double getSlopeInDegree() {
 		return Math.abs(getSlope()) * 100;
 	}
 
@@ -55,7 +65,7 @@ public class HydroLineUtil {
 	 *
 	 * @return angle entre le nord et l'edge (sens descendant) (en degres)
 	 */
-	public double getSlopeAzimut() {
+	public final double getSlopeAzimut() {
 		if (orientationPente == -1.) {
 			Coordinate c1 = this.geom.getCoordinates()[0];
 			Coordinate c2 = this.geom.getCoordinates()[this.geom.getNumPoints() - 1];
@@ -74,10 +84,10 @@ public class HydroLineUtil {
 	}
 
 	/**
-	 *
+	 * Get the vector defined by this edge.
 	 * @return vecteur de l'edge
 	 */
-	public Coordinate get3DVector() {
+	public final Coordinate get3DVector() {
 		if (pente == null) {
 			Coordinate d = new Coordinate();
 			Geometry g = this.geom;
