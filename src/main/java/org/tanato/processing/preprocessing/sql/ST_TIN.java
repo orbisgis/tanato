@@ -188,13 +188,11 @@ public class ST_TIN implements CustomQuery {
 	}
 
 	/**
-	 * Retrieve the arguments this function can take. We always need five arguments<br/><br/>
+	 * Retrieve the arguments this function can take. We always need three arguments<br/><br/>
 	 *
 	 * BOOLEAN : Flat triangles removal or not.<br/>
 	 * BOOLEAN : Intersection processing <br/>
-	 * STRING : Name of the table of points<br/>
-	 * STRING : Name of the table of edges<br/>
-	 * STRINGE : Name of the table of triangles.
+	 * STRING : Prefixe name of the TIN table<br/>
 	 * @return
 	 */
 	@Override
@@ -292,8 +290,8 @@ public class ST_TIN implements CustomQuery {
 				TypeFactory.createType(Type.INT),
 				TypeFactory.createType(Type.FLOAT),
 				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),},
-			new String[] {"the_geom","GID","StartPoint_GID","EndPoint_GID","LeftTriangle_GID","RightTriangle_GID",
+				TypeFactory.createType(Type.INT)},
+			new String[] {"the_geom","GID","StartP_GID","EndP_GID","LeftT_GID","RightT_GID",
 					"Height","Property","Source_GID"});
 		int triangleCount = mesh.getEdges().size();
 		writer.writeMetadata(triangleCount, md);
@@ -330,14 +328,10 @@ public class ST_TIN implements CustomQuery {
 		Metadata md = new DefaultMetadata(
 			new Type[] {TypeFactory.createType(Type.GEOMETRY),
 				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
 				TypeFactory.createType(Type.FLOAT),
 				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),},
-			new String[] {"the_geom","GID","StartPoint_GID","EndPoint_GID","LeftTriangle_GID","RightTriangle_GID",
+				TypeFactory.createType(Type.INT)},
+			new String[] {"the_geom","GID",
 					"Height","Property","Source_GID"});
 		int triangleCount = mesh.getPoints().size();
 		writer.writeMetadata(triangleCount, md);
@@ -369,15 +363,11 @@ public class ST_TIN implements CustomQuery {
 		GdmsWriter writer = new GdmsWriter(out);
 		Metadata md = new DefaultMetadata(
 			new Type[] {TypeFactory.createType(Type.GEOMETRY),
-				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),
+				TypeFactory.createType(Type.INT),				
 				TypeFactory.createType(Type.FLOAT),
 				TypeFactory.createType(Type.INT),
-				TypeFactory.createType(Type.INT),},
-			new String[] {"the_geom","GID","StartPoint_GID","EndPoint_GID","LeftTriangle_GID","RightTriangle_GID",
+				TypeFactory.createType(Type.INT)},
+			new String[] {"the_geom","GID",
 					"Height","Property","Source_GID"});
 		int triangleCount = mesh.getTriangleList().size();
 		writer.writeMetadata(triangleCount, md);
