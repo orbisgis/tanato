@@ -15,8 +15,10 @@ import java.util.logging.Logger;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.ExecutionException;
+import org.gdms.data.NoSuchTableException;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.DefaultSpatialIndexQuery;
+import org.gdms.data.indexes.IndexException;
 import org.gdms.data.metadata.Metadata;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
@@ -50,10 +52,17 @@ public class ST_SetZFromTriangles implements CustomQuery {
                         sdsTriangle.open();
                         sdsToBeInterpolate.open();
 
+
                         GenericObjectDriver driver = new GenericObjectDriver(sdsToBeInterpolate.getMetadata());
                         long countToBeInterpol = sdsToBeInterpolate.getRowCount();
                         String geomField = sdsTriangle.getSpatialFieldName();
                         int geomIndex = sdsTriangle.getSpatialFieldIndex();
+
+                        if (!dsf.getIndexManager().isIndexed(sdsTriangle.getName(), geomField)) {
+                                dsf.getIndexManager().buildIndex(sdsTriangle.getName(), geomField, pm);
+                        }
+
+
                         Geometry geomToBeInterpol;
                         Value[] valuesToBeInterpolate;
                         for (int i = 0; i < countToBeInterpol; i++) {
@@ -81,13 +90,19 @@ public class ST_SetZFromTriangles implements CustomQuery {
 
                         return driver;
 
+                } catch (IndexException ex) {
+                        Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
+
+                } catch (NoSuchTableException ex) {
+                        Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
+
                 } catch (DriverException ex) {
                         Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
 
                 } catch (DelaunayError ex) {
                         Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                return  null;
+                return null;
         }
 
         @Override
