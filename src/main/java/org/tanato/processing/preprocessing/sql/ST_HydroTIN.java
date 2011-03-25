@@ -50,6 +50,7 @@ import org.jhydrocell.hydronetwork.HydroProperties;
 import org.jhydrocell.hydronetwork.HydroTINBuilder;
 import org.orbisgis.progress.IProgressMonitor;
 import org.tanato.factory.TINFeatureFactory;
+import org.tanato.model.TINSchema;
 
 /**
  * This class designs a custom query for GDMS. The goal of the query is to process
@@ -61,16 +62,12 @@ import org.tanato.factory.TINFeatureFactory;
 public class ST_HydroTIN implements CustomQuery {
 
         private static final Logger logger = Logger.getLogger(ST_HydroTIN.class.getName());
-        static String PROPERTY_FIELD = "proprety";
-        static String WEIGTH_FIELD = "weight";
-        static String HEIGHT_FIELD = "height";
 
         @Override
         public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
                 Value[] values, IProgressMonitor pm) throws ExecutionException {
 
                 try {
-
                         //Process contourlines
                         DataSource ds = tables[0];
                         //We need to read our source.
@@ -79,10 +76,10 @@ public class ST_HydroTIN implements CustomQuery {
                         boolean useTriangulationRules = false;
                         Map<Integer, Integer> weights = new HashMap<Integer, Integer>();
                         int propertyIndex = -1;
-                        int weigthIndex= -1;
-                        if (values[3].getAsBoolean()) {                                 
-                                propertyIndex = ds.getFieldIndexByName(PROPERTY_FIELD);
-                                 weigthIndex = ds.getFieldIndexByName(WEIGTH_FIELD);
+                        int weigthIndex = -1;
+                        if (values[3].getAsBoolean()) {
+                                propertyIndex = ds.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
+                                weigthIndex = ds.getFieldIndexByName(TINSchema.WEIGTH_FIELD);
                                 if ((propertyIndex != -1) && (weigthIndex != -1)) {
                                         useTriangulationRules = true;
                                 }
@@ -167,6 +164,8 @@ public class ST_HydroTIN implements CustomQuery {
                                         mesh.removeFlatTriangles();
                                 }
 
+                                mesh.morphologicalQualification();
+
                                 //And we write and register our results.
                                 String edgesOut = name + "_edges";
                                 String pointsOut = name + "_points";
@@ -193,7 +192,7 @@ public class ST_HydroTIN implements CustomQuery {
 
                 }
 
-                throw new UnsupportedOperationException("Not supported yet.");
+                return null;
 
 
         }
@@ -305,18 +304,12 @@ public class ST_HydroTIN implements CustomQuery {
 
                 int count = coords.length;
 
-
-                for (int k = 1; k
-                        < count; k++) {
+                for (int k = 1; k < count; k++) {
                         c2 = coords[k];
-
-
                         try {
                                 DEdge edge = new DEdge(new DPoint(c1), new DPoint(c2));
                                 edge.setProperty(propertyValue);
                                 edges.add(new DEdge(new DPoint(c1), new DPoint(c2)));
-
-
                         } catch (DelaunayError d) {
                                 logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n", d);
 
@@ -349,8 +342,8 @@ public class ST_HydroTIN implements CustomQuery {
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),},
-                        new String[]{"the_geom", "GID", "StartPoint_GID", "EndPoint_GID", "LeftTriangle_GID", "RightTriangle_GID",
-                                "Height", "Property", "Source_GID"});
+                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.LEFT_TRIANGLE_FIELD, TINSchema.RIGHT_TRIANGLE_FIELD,
+                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
 
 
                 int triangleCount = mesh.getEdges().size();
@@ -360,12 +353,8 @@ public class ST_HydroTIN implements CustomQuery {
 
                 for (DEdge dt : mesh.getEdges()) {
                         Coordinate[] coords = new Coordinate[2];
-                        coords[
-
-0] = dt.getPointLeft().getCoordinate();
-                        coords[
-
-1] = dt.getPointRight().getCoordinate();
+                        coords[0] = dt.getPointLeft().getCoordinate();
+                        coords[1] = dt.getPointRight().getCoordinate();
                         CoordinateSequence cs = new CoordinateArraySequence(coords);
 
                         LineString mp = new LineString(cs, gf);
@@ -373,23 +362,18 @@ public class ST_HydroTIN implements CustomQuery {
                                         ValueFactory.createValue(dt.getGID()),
                                         ValueFactory.createValue(dt.getStartPoint().getGID()),
                                         ValueFactory.createValue(dt.getEndPoint().getGID()),
-                                        ValueFactory.createValue(dt.getLeft().getGID()),
-                                        ValueFactory.createValue(dt.getRight().getGID()),
+                                        ValueFactory.createValue(dt.getLeft() == null ? -1 : dt.getLeft().getGID()),
+                                        ValueFactory.createValue(dt.getRight() == null ? -1 : dt.getRight().getGID()),
                                         ValueFactory.createValue(dt.getHeight()),
                                         ValueFactory.createValue(dt.getProperty()),
                                         ValueFactory.createValue(dt.getExternalGID()),});
-
-
                 }
-
                 // write the row indexes
                 writer.writeRowIndexes();
                 // write envelope
                 writer.writeExtent();
                 writer.close();
                 dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
-
-
         }
 
         private void registerPoints(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
@@ -398,15 +382,11 @@ public class ST_HydroTIN implements CustomQuery {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY),
                                 TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),},
-                        new String[]{"the_geom", "GID", "StartPoint_GID", "EndPoint_GID", "LeftTriangle_GID", "RightTriangle_GID",
-                                "Height", "Property", "Source_GID"});
+                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID,
+                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
 
 
                 int triangleCount = mesh.getPoints().size();
@@ -416,18 +396,15 @@ public class ST_HydroTIN implements CustomQuery {
 
                 for (DPoint dt : mesh.getPoints()) {
                         Coordinate[] coords = new Coordinate[1];
-                        coords[
-
-0] = dt.getCoordinate();
+                        coords[0] = dt.getCoordinate();
                         CoordinateSequence cs = new CoordinateArraySequence(coords);
-
                         Point mp = new Point(cs, gf);
 
                         writer.addValues(new Value[]{ValueFactory.createValue(mp),
                                         ValueFactory.createValue(dt.getGID()),
                                         ValueFactory.createValue(dt.getHeight()),
                                         ValueFactory.createValue(dt.getProperty()),
-                                        ValueFactory.createValue(dt.getExternalGID()),});
+                                        ValueFactory.createValue(dt.getExternalGID())});
 
 
                 }
@@ -448,15 +425,15 @@ public class ST_HydroTIN implements CustomQuery {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY),
                                 TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),},
-                        new String[]{"the_geom", "GID", "StartPoint_GID", "EndPoint_GID", "LeftTriangle_GID", "RightTriangle_GID",
-                                "Height", "Property", "Source_GID"});
+                                TypeFactory.createType(Type.INT),
+                                TypeFactory.createType(Type.INT),
+                                TypeFactory.createType(Type.INT),
+                                TypeFactory.createType(Type.INT)},
+                        new String[]{"the_geom", TINSchema.GID,
+                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD,
+                                TINSchema.EDGE_0_GID_FIELD, TINSchema.EDGE_1_GID_FIELD, TINSchema.EDGE_2_GID_FIELD});
 
 
                 int triangleCount = mesh.getTriangleList().size();
@@ -466,18 +443,10 @@ public class ST_HydroTIN implements CustomQuery {
 
                 for (DTriangle dt : mesh.getTriangleList()) {
                         Coordinate[] coords = new Coordinate[4];
-                        coords[
-
-0] = dt.getPoint(0).getCoordinate();
-                        coords[
-
-1] = dt.getPoint(1).getCoordinate();
-                        coords[
-
-2] = dt.getPoint(2).getCoordinate();
-                        coords[
-
-3] = dt.getPoint(0).getCoordinate();
+                        coords[0] = dt.getPoint(0).getCoordinate();
+                        coords[1] = dt.getPoint(1).getCoordinate();
+                        coords[2] = dt.getPoint(2).getCoordinate();
+                        coords[3] = dt.getPoint(0).getCoordinate();
                         CoordinateSequence cs = new CoordinateArraySequence(coords);
                         LinearRing lr = new LinearRing(cs, gf);
                         Polygon poly = new Polygon(lr, null, gf);
@@ -487,11 +456,11 @@ public class ST_HydroTIN implements CustomQuery {
                                         ValueFactory.createValue(dt.getGID()),
                                         ValueFactory.createValue(dt.getHeight()),
                                         ValueFactory.createValue(dt.getProperty()),
-                                        ValueFactory.createValue(dt.getExternalGID()),});
-
-
+                                        ValueFactory.createValue(dt.getExternalGID()),
+                                        ValueFactory.createValue(dt.getEdge(0).getGID()),
+                                        ValueFactory.createValue(dt.getEdge(1).getGID()),
+                                        ValueFactory.createValue(dt.getEdge(2).getGID())});
                 }
-
                 // write the row indexes
                 writer.writeRowIndexes();
                 // write envelope
