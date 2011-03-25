@@ -76,10 +76,12 @@ public class ST_SetZFromTriangle implements Function {
                         }
                 }
 
+		@Override
                 public boolean isGeometryChanged() {
                         return true;
                 }
 
+		@Override
                 public boolean isDone() {
                         return done;
                 }

@@ -287,8 +287,15 @@ public class ST_TIN implements CustomQuery {
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.LEFT_TRIANGLE_FIELD, TINSchema.RIGHT_TRIANGLE_FIELD,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
+                        new String[]{TINSchema.GEOM_FIELD,
+				TINSchema.GID,
+				TINSchema.STARTPOINT_NODE_FIELD,
+				TINSchema.ENDPOINT_NODE_FIELD,
+				TINSchema.LEFT_TRIANGLE_FIELD,
+				TINSchema.RIGHT_TRIANGLE_FIELD,
+                                TINSchema.HEIGHT_FIELD, 
+				TINSchema.PROPERTY_FIELD,
+				TINSchema.GID_SOURCE_FIELD});
                 int triangleCount = mesh.getEdges().size();
                 writer.writeMetadata(triangleCount, md);
                 GeometryFactory gf = new GeometryFactory();
@@ -327,8 +334,11 @@ public class ST_TIN implements CustomQuery {
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
+                        new String[]{TINSchema.GEOM_FIELD,
+				TINSchema.GID,
+                                TINSchema.HEIGHT_FIELD, 
+				TINSchema.PROPERTY_FIELD,
+				TINSchema.GID_SOURCE_FIELD});
                 int triangleCount = mesh.getPoints().size();
                 writer.writeMetadata(triangleCount, md);
                 GeometryFactory gf = new GeometryFactory();
@@ -366,9 +376,14 @@ public class ST_TIN implements CustomQuery {
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT)},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD,
-                                TINSchema.EDGE_0_GID_FIELD, TINSchema.EDGE_1_GID_FIELD, TINSchema.EDGE_2_GID_FIELD});
+                        new String[]{TINSchema.GEOM_FIELD,
+				TINSchema.GID,
+                                TINSchema.HEIGHT_FIELD, 
+				TINSchema.PROPERTY_FIELD,
+				TINSchema.GID_SOURCE_FIELD,
+                                TINSchema.EDGE_0_GID_FIELD,
+				TINSchema.EDGE_1_GID_FIELD,
+				TINSchema.EDGE_2_GID_FIELD});
 
                 int triangleCount = mesh.getTriangleList().size();
                 writer.writeMetadata(triangleCount, md);

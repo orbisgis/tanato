@@ -36,7 +36,9 @@ public class ST_TINSlopeDirection implements Function {
                 try {
                         Geometry geom = values[0].getAsGeometry();
                         DTriangle dTriangle = TINFeatureFactory.createDTriangle(geom);
-                        return ValueFactory.createValue(gf.createLineString(new Coordinate[]{dTriangle.getBarycenter().getCoordinate(), dTriangle.getSteepestIntersectionPoint(dTriangle.getBarycenter()).getCoordinate()}));
+                        return ValueFactory.createValue(
+				gf.createLineString(new Coordinate[]{dTriangle.getBarycenter().getCoordinate(),
+					dTriangle.getSteepestIntersectionPoint(dTriangle.getBarycenter()).getCoordinate()}));
 
 
                 } catch (DelaunayError ex) {
