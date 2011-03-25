@@ -86,7 +86,6 @@ public class Tanato2SQLTest extends TestCase {
 
                 geom = function2.evaluate(null, values).getAsGeometry().getGeometryN(1);
                 coords = geom.getCoordinates();
-
                 assertTrue(coords[1].z == 6);
         }
 }
