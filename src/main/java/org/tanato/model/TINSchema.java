@@ -26,4 +26,7 @@ public class TINSchema {
         public static String EDGE_2_GID_FIELD = "edge2_gid";
         public static String GID = "gid";
         public static String GEOM_FIELD="the_geom";
+        static String TIN_FEATURE = "tin_feature";
+        static String TIN_GID = "tin_gid";
+        static String PROPORTION = "proportion";
 }
