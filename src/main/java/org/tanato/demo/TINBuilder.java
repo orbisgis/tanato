@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
@@ -26,6 +27,8 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
+import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.driver.gdms.GdmsWriter;
 import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.DEdge;
@@ -35,6 +38,9 @@ import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.display.MeshDrawer;
 import org.jhydrocell.hydronetwork.HydroTINBuilder;
 import org.jhydrocell.hydronetwork.HydroProperties;
+import org.orbisgis.progress.NullProgressMonitor;
+import org.tanato.model.HydroGraphBuilder;
+import org.tanato.model.TINSchema;
 
 /**
  *
@@ -43,9 +49,9 @@ import org.jhydrocell.hydronetwork.HydroProperties;
 public class TINBuilder {
 
         static DataSourceFactory dsf = new DataSourceFactory();
-        static String targetPoints = "/tmp/tinPoint.gdms";
-        static String targetConstraints = "/tmp/tinEdges.gdms";
-        static String target = "/tmp/tinTriangles.gdms";
+        static String tinPoints = "/tmp/tinPoint.gdms";
+        static String tinEdges = "/tmp/tinEdges.gdms";
+        static String tinTriangles = "/tmp/tinTriangles.gdms";
 
         public TINBuilder() {
         }
@@ -62,17 +68,14 @@ public class TINBuilder {
                 ArrayList<DEdge> toBeAdded = new ArrayList<DEdge>();
                 for (long i = 0; i < sds.getRowCount(); i++) {
                         Geometry geom = sds.getGeometry(i);
-                        z = sds.getFieldValue(i, 2).getAsDouble();
                         if (geom.isValid()) {
                                 for (int j = 0; j < geom.getNumGeometries(); j++) {
                                         Geometry subGeom = geom.getGeometryN(j);
                                         if (geom.isValid()) {
                                                 Coordinate c1 = subGeom.getCoordinates()[0];
-                                                c1.z = z;
                                                 Coordinate c2;
                                                 for (int k = 1; k < subGeom.getCoordinates().length; k++) {
                                                         c2 = subGeom.getCoordinates()[k];
-                                                        c2.z = z;
                                                         DEdge edge = new DEdge(new DPoint(c1), new DPoint(c2));
                                                         edge.setProperty(1);
                                                         toBeAdded.add(edge);
@@ -97,10 +100,10 @@ public class TINBuilder {
                 long triangulationTime = System.currentTimeMillis() - start;
                 System.out.println("Temps de triangulation " + triangulationTime);
 
-                //hydroNetwork.removeFlatTriangles();
-                //triangulationTime = System.currentTimeMillis() - start;
+                hydroNetwork.removeFlatTriangles();
+                triangulationTime = System.currentTimeMillis() - start;
 
-               // System.out.println("Suppresion des triangles plats " + triangulationTime);
+                System.out.println("Suppresion des triangles plats " + triangulationTime);
 
 
                 hydroNetwork.morphologicalQualification();
@@ -109,26 +112,24 @@ public class TINBuilder {
                 System.out.println("Temps de qualification " + qualificationTime);
 
 
-                MeshDrawer meshDrawer = new MeshDrawer();
-                meshDrawer.add(hydroNetwork);
-                meshDrawer.setVisible(true);
+                //MeshDrawer meshDrawer = new MeshDrawer();
+                //meshDrawer.add(hydroNetwork);
+                //meshDrawer.setVisible(true);
                 //We write the triangles in a GDMS output file
-                File out = new File(target);
+                File out = new File(tinTriangles);
                 if (out.exists()) {
                         out.delete();
                 }
-                out = new File(target);
+                out = new File(tinTriangles);
                 GdmsWriter writer = new GdmsWriter(out);
 
                 Metadata md = new DefaultMetadata(new Type[]{TypeFactory.createType(Type.GEOMETRY),
-                                TypeFactory.createType(Type.FLOAT)}, new String[]{"the_geom", "Z"});
+                                TypeFactory.createType(Type.INT)}, new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
 
                 int triangleCount = hydroNetwork.getTriangleList().size();
                 writer.writeMetadata(triangleCount, md);
                 GeometryFactory gf = new GeometryFactory();
-                double midZ;
                 for (DTriangle dt : hydroNetwork.getTriangleList()) {
-                        midZ = dt.interpolateZ(dt.getBarycenter());
                         Coordinate[] coords = new Coordinate[4];
                         coords[0] = dt.getPoint(0).getCoordinate();
                         coords[1] = dt.getPoint(1).getCoordinate();
@@ -136,7 +137,7 @@ public class TINBuilder {
                         coords[3] = dt.getPoint(0).getCoordinate();
                         Polygon poly = gf.createPolygon(gf.createLinearRing(coords), null);
                         Value v1 = ValueFactory.createValue(poly);
-                        Value v2 = ValueFactory.createValue(midZ);
+                        Value v2 = ValueFactory.createValue(dt.getGID());
                         writer.addValues(new Value[]{v1, v2});
                 }
                 // write the row indexes
@@ -145,18 +146,18 @@ public class TINBuilder {
                 writer.writeExtent();
                 writer.close();
                 //We write the output points in a GDMS file.
-                File outPoints = new File(targetPoints);
+                File outPoints = new File(tinPoints);
                 if (outPoints.exists()) {
                         outPoints.delete();
                 }
-                outPoints = new File(targetPoints);
+                outPoints = new File(tinPoints);
                 GdmsWriter writerb = new GdmsWriter(outPoints);
-                md = new DefaultMetadata(new Type[]{TypeFactory.createType(Type.GEOMETRY)}, new String[]{"the_geom"});
+                md = new DefaultMetadata(new Type[]{TypeFactory.createType(Type.GEOMETRY), TypeFactory.createType(Type.INT)}, new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
                 int pointCount = hydroNetwork.getPoints().size();
                 writerb.writeMetadata(pointCount, md);
                 gf = new GeometryFactory();
                 for (DPoint dt : hydroNetwork.getPoints()) {
-                        writerb.addValues(new Value[]{ValueFactory.createValue(gf.createPoint(dt.getCoordinate()))});
+                        writerb.addValues(new Value[]{ValueFactory.createValue(gf.createPoint(dt.getCoordinate())), ValueFactory.createValue(dt.getGID())});
                 }
                 // write the row indexes
                 writerb.writeRowIndexes();
@@ -164,18 +165,19 @@ public class TINBuilder {
                 writerb.writeExtent();
                 writerb.close();
                 // We write the constraint edges in a GDMS file
-                File constraints = new File(targetConstraints);
+                File constraints = new File(tinEdges);
                 if (constraints.exists()) {
                         constraints.delete();
                 }
-                constraints = new File(targetConstraints);
+                constraints = new File(tinEdges);
                 writerb = new GdmsWriter(constraints);
                 md = new DefaultMetadata(new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                                TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT), TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT), TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.STRING),
-                                TypeFactory.createType(Type.DOUBLE)}, new String[]{"the_geom", "t_left", "t_right", "n_start", "n_end", "property", "type", "slope"});
+                                TypeFactory.createType(Type.DOUBLE)}, new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, TINSchema.LEFT_TRIANGLE_FIELD,
+                                TINSchema.RIGHT_TRIANGLE_FIELD, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.HEIGHT_FIELD});
                 int cstrCount = hydroNetwork.getEdges().size();
                 writerb.writeMetadata(cstrCount, md);
                 gf = new GeometryFactory();
@@ -197,13 +199,13 @@ public class TINBuilder {
                                 gidRight = dt.getRight().getGID();
                         }
                         writerb.addValues(new Value[]{ValueFactory.createValue(mp),
+                                        ValueFactory.createValue(dt.getGID()),
                                         ValueFactory.createValue(gidLeft),
                                         ValueFactory.createValue(gidRight),
                                         ValueFactory.createValue(dt.getStart().getGID()),
                                         ValueFactory.createValue(dt.getEnd().getGID()),
                                         ValueFactory.createValue(dt.getProperty()),
-                                        ValueFactory.createValue(HydroProperties.toString(dt.getProperty())),
-                                        ValueFactory.createValue(dt.getSlope())});
+                                        ValueFactory.createValue(dt.getHeight())});
                 }
                 // write the row indexes
                 writerb.writeRowIndexes();
@@ -229,9 +231,10 @@ public class TINBuilder {
                 writerb.writeMetadata(pointCount, md);
 
                 for (DTriangle dTriangle : triangleList) {
-
-                        writerb.addValues(new Value[]{ValueFactory.createValue(gf.createLineString(new Coordinate[]{dTriangle.getBarycenter().getCoordinate(), dTriangle.getSteepestIntersectionPoint(dTriangle.getBarycenter()).getCoordinate()}))});
-
+                        DPoint pointIntersection = dTriangle.getSteepestIntersectionPoint(dTriangle.getBarycenter());
+                        if (pointIntersection != null) {
+                                writerb.addValues(new Value[]{ValueFactory.createValue(gf.createLineString(new Coordinate[]{dTriangle.getBarycenter().getCoordinate(), pointIntersection.getCoordinate()}))});
+                        }
                 }
                 // write the row indexes
                 writerb.writeRowIndexes();
@@ -241,12 +244,51 @@ public class TINBuilder {
 
         }
 
+        private static void createHydroGraph() throws Exception {
+                SpatialDataSourceDecorator sdsPoints = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinPoints)));
+                SpatialDataSourceDecorator sdsEdges = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinEdges)));
+                SpatialDataSourceDecorator sdsTriangles = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinTriangles)));
+
+                HydroGraphBuilder hydroGraphBuilder = new HydroGraphBuilder(dsf, sdsTriangles, sdsEdges, sdsPoints);
+                ObjectDriver[] drivers = hydroGraphBuilder.createGraph(new NullProgressMonitor());
+
+
+        }
+
         public static void main(String[] args) throws Exception {
-               // createTIN("/home/ebocher/Bureau/demo_tanato/small_courbes.shp");
-                //createTIN("/home/ebocher/Documents/data/Data_Girona/ICC_Topo/bt25m_al.shp");
-                //createTIN("/home/ebocher/Documents/projets/ANR/anr_avupur/modelisation_avupur/data/courbeschezine.shp");
-                //createTIN("/home/ebocher/Bureau/data3D_chezine/route_buff_3D.shp");
-                //createTIN("/home/ebocher/Documents/projets/ANR/anr_avupur/data_nantes/data_cadastre/parc_dgi/Parc_dgi.shp");
-                 createTIN("/home/ebocher/Documents/projets/ANR/anr_avupur/data_nantes/bdtopo_x191_shp_l2e/e_bati/bati_indifferencie.shp");
+                //createTIN("/home/ebocher/Documents/projets/ANR/anr_avupur/modelisation_finale/chezine/data/courbesniveau.shp");
+                 createTIN("/home/ebocher/Bureau/demo_tanato/small_courbes.shp");
+
+                createHydroGraph();
+
+
+//                SpatialDataSourceDecorator sdsTriangles = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinTriangles)));
+//                sdsTriangles.open();
+//
+//                SpatialDataSourceDecorator sdsEdges = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinEdges)));
+//
+//                sdsEdges.open();
+//
+//                int leftTriangleFieldIndex = sdsEdges.getFieldIndexByName(TINSchema.LEFT_TRIANGLE_FIELD);
+//                int rightTriangleFieldIndex = sdsEdges.getFieldIndexByName(TINSchema.RIGHT_TRIANGLE_FIELD);
+//
+//
+//                for (int i = 0; i < sdsEdges.getRowCount(); i++) {
+//                        int leftGid = sdsEdges.getFieldValue(i, leftTriangleFieldIndex).getAsInt();
+//                        int rightGid = sdsEdges.getFieldValue(i, rightTriangleFieldIndex).getAsInt();
+//
+//                        if (leftGid!=-1){
+//                        System.out.println(sdsTriangles.getGeometry(leftGid-1));
+//                        }
+//                        if(rightGid!=-1){
+//                        System.out.println(sdsTriangles.getGeometry(rightGid-1));
+//                        }
+//
+//                }
+//
+//                sdsEdges.close();
+//                sdsTriangles.close();
+
+
         }
 }

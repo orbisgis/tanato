@@ -89,13 +89,14 @@ public class ST_HydroTIN implements CustomQuery {
                         //We retrieve the values to know how we are supposed to proceed.
                         boolean inter = values[0].getAsBoolean();
                         boolean flat = values[1].getAsBoolean();
-                        String name = values[2].getAsString();
+                        String name = values[4].getAsString();
                         long count = sds.getRowCount();
                         Geometry geom = null;
                         //We prepare our input structures.
                         List<DPoint> pointsToAdd = new ArrayList<DPoint>();
                         ArrayList<DEdge> edges = new ArrayList<DEdge>();
                         int propertyValue = 0;
+                        boolean notSewer = false;
                         //We fill the input structures with our table.
                         for (long i = 0; i < count; i++) {
                                 geom = sds.getGeometry(i);
@@ -104,6 +105,7 @@ public class ST_HydroTIN implements CustomQuery {
                                         int property = sds.getFieldValue(i, propertyIndex).getAsInt();
                                         int weight = sds.getFieldValue(i, weigthIndex).getAsInt();
                                         weights.put(property, weight);
+                                        
 
                                         switch (property) {
                                                 case HydroProperties.DITCH:
@@ -115,8 +117,14 @@ public class ST_HydroTIN implements CustomQuery {
                                                 case HydroProperties.RIVER:
                                                         propertyValue = HydroProperties.RIVER;
                                                         break;
+                                                case HydroProperties.SEWER_INPUT:
+                                                        notSewer = true;
+                                                        break;
                                                 case HydroProperties.SEWER:
-                                                        propertyValue = HydroProperties.SEWER;
+                                                        notSewer = true;
+                                                        break;
+                                                case HydroProperties.SEWER_OUTPUT:
+                                                        notSewer = true;
                                                         break;
                                                 case HydroProperties.WALL:
                                                         propertyValue = HydroProperties.WALL;
@@ -135,14 +143,16 @@ public class ST_HydroTIN implements CustomQuery {
                                                         break;
                                         }
                                 }
+                                //Dot no take into account sewer in the triangulation
+                                if (!notSewer) {
+                                        if (geom instanceof GeometryCollection) {
+                                                final int nbOfGeometries = geom.getNumGeometries();
 
-                                if (geom instanceof GeometryCollection) {
-                                        final int nbOfGeometries = geom.getNumGeometries();
+                                                for (int j = 0; j < nbOfGeometries; j++) {
+                                                        addGeometry(geom.getGeometryN(j), pointsToAdd, edges, propertyValue);
+                                                }
 
-                                        for (int j = 0; j < nbOfGeometries; j++) {
-                                                addGeometry(geom.getGeometryN(j), pointsToAdd, edges, propertyValue);
                                         }
-
                                 }
 
                                 //We have filled the input of our mesh. We can close our source.
@@ -243,13 +253,14 @@ public class ST_HydroTIN implements CustomQuery {
          *
          * BOOLEAN : Flat triangles removal or not.<br/>
          * BOOLEAN : Intersection processing <br/>
+         * BOOLEAN : Rules used or not  <br/>
          * STRING : Name of the TIN table<br/>
          *
          * @return
          */
         @Override
         public Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.STRING)};
+                return new Arguments[]{new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.BOOLEAN, Argument.STRING)};
 
 
         }
@@ -341,7 +352,7 @@ public class ST_HydroTIN implements CustomQuery {
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),},
+                                TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.LEFT_TRIANGLE_FIELD, TINSchema.RIGHT_TRIANGLE_FIELD,
                                 TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
 

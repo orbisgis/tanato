@@ -10,7 +10,9 @@ import java.util.logging.Logger;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.ExecutionException;
+import org.gdms.data.NoSuchTableException;
 import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.indexes.IndexException;
 import org.gdms.data.metadata.Metadata;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DriverException;
@@ -47,11 +49,15 @@ public class ST_HydroGraph implements CustomQuery {
                         ds = tables[2];
                         //We need to read our source.
                         SpatialDataSourceDecorator sdsTriangles = new SpatialDataSourceDecorator(ds);
-                        HydroGraphBuilder hydroGraphBuilder = new HydroGraphBuilder(sdsTriangles, sdsEdges, sdsPoints);
+                        HydroGraphBuilder hydroGraphBuilder = new HydroGraphBuilder(dsf, sdsTriangles, sdsEdges, sdsPoints);
                         ObjectDriver[] drivers = hydroGraphBuilder.createGraph(pm);
                         dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(values[0].getAsString()+"_hydronodes"), drivers[0]);
                         dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(values[0].getAsString()+"_hydroedges"), drivers[1]);
                         return null;
+                } catch (NoSuchTableException ex) {
+                        Logger.getLogger(ST_HydroGraph.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IndexException ex) {
+                        Logger.getLogger(ST_HydroGraph.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (DriverException ex) {
                         Logger.getLogger(ST_HydroGraph.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
