@@ -93,30 +93,30 @@ public class HydroGraphBuilder {
                         Point point = sdsEdges.getGeometry(i).getCentroid();
 
                         if (HydroProperties.check(HydroProperties.TALWEG, edgeProperty)) {
-                                //On ajoute le noeud du triangle de gauche                                                        
+                                //We add the node associated to the left triangle.                                                        
 
                                 int nodeIdLeft = nodeID;
                                 addNodesValue(nodes_graphDriver, null, nodeIdLeft, -1, 0, leftGid, TIN_TRIANGLE);
                                 nodeID++;
 
-                                //On ajoute le noeud de l'edge
+                                //We add the node associated to the edge.
 
                                 int nodeIdEdge = nodeID;
                                 addNodesValue(nodes_graphDriver, point, nodeIdEdge, edgeProperty, edgeHeight, edgeGID, TIN_EDGE);
                                 nodeID++;
 
-                                //On ajoute la connexion entre le noeud du triangle de gauche et le noeud de l'edge
+                                //We add the link between the left triangle's node and the edge's node.
 
                                 addEdgesValue(edges_graphDriver, null, edgeID, nodeIdLeft, nodeIdEdge, 1.0f);
                                 edgeID++;
 
-                                //On ajoute le noeud du triangle de droite
+                                //We add the node of the right triangle.
 
                                 int nodeIdRight = nodeID;
                                 addNodesValue(nodes_graphDriver, null, nodeIdRight, -1, 0, rightGid, TIN_TRIANGLE);
                                 nodeID++;
 
-                                //On ajoute la connexion entre le noeud du  triangle de droite et le noeud de l'edge
+                                //We add the link between the right triangle's node and the edge's node.
 
                                 addEdgesValue(edges_graphDriver, null, edgeID, nodeIdRight, nodeIdEdge, 1.0f);
                                 edgeID++;
