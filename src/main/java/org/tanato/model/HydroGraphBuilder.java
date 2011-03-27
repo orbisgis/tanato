@@ -4,11 +4,16 @@
  */
 package org.tanato.model;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import java.io.IOException;
+import org.gdms.data.DataSourceFactory;
+import org.gdms.data.NoSuchTableException;
 import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.indexes.IndexException;
 import org.gdms.data.metadata.DefaultMetadata;
 import org.gdms.data.metadata.Metadata;
 import org.gdms.data.types.Type;
@@ -34,23 +39,29 @@ public class HydroGraphBuilder {
         private int TIN_POINT = 0;
         private int TIN_EDGE = 1;
         private int TIN_TRIANGLE = 2;
+        private final DataSourceFactory dsf;
 
-        public HydroGraphBuilder(SpatialDataSourceDecorator sdsPoints,
+        public HydroGraphBuilder(DataSourceFactory dsf , SpatialDataSourceDecorator sdsPoints,
                 SpatialDataSourceDecorator sdsEdges, SpatialDataSourceDecorator sdsTriangles) {
                 this.sdsTriangles = sdsTriangles;
                 this.sdsEdges = sdsEdges;
                 this.sdsPoints = sdsPoints;
-
+                this.dsf=dsf;
+                
         }
+
+        
 
         /**
          * Create the graph structure based on edge loop.
          * @param name
          * @param pm
          */
-        public ObjectDriver[] createGraph(IProgressMonitor pm) throws DriverException, IOException {
+        public ObjectDriver[] createGraph(IProgressMonitor pm) throws DriverException, IOException, NoSuchTableException, IndexException {
 
                 sdsEdges.open();
+                //TODO: Penser à faire le process en deux fois. Rechercher les geometries a l'issue de la création du graphe
+                sdsTriangles.open();
                 long edgesCount = sdsEdges.getRowCount();
                 int gidField = sdsEdges.getFieldIndexByName(TINSchema.GID);
                 int propertyIndex = sdsEdges.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
@@ -84,6 +95,8 @@ public class HydroGraphBuilder {
 
                 int nodeID = 1;
                 int edgeID = 1;
+                Point trianglePoint;
+                LineString edgeConnection;
                 for (int i = 0; i < edgesCount; i++) {
                         int edgeGID = sdsEdges.getFieldValue(i, gidField).getAsInt();
                         int edgeProperty = sdsEdges.getFieldValue(i, propertyIndex).getAsInt();
@@ -93,38 +106,39 @@ public class HydroGraphBuilder {
                         Point point = sdsEdges.getGeometry(i).getCentroid();
 
                         if (HydroProperties.check(HydroProperties.TALWEG, edgeProperty)) {
-                                //We add the node associated to the left triangle.                                                        
+                                //We add the node associated to the left triangle.
+                                System.out.println(leftGid - 1);
+                                trianglePoint = sdsTriangles.getGeometry(leftGid - 1).getInteriorPoint();
 
                                 int nodeIdLeft = nodeID;
-                                addNodesValue(nodes_graphDriver, null, nodeIdLeft, -1, 0, leftGid, TIN_TRIANGLE);
+                                addNodesValue(nodes_graphDriver, trianglePoint, nodeIdLeft, -1, 0, leftGid, TIN_TRIANGLE);
                                 nodeID++;
 
                                 //We add the node associated to the edge.
-
                                 int nodeIdEdge = nodeID;
                                 addNodesValue(nodes_graphDriver, point, nodeIdEdge, edgeProperty, edgeHeight, edgeGID, TIN_EDGE);
                                 nodeID++;
 
                                 //We add the link between the left triangle's node and the edge's node.
 
-                                addEdgesValue(edges_graphDriver, null, edgeID, nodeIdLeft, nodeIdEdge, 1.0f);
+                                edgeConnection = gf.createLineString(new Coordinate[]{trianglePoint.getCoordinate(), point.getCoordinate()});
+                                addEdgesValue(edges_graphDriver, edgeConnection, edgeID, nodeIdLeft, nodeIdEdge, 1.0f);
                                 edgeID++;
 
                                 //We add the node of the right triangle.
-
+                                trianglePoint = sdsTriangles.getGeometry(rightGid - 1).getInteriorPoint();
                                 int nodeIdRight = nodeID;
-                                addNodesValue(nodes_graphDriver, null, nodeIdRight, -1, 0, rightGid, TIN_TRIANGLE);
+                                addNodesValue(nodes_graphDriver, trianglePoint, nodeIdRight, -1, 0, rightGid, TIN_TRIANGLE);
                                 nodeID++;
 
                                 //We add the link between the right triangle's node and the edge's node.
-
-                                addEdgesValue(edges_graphDriver, null, edgeID, nodeIdRight, nodeIdEdge, 1.0f);
+                                edgeConnection = gf.createLineString(new Coordinate[]{trianglePoint.getCoordinate(), point.getCoordinate()});
+                                addEdgesValue(edges_graphDriver, edgeConnection, edgeID, nodeIdRight, nodeIdEdge, 1.0f);
                                 edgeID++;
 
                         } else if (HydroProperties.check(HydroProperties.RIDGE, edgeProperty)) {
                                 System.out.println("Ridge");
                         } else if (HydroProperties.check(HydroProperties.RIGHTSLOPE, edgeProperty)) {
-                                System.out.println("Right slope");
                         } else if (HydroProperties.check(HydroProperties.LEFTTSLOPE, edgeProperty)) {
                                 System.out.println("Left slope");
                         } else {
@@ -134,8 +148,9 @@ public class HydroGraphBuilder {
                 }
 
                 sdsEdges.close();
+                sdsTriangles.close();
 
-                return new ObjectDriver[] {nodes_graphDriver, edges_graphDriver};
+                return new ObjectDriver[]{nodes_graphDriver, edges_graphDriver};
 
         }
 
@@ -190,4 +205,16 @@ public class HydroGraphBuilder {
                         ValueFactory.createValue(gidStart), ValueFactory.createValue(gidEnd),
                         ValueFactory.createValue(proportion));
         }
+
+        /*
+         * Some indexes to perform search in datasources;
+         */
+        private void createIndexes(IProgressMonitor pm) throws NoSuchTableException, IndexException {
+
+                if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GID)) {
+                                dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GID, pm);
+                        }
+        }
+
+
 }
