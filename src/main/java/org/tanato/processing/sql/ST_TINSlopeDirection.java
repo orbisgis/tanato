@@ -19,6 +19,7 @@ import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.Arguments;
 import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
+import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DTriangle;
 import org.jdelaunay.delaunay.DelaunayError;
 import org.tanato.factory.TINFeatureFactory;
@@ -32,11 +33,15 @@ public class ST_TINSlopeDirection implements Function {
         GeometryFactory gf = new GeometryFactory();
 
         @Override
-        public Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {               
+        public Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 try {
                         Geometry geom = values[0].getAsGeometry();
                         DTriangle dTriangle = TINFeatureFactory.createDTriangle(geom);
-                        return ValueFactory.createValue(gf.createLineString(new Coordinate[]{dTriangle.getBarycenter().getCoordinate(), dTriangle.getSteepestIntersectionPoint(dTriangle.getBarycenter()).getCoordinate()}));
+                        DPoint pointIntersection = dTriangle.getSteepestIntersectionPoint(dTriangle.getBarycenter());
+                        if (pointIntersection != null) {
+                                return ValueFactory.createValue(gf.createLineString(new Coordinate[]{dTriangle.getBarycenter().getCoordinate(), dTriangle.getSteepestIntersectionPoint(dTriangle.getBarycenter()).getCoordinate()}));
+
+                        }
 
 
                 } catch (DelaunayError ex) {
