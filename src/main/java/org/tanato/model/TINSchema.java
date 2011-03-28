@@ -5,7 +5,9 @@
 package org.tanato.model;
 
 /**
- *
+ * This class contains only some constants that describe the names of the columns,
+ * in the GDMS tables, that will be produced by the tanato GDMS functions and
+ * custom queries.
  * @author ebocher
  */
 public class TINSchema {
