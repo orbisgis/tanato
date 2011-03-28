@@ -556,8 +556,8 @@ public class ST_DropletPath implements CustomQuery {
                                         && (anElement instanceof DTriangle)) {
                                         // both are triangles => they are the same
                                         found = true;
-                                } else if ((Current instanceof DTriangle)
-                                        && (anElement instanceof DTriangle)) {
+                                } else if ((Current instanceof DEdge)
+                                        && (anElement instanceof DEdge)) {
                                         // both are edges => they are the same
                                         found = true;
                                 } else {
@@ -597,8 +597,8 @@ public class ST_DropletPath implements CustomQuery {
                                 // Check all edges : add edges that contains the point
                                 for (int i = 0; i < 3; i++) {
                                         DEdge possibleEdge = aTriangle.getEdge(i);
-                                        if ((possibleEdge.getStart() == aPoint)
-                                                || (possibleEdge.getEnd() == aPoint)) {
+                                        if ((possibleEdge.getStartPoint().getGID() == aPoint.getGID())
+                                                || (possibleEdge.getEndPoint().getGID() == aPoint.getGID())) {
                                                 // The edge contains aPoint => it is the one we look for.
                                                 // generate full element
                                                 if (!isElementInArray(ElementToProcess, possibleEdge)) {
