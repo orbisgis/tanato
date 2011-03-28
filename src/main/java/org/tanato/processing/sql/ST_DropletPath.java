@@ -107,7 +107,7 @@ public class ST_DropletPath implements CustomQuery {
 
         @Override
         public TableDefinition[] getTablesDefinitions() {
-                throw new UnsupportedOperationException("Not supported yet.");
+                return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
         }
 
         @Override
@@ -127,8 +127,7 @@ public class ST_DropletPath implements CustomQuery {
 
         @Override
         public Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.GEOMETRY)};
-
+                return new Arguments[]{new Arguments(Argument.GEOMETRY,Argument.STRING)};
         }
 
         // ----------------------------------------------------------------
