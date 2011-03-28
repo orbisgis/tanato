@@ -89,6 +89,11 @@ public class ST_DropletPath implements CustomQuery {
                                 // create value
                                 savePath(dsf, pathName, Result);
 
+                                // close drivers
+                                sds_points.close();
+                                sds_edges.close();
+                                sds_triangles.close();
+
                         } catch (DriverException ex) {
                                 logger.log(Level.SEVERE, "There has been an error while opening a table, or counting its lines.\n", ex);
                         } catch (DelaunayError ex) {
@@ -184,6 +189,33 @@ public class ST_DropletPath implements CustomQuery {
         }
 
         /**
+         * Get index position of a Triangle
+         * @param GID
+         * @return
+         */
+        private long getTriangleIndex(int GID) {
+            return trianglesGID2Index.get(GID);
+        }
+
+        /**
+         * Get index position of an Edge
+         * @param GID
+         * @return
+         */
+        private long getEdgeIndex(int GID) {
+            return edgesGID2Index.get(GID);
+        }
+
+        /**
+         * Get index position of a Point
+         * @param GID
+         * @return
+         */
+        private long getPointIndex(int GID) {
+            return pointsGID2Index.get(GID);
+        }
+
+        /**
          * create DTriangle structure with GDMS data
          * 
          * @param aTriangle
@@ -192,22 +224,22 @@ public class ST_DropletPath implements CustomQuery {
          */
         private DTriangle populateTriangleWithGDMS(int GID) throws DriverException, DelaunayError {
                 DTriangle aTriangle;
-                long tIndex = trianglesGID2Index.get(GID);
+                long tIndex = getTriangleIndex(GID);
 
                 // Create edges
                 DEdge Edge0 = new DEdge();
                 int E_GID_0 = sds_triangles.getInt(tIndex, TINSchema.EDGE_0_GID_FIELD);
-                long e0Index = edgesGID2Index.get(E_GID_0);
+                long e0Index = getEdgeIndex(E_GID_0);
                 Edge0.setGID(E_GID_0);
 
                 DEdge Edge1 = new DEdge();
                 int E_GID_1 = sds_triangles.getInt(tIndex, TINSchema.EDGE_1_GID_FIELD);
-                long e1Index = edgesGID2Index.get(E_GID_1);
+                long e1Index = getEdgeIndex(E_GID_1);
                 Edge1.setGID(E_GID_1);
 
                 DEdge Edge2 = new DEdge();
                 int E_GID_2 = sds_triangles.getInt(tIndex, TINSchema.EDGE_2_GID_FIELD);
-                long e2Index = edgesGID2Index.get(E_GID_2);
+                long e2Index = getEdgeIndex(E_GID_2);
                 Edge2.setGID(E_GID_2);
 
                 // Create Points
@@ -215,13 +247,13 @@ public class ST_DropletPath implements CustomQuery {
                 DPoint Point0 = new DPoint();
                 Edge0.setStartPoint(Point0);
                 int P_GID_0 = sds_edges.getInt(e0Index, TINSchema.STARTPOINT_NODE_FIELD);
-                long p0Index = pointsGID2Index.get(P_GID_0);
+                long p0Index = getPointIndex(P_GID_0);
                 Point0.setGID(P_GID_0);
 
                 DPoint Point1 = new DPoint();
                 Edge0.setEndPoint(Point1);
                 int P_GID_1 = sds_edges.getInt(e0Index, TINSchema.ENDPOINT_NODE_FIELD);
-                long p1Index = pointsGID2Index.get(P_GID_1);
+                long p1Index = getPointIndex(P_GID_1);
                 Point1.setGID(P_GID_1);
 
                 int P_GID_2;
@@ -290,7 +322,7 @@ public class ST_DropletPath implements CustomQuery {
                         }
                         P_GID_2 = sds_edges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
                 }
-                long p2Index = pointsGID2Index.get(P_GID_2);
+                long p2Index = getPointIndex(P_GID_2);
                 Point2.setGID(P_GID_2);
 
                 // Set points location
@@ -352,7 +384,7 @@ public class ST_DropletPath implements CustomQuery {
                 DEdge theEdge = null;
 
                 // Get GIDs
-                long eIndex = edgesGID2Index.get(GID);
+                long eIndex = getEdgeIndex(GID);
                 int leftGID = sds_edges.getInt(eIndex, TINSchema.LEFT_TRIANGLE_FIELD);
                 int rightGID = sds_edges.getInt(eIndex, TINSchema.RIGHT_TRIANGLE_FIELD);
 
