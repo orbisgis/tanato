@@ -102,7 +102,7 @@ public class ST_DropletPath implements CustomQuery {
 
         @Override
         public Metadata getMetadata(Metadata[] tables) throws DriverException {
-                throw new UnsupportedOperationException("Not supported yet.");
+                return null;
         }
 
         @Override
@@ -163,7 +163,7 @@ public class ST_DropletPath implements CustomQuery {
                         throw new ExecutionException("not enough edges.");
                 }
                 edgesGID2Index = new HashMap<Integer, Long>();
-                for (long i = 0; i < count_points; i++) {
+                for (long i = 0; i < count_edges; i++) {
                         int GID = sds_edges.getInt(i, TINSchema.GID);
                         edgesGID2Index.put(GID, new Long(i));
                 }
@@ -177,7 +177,7 @@ public class ST_DropletPath implements CustomQuery {
                         throw new ExecutionException("not enough triangles.");
                 }
                 trianglesGID2Index = new HashMap<Integer, Long>();
-                for (long i = 0; i < count_points; i++) {
+                for (long i = 0; i < count_triangles; i++) {
                         int GID = sds_triangles.getInt(i, TINSchema.GID);
                         trianglesGID2Index.put(GID, new Long(i));
                 }
@@ -215,13 +215,13 @@ public class ST_DropletPath implements CustomQuery {
                 DPoint Point0 = new DPoint();
                 Edge0.setStartPoint(Point0);
                 int P_GID_0 = sds_edges.getInt(e0Index, TINSchema.STARTPOINT_NODE_FIELD);
-                long p0Index = edgesGID2Index.get(P_GID_0);
+                long p0Index = pointsGID2Index.get(P_GID_0);
                 Point0.setGID(P_GID_0);
 
                 DPoint Point1 = new DPoint();
                 Edge0.setEndPoint(Point1);
                 int P_GID_1 = sds_edges.getInt(e0Index, TINSchema.ENDPOINT_NODE_FIELD);
-                long p1Index = edgesGID2Index.get(P_GID_1);
+                long p1Index = pointsGID2Index.get(P_GID_1);
                 Point1.setGID(P_GID_1);
 
                 int P_GID_2;
@@ -290,7 +290,7 @@ public class ST_DropletPath implements CustomQuery {
                         }
                         P_GID_2 = sds_edges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
                 }
-                long p2Index = edgesGID2Index.get(P_GID_2);
+                long p2Index = pointsGID2Index.get(P_GID_2);
                 Point2.setGID(P_GID_2);
 
                 // Set points location
