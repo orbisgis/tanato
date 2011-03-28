@@ -34,6 +34,11 @@ import org.jdelaunay.delaunay.DelaunayError;
 import org.orbisgis.progress.IProgressMonitor;
 import org.tanato.factory.TINFeatureFactory;
 
+/**
+ * This custom query will try to affect a z value to each point of a geometry. To do so,
+ * it will use a triangular irregulated network, and will interpolate the z values from it.
+ * @author alexis
+ */
 public class ST_SetZFromTriangles implements CustomQuery {
 
         @Override
@@ -133,10 +138,12 @@ public class ST_SetZFromTriangles implements CustomQuery {
                         }
                 }
 
+		@Override
                 public boolean isGeometryChanged() {
                         return true;
                 }
 
+		@Override
                 public boolean isDone() {
                         return done;
                 }
