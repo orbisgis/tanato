@@ -48,6 +48,21 @@ public class TINFeatureFactory {
                 return new DPoint(coords[0]);
         }
 
+	/**
+	 * Tries to create a DEdge from the given geometry, which is supposed to be formed
+	 * of exactly two coordinates.
+	 * @param geom
+	 * @return
+	 * @throws DelaunayError
+	 */
+	public static DEdge createDEdge(Geometry geom) throws DelaunayError {
+		Coordinate[] coords = geom.getCoordinates();
+		if(coords.length!=2){
+			throw new IllegalArgumentException("the geometry is supposed to be line with two points.");
+		}
+		return new DEdge(new DPoint(coords[0]), new DPoint(coords[1]));
+	}
+
         /**
          * A factory to create a DPoint from a Coordinate.
          * @param geom
