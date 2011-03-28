@@ -7,7 +7,6 @@ import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,9 +22,9 @@ import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.gdms.GdmsWriter;
 import org.gdms.sql.customQuery.CustomQuery;
 import org.gdms.sql.customQuery.TableDefinition;
 import org.gdms.sql.function.Argument;
@@ -66,9 +65,6 @@ public class ST_DropletPath implements CustomQuery {
                 if (tables.length < 3) {
                         // There MUST be at least 3 tables
                         throw new ExecutionException("needs points, edges and triangles.");
-                } else if (values.length != 2) {
-                        // There MUST be 2 value : the start point and the pathName
-                        throw new ExecutionException("needs 1 start point and a pathName.");
                 } else {
                         try {
                                 // Get informations from tables
@@ -81,19 +77,16 @@ public class ST_DropletPath implements CustomQuery {
                                 } else if (!testPoint.getGeometryType().equals("Point")) {
                                         throw new ExecutionException("invalid point geometry.");
                                 }
-                                String pathName = values[1].getAsString();
-
                                 // process path
                                 ArrayList<DPoint> Result = dropletFollows(testPoint);
-
-                                // create value
-                                savePath(dsf, pathName, Result);
 
                                 // close drivers
                                 sds_points.close();
                                 sds_edges.close();
                                 sds_triangles.close();
 
+                                // create value
+                                return createDataSource(dsf, Result);
                         } catch (DriverException ex) {
                                 logger.log(Level.SEVERE, "There has been an error while opening a table, or counting its lines.\n", ex);
                         } catch (DelaunayError ex) {
@@ -102,12 +95,16 @@ public class ST_DropletPath implements CustomQuery {
                                 logger.log(Level.SEVERE, "Failed to write the file.\n", ex);
                         }
                 }
-                return driver;
+                return null;
         }
 
         @Override
         public Metadata getMetadata(Metadata[] tables) throws DriverException {
-                return null;
+                Metadata md = new DefaultMetadata(
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                                TypeFactory.createType(Type.INT)},
+                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
+                return md;
         }
 
         @Override
@@ -127,12 +124,12 @@ public class ST_DropletPath implements CustomQuery {
 
         @Override
         public String getSqlOrder() {
-                return "SELECT ST_DropletPath(pointGeom, pathName) FROM out_point, out_edges, out_triangles";
+                return "SELECT ST_DropletPath(pointGeom) FROM out_point, out_edges, out_triangles";
         }
 
         @Override
         public Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.GEOMETRY,Argument.STRING)};
+                return new Arguments[]{new Arguments(Argument.GEOMETRY)};
         }
 
         // ----------------------------------------------------------------
@@ -194,7 +191,7 @@ public class ST_DropletPath implements CustomQuery {
          * @return
          */
         private long getTriangleIndex(int GID) {
-            return trianglesGID2Index.get(GID);
+                return trianglesGID2Index.get(GID);
         }
 
         /**
@@ -203,7 +200,7 @@ public class ST_DropletPath implements CustomQuery {
          * @return
          */
         private long getEdgeIndex(int GID) {
-            return edgesGID2Index.get(GID);
+                return edgesGID2Index.get(GID);
         }
 
         /**
@@ -212,12 +209,12 @@ public class ST_DropletPath implements CustomQuery {
          * @return
          */
         private long getPointIndex(int GID) {
-            return pointsGID2Index.get(GID);
+                return pointsGID2Index.get(GID);
         }
 
         /**
          * create DTriangle structure with GDMS data
-         * 
+         *
          * @param aTriangle
          * @throws DriverException
          * @throws DelaunayError
@@ -981,20 +978,13 @@ public class ST_DropletPath implements CustomQuery {
 
         /**
          * save Results in a file
-         * 
+         *
          * @param pathName
          * @param Result
          */
-        private void savePath(DataSourceFactory dsf, String pathName, ArrayList<DPoint> Result) throws IOException, DriverException {
-                File out = new File(pathName + ".gdms");
-                GdmsWriter writer = new GdmsWriter(out);
-                Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
-                                TypeFactory.createType(Type.INT)},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
+        private DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> Result) throws IOException, DriverException {
 
-                int pointsCount = Result.size();
-                writer.writeMetadata(pointsCount, md);
+                DiskBufferDriver writer = new DiskBufferDriver(dsf, getMetadata(null));
                 GeometryFactory gf = new GeometryFactory();
                 Coordinate[] coords = new Coordinate[1];
                 int i = 0;
@@ -1006,12 +996,8 @@ public class ST_DropletPath implements CustomQuery {
                         writer.addValues(new Value[]{ValueFactory.createValue(thePoint),
                                         ValueFactory.createValue(i)});
                 }
+                writer.writingFinished();
 
-                // write the row indexes
-                writer.writeRowIndexes();
-                // write envelope
-                writer.writeExtent();
-                writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(pathName), out);
+                return writer;
         }
 }
