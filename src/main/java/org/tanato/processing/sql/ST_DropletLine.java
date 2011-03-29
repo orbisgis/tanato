@@ -5,7 +5,6 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,11 +44,6 @@ import org.tanato.model.TINSchema;
 public class ST_DropletLine implements CustomQuery {
 
     private static final Logger logger = Logger.getLogger(ST_DropletLine.class.getName());
-    // Table informations to navigate
-    private SpatialDataSourceDecorator sds_points = null;
-    private SpatialDataSourceDecorator sds_edges = null;
-    private SpatialDataSourceDecorator sds_triangles = null;
-    private final int maxStagnation = 10;       // to stop iterations on the same point
 
     @Override
     public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {

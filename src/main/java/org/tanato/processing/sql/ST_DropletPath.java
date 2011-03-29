@@ -44,11 +44,6 @@ import org.tanato.model.TINSchema;
 public class ST_DropletPath implements CustomQuery {
 
     private static final Logger logger = Logger.getLogger(ST_DropletPath.class.getName());
-    // Table informations to navigate
-    private SpatialDataSourceDecorator sds_points = null;
-    private SpatialDataSourceDecorator sds_edges = null;
-    private SpatialDataSourceDecorator sds_triangles = null;
-    private final int maxStagnation = 10;       // to stop iterations on the same point
 
     @Override
     public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
