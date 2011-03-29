@@ -10,6 +10,8 @@ import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiLineString;
+import java.util.ArrayList;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.InvalidTypeException;
 import org.gdms.data.types.Type;
@@ -32,21 +34,26 @@ public class ST_LINEARINTERPOLATION implements Function {
         @Override
         public Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 Geometry geom = values[0].getAsGeometry();
-                int nbGeom = geom.getNumGeometries();
-
-                for (int i = 0; i < nbGeom; i++) {
-                        Geometry subGeom = geom.getGeometryN(i);
-                        if (subGeom instanceof LineString) {
+                if (geom instanceof MultiLineString) {
+                        int nbGeom = geom.getNumGeometries();
+                        LineString[] lines = new LineString[nbGeom];
+                        for (int i = 0; i < nbGeom; i++) {
+                                LineString subGeom = (LineString) geom.getGeometryN(i);
                                 double startz = ((LineString) subGeom).getStartPoint().getCoordinates()[0].z;
                                 double endz = ((LineString) subGeom).getEndPoint().getCoordinates()[0].z;
                                 double length = subGeom.getLength();
                                 subGeom.apply(new LinearZInterpolationFilter(startz, endz, length));
+                                lines[i]=subGeom;
 
                         }
+                        geom = gf.createMultiLineString(lines);
 
+                } else if (geom instanceof LineString) {
+                        double startz = ((LineString) geom).getStartPoint().getCoordinates()[0].z;
+                        double endz = ((LineString) geom).getEndPoint().getCoordinates()[0].z;
+                        double length = geom.getLength();
+                        geom.apply(new LinearZInterpolationFilter(startz, endz, length));
                 }
-
-
                 return ValueFactory.createValue(geom);
 
         }
@@ -109,16 +116,15 @@ public class ST_LINEARINTERPOLATION implements Function {
                         if (i == 0) {
                                 seqSize = seq.size();
                                 dZ = endZ - startZ;
-                        } else if (i == seqSize){
-                                done =true;
-                        }
-                        else {
+                        } else if (i == seqSize) {
+                                done = true;
+                        } else {
                                 Coordinate coord = seq.getCoordinate(i);
                                 Coordinate previousCoord = seq.getCoordinate(i - 1);
                                 sumLenght += coord.distance(previousCoord);
                                 seq.setOrdinate(i, 2, startZ + dZ * sumLenght / length);
                         }
-                       
+
                 }
 
                 public boolean isGeometryChanged() {
