@@ -75,22 +75,22 @@ public class ST_HydroTIN implements CustomQuery {
                         sds.open();
                         boolean useTriangulationRules = values[2].getAsBoolean();
                         HashMap<Integer, Integer> weights = new HashMap<Integer, Integer>();
-                        
+
                         int propertyIndex = sds.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
                         int heightIndex = sds.getFieldIndexByName(TINSchema.HEIGHT_FIELD);
                         int weigthIndex = sds.getFieldIndexByName(TINSchema.WEIGTH_FIELD);
                         int gidIndex = sds.getFieldIndexByName(TINSchema.GID);
 
 
-                        if ((propertyIndex==-1)||(heightIndex==-1)){
-                                  throw new IllegalArgumentException("The table must contains a property and height fields");
+                        if ((propertyIndex == -1) || (heightIndex == -1)) {
+                                throw new IllegalArgumentException("The table must contains a property and height fields");
                         }
-                        if (useTriangulationRules) {                                
-                                if ((weigthIndex==-1)){
+                        if (useTriangulationRules) {
+                                if ((weigthIndex == -1)) {
                                         throw new IllegalArgumentException("The table must contains a weight field that defines rules weight.");
                                 }
                         }
-                                                
+
 
                         //We retrieve the values to know how we are supposed to proceed.
                         boolean inter = values[0].getAsBoolean();
@@ -107,7 +107,7 @@ public class ST_HydroTIN implements CustomQuery {
                         for (long i = 0; i < count; i++) {
                                 geom = sds.getGeometry(i);
                                 double heightValue = sds.getFieldValue(i, heightIndex).getAsDouble();
-                                if (gidIndex!=1){
+                                if (gidIndex != 1) {
                                         gidIndex = sds.getFieldValue(i, gidIndex).getAsInt();
                                 }
                                 //If rules is used then get property and weight
@@ -123,7 +123,7 @@ public class ST_HydroTIN implements CustomQuery {
                                                 final int nbOfGeometries = geom.getNumGeometries();
 
                                                 for (int j = 0; j < nbOfGeometries; j++) {
-                                                        addGeometry(geom.getGeometryN(j), pointsToAdd, edges, propertyValue, heightValue,gidIndex);
+                                                        addGeometry(geom.getGeometryN(j), pointsToAdd, edges, propertyValue, heightValue, gidIndex);
                                                 }
 
                                         }
@@ -134,14 +134,13 @@ public class ST_HydroTIN implements CustomQuery {
                         sds.close();
                         Collections.sort(edges);
                         HydroTINBuilder mesh = new HydroTINBuilder();
-                        if (useTriangulationRules){
-                        mesh.setWeights(weights);
+                        if (useTriangulationRules) {
+                                mesh.setWeights(weights);
                         }
 
                         //We actually fill the mesh
-                        //if (pointsToAdd.size() > 3) {
-                                mesh.setPoints(pointsToAdd);
-                        //}
+                        mesh.setPoints(pointsToAdd);
+
                         mesh.setConstraintEdges(edges);
                         if (inter) {
                                 //If needed, we use the intersection algorithm
@@ -250,15 +249,15 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, double height , int gid_source) {
+        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, double height, int gid_source) {
                 if (geom instanceof Point) {
-                        addPoint(pointsToAdd, (Point) geom, propertyValue, height,gid_source);
+                        addPoint(pointsToAdd, (Point) geom, propertyValue, height, gid_source);
 
                 } else if (geom instanceof LineString) {
-                        addGeometry(edges, geom, propertyValue,height,gid_source);
+                        addGeometry(edges, geom, propertyValue, height, gid_source);
 
                 } else if (geom instanceof Polygon) {
-                        addGeometry(edges, geom, propertyValue,height,gid_source);
+                        addGeometry(edges, geom, propertyValue, height, gid_source);
 
 
                 }
@@ -269,7 +268,7 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addPoint(List<DPoint> points, Point geom, int propertyValue,  double height , int gid_source) {
+        private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height, int gid_source) {
                 try {
                         DPoint dPoint = TINFeatureFactory.createDPoint(geom.getCoordinate());
                         dPoint.setProperty(propertyValue);
@@ -286,7 +285,7 @@ public class ST_HydroTIN implements CustomQuery {
 
         }
 
-        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, double height , int gid_source) {
+        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, double height, int gid_source) {
 
                 Coordinate c1 = geometry.getCoordinates()[0];
                 Coordinate c2;
