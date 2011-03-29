@@ -640,7 +640,8 @@ public class DropletFollower {
                             maxSlope = theSlope;
                             selectedElement = ElementToTest;
                         }
-                    } else {
+                    } else if (anElement.getGID() != ElementToTest.getGID()) {
+                        // Do not go back on the same element
                         DEdge anEdge = (DEdge) ElementToTest;
                         double theSlope = getSlope(anEdge, aPoint);
                         if (theSlope >= maxSlope) {
@@ -666,7 +667,7 @@ public class DropletFollower {
                             maxSlope = theSlope;
                             selectedElement = ElementToTest;
                         }
-                    } else {
+                    } else if (anElement.getGID() != ElementToTest.getGID()) {
                         DEdge anEdge = (DEdge) ElementToTest;
                         double theSlope = getSlope(anEdge, aPoint);
                         if ((theSlope >= maxSlope) && (theSlope > 0)) {
@@ -704,7 +705,7 @@ public class DropletFollower {
                         maxSlope = theSlope;
                         selectedElement = ElementToTest;
                     }
-                } else {
+                } else if (anElement.getGID() != ElementToTest.getGID()) {
                     DEdge anEdge = (DEdge) ElementToTest;
                     double theSlope = getSlope(anEdge, aPoint);
                     if (theSlope > 0) {
