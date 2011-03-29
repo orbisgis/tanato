@@ -680,6 +680,7 @@ public class DropletFollower {
         if (selectedElement == null) {
             // No exit found => get the one we can with the greatest slope
             ElementToProcess = getElementsToProcess(aPoint, startElement, withWallConstraint);
+            int levelChange = 0;
 
             // Now we process all elements in the array and we keep the one with th greastest slope
             // Except that rivers goes to rivers and ditches goes to ditches or rivers
@@ -688,14 +689,28 @@ public class DropletFollower {
                 if (ElementToTest instanceof DTriangle) {
                     DTriangle aTriangle = (DTriangle) ElementToTest;
                     double theSlope = getSlope(aTriangle, aPoint);
-                    if (theSlope > maxSlope) {
+                    if ((theSlope > maxSlope) && (levelChange == 0)) {
                         maxSlope = theSlope;
                         selectedElement = ElementToTest;
                     }
                 } else {
                     DEdge anEdge = (DEdge) ElementToTest;
                     double theSlope = getSlope(anEdge, aPoint);
-                    if (theSlope >= maxSlope) {
+                    if (anEdge.hasProperty(HydroProperties.RIVER)) {
+                        // Go to river when it exists
+                        if ((levelChange < 2) || (theSlope >= maxSlope)) {
+                            maxSlope = theSlope;
+                            selectedElement = ElementToTest;
+                            levelChange = 2;
+                        }
+                    } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
+                        // Go to ditch when we are not in a river
+                        if (((levelChange < 1) || ((levelChange == 1)) && (theSlope >= maxSlope))) {
+                            maxSlope = theSlope;
+                            selectedElement = ElementToTest;
+                            levelChange = 1;
+                        }
+                    } else if ((theSlope >= maxSlope) && (levelChange == 0)) {
                         // We prefer edges to triangles when it is possible
                         maxSlope = theSlope;
                         selectedElement = ElementToTest;
@@ -960,14 +975,14 @@ public class DropletFollower {
                             // Define the new value for previousTriangle
                             if (wallSide == 1) {
                                 // Stay left
-                                if (aPoint.getGID() == anEdge.getStartPoint().getGID()) {
+                                if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
                                     previousTriangle = Left;
                                 } else {
                                     previousTriangle = Right;
                                 }
                             } else {
                                 // Stay right
-                                if (aPoint.getGID() == anEdge.getStartPoint().getGID()) {
+                                if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
                                     previousTriangle = Right;
                                 } else {
                                     previousTriangle = Left;
