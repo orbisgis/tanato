@@ -4,11 +4,7 @@
  */
 package org.tanato.processing.sql;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.InvalidTypeException;
 import org.gdms.data.types.Type;
@@ -19,11 +15,7 @@ import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.Arguments;
 import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DTriangle;
-import org.jdelaunay.delaunay.DelaunayError;
 import org.jhydrocell.hydronetwork.HydroProperties;
-import org.tanato.factory.TINFeatureFactory;
 
 /**
  *
