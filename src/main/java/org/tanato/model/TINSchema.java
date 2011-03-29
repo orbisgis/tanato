@@ -15,7 +15,7 @@ public class TINSchema {
         /**
          * Field names used by TIN datasources
          */
-        public static String PROPERTY_FIELD = "proprety";
+        public static String PROPERTY_FIELD = "property";
         public static String WEIGTH_FIELD = "weight";
         public static String HEIGHT_FIELD = "height";
         public static String STARTPOINT_NODE_FIELD = "startp_n";
