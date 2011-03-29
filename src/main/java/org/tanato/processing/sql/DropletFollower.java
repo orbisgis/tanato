@@ -703,6 +703,10 @@ public class DropletFollower {
                 }
             }
         }
+        if (maxSlope == 0) {
+            // If no slope => stop procesz
+            selectedElement = null;
+        }
         return selectedElement;
     }
 
@@ -911,6 +915,7 @@ public class DropletFollower {
                     } else {
                         // there is a problem
                         // there is no intersection with the triangle
+                        // The triangle might be flat
                         theElement = null;
                         ended = true;
                     }
@@ -940,38 +945,31 @@ public class DropletFollower {
                             if (Right == null) {
                                 // Come from left
                                 wallSide = 1;
-                            }
-                            else if (Left == null) {
+                            } else if (Left == null) {
                                 // Come from right
                                 wallSide = 2;
-                            }
-                            else if (previousTriangle.getGID() == Left.getGID()) {
+                            } else if (previousTriangle.getGID() == Left.getGID()) {
                                 // Come from left
                                 wallSide = 1;
-                            }
-                            else {
+                            } else {
                                 // Come from right
                                 wallSide = 2;
                             }
-                        }
-                        else {
+                        } else {
                             // We come from another edge (last one was a point)
                             // Define the new value for previousTriangle
                             if (wallSide == 1) {
                                 // Stay left
                                 if (aPoint.getGID() == anEdge.getStartPoint().getGID()) {
                                     previousTriangle = Left;
-                                }
-                                else {
+                                } else {
                                     previousTriangle = Right;
                                 }
-                            }
-                            else {
+                            } else {
                                 // Stay right
                                 if (aPoint.getGID() == anEdge.getStartPoint().getGID()) {
                                     previousTriangle = Right;
-                                }
-                                else {
+                                } else {
                                     previousTriangle = Left;
                                 }
                             }
@@ -1003,29 +1001,35 @@ public class DropletFollower {
                     }
 
                     lastElement = theElement;
-                    if (nextElement == null) {
-                        // next step is on the edge
-                        // => follow the edge
-                        if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
-                            aPoint = anEdge.getEndPoint();
-                        } else {
-                            aPoint = anEdge.getStartPoint();
-                        }
+                    if (maxSlope > 0) {
+                        if (nextElement == null) {
+                            // next step is on the edge
+                            // => follow the edge
+                            if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
+                                aPoint = anEdge.getEndPoint();
+                            } else {
+                                aPoint = anEdge.getStartPoint();
+                            }
 
-                        // We memorise the lowest point
-                        if (!lastPoint.contains(aPoint)) {
-                            // The next point is not the previous one
-                            theList.add(aPoint);
-                            lastPoint = aPoint;
-                            stagnation = 1;
+                            // We memorise the lowest point
+                            if (!lastPoint.contains(aPoint)) {
+                                // The next point is not the previous one
+                                theList.add(aPoint);
+                                lastPoint = aPoint;
+                                stagnation = 1;
+                            } else {
+                                stagnation++;
+                            }
+                            theElement = aPoint;
                         } else {
-                            stagnation++;
+                            // Next element is a triangle
+                            theElement = nextElement;
+                            // We stay on the same point => aPoint does not change
                         }
-                        theElement = aPoint;
                     } else {
-                        // Next element is a triangle
-                        theElement = nextElement;
-                        // We stay on the same point => aPoint does not change
+                        // Slope is flat => stop process
+                        theElement = null;
+                        ended = true;
                     }
 
                 } else {
