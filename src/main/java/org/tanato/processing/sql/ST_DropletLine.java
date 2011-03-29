@@ -5,6 +5,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,7 +15,6 @@ import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.ExecutionException;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.metadata.DefaultMetadata;
 import org.gdms.data.metadata.Metadata;
@@ -141,8 +141,14 @@ public class ST_DropletLine implements CustomQuery {
         }
         CoordinateSequence cs = new CoordinateArraySequence(coords);
 
-        LineString mp = new LineString(cs, gf);
-        writer.addValues(new Value[]{ValueFactory.createValue(mp)});
+        if (ResultSize == 1) {
+            Point thePoint = new Point(cs, gf);
+            writer.addValues(new Value[]{ValueFactory.createValue(thePoint)});
+        }
+        else {
+            LineString mp = new LineString(cs, gf);
+            writer.addValues(new Value[]{ValueFactory.createValue(mp)});
+        }
         writer.writingFinished();
 
         return writer;
