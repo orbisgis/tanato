@@ -12,6 +12,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiLineString;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.union.UnaryUnionOp;
 import java.util.ArrayList;
@@ -208,13 +209,18 @@ public class BasinBuilder {
 						edLine[gidEdgeRight].getAsInt(),
 						edLine[gidEdgeStart].getAsInt(),
 						edLine[gidEdgeEnd].getAsInt());
+
 					remainingElements.add(ep);
 				} else if(HydroProperties.check(edProp, HydroProperties.RIGHTSLOPE)){
 					//We analyze the left triangle
-					analyzeTriangleLine(pp.getPt(),edLine[gidEdgeLeft].getAsInt() );
+					if(!basin.contains(gf.createPoint(pp.getPt()))){
+						analyzeTriangleLine(pp.getPt(),edLine[gidEdgeLeft].getAsInt() );
+					}
 				} else if(HydroProperties.check(edProp, HydroProperties.LEFTTSLOPE)){
 					//We analyze the right triangle
-					analyzeTriangleLine(pp.getPt(),edLine[gidEdgeRight].getAsInt() );
+					if(!basin.contains(gf.createPoint(pp.getPt()))){
+						analyzeTriangleLine(pp.getPt(),edLine[gidEdgeRight].getAsInt() );
+					}
 				}
 
 			} catch (DriverException ex) {
@@ -261,18 +267,27 @@ public class BasinBuilder {
 						sdsEdges.getInt(cur, TINSchema.RIGHT_TRIANGLE_FIELD),
 						sdsEdges.getInt(cur, TINSchema.STARTPOINT_NODE_FIELD),
 						sdsEdges.getInt(cur, TINSchema.ENDPOINT_NODE_FIELD));
-					remainingElements.add(ep);
+					Coordinate[] cs = new Coordinate[] {ed.getStartPoint().getCoordinate(),ed.getEndPoint().getCoordinate()};
+					if(!basin.contains(gf.createLineString(cs))){
+						remainingElements.add(ep);
+					}
 				}
 				//If we have a right or left slope, we must go a little further to know
 				//if the triangle point to the point
 				else if(HydroProperties.check(edProp, HydroProperties.RIGHTSLOPE)){
 					//We must analyze the left triangle.
 					int leftGID = sdsEdges.getInt(cur, TINSchema.LEFT_TRIANGLE_FIELD);
-					analyzeTriangleLine(ptValue[geomPointIndex].getAsGeometry().getCoordinates()[0], leftGID);
+					Coordinate coord = ptValue[geomPointIndex].getAsGeometry().getCoordinates()[0];
+					if(!basin.contains(gf.createPoint(coord))){
+						analyzeTriangleLine(coord, leftGID);
+					}
 				} else if(HydroProperties.check(edProp, HydroProperties.LEFTTSLOPE)){
 					//We must analyze the right triangle.
 					int rightGID = sdsEdges.getInt(cur, TINSchema.RIGHT_TRIANGLE_FIELD);
-					analyzeTriangleLine(ptValue[geomPointIndex].getAsGeometry().getCoordinates()[0], rightGID);
+					Coordinate coord = ptValue[geomPointIndex].getAsGeometry().getCoordinates()[0];
+					if(!basin.contains(gf.createPoint(coord))){
+						analyzeTriangleLine(coord, rightGID);
+					}
 				}
 			}
 		} catch (DriverException ex) {
@@ -357,7 +372,7 @@ public class BasinBuilder {
 				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.LEFT_TRIANGLE_FIELD));
 			} else if (HydroProperties.check(epProp, HydroProperties.LEFTTSLOPE)||
 					HydroProperties.check(epProp, HydroProperties.LEFTWELL)) {
-				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.LEFT_TRIANGLE_FIELD));
+				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.RIGHT_TRIANGLE_FIELD));
 			}
 		} catch (DriverException ex) {
 			Logger.getLogger(BasinBuilder.class.getName()).log(Level.SEVERE, null, ex);
@@ -406,47 +421,97 @@ public class BasinBuilder {
 				int gidE2Start = lineE2[gidEdgeStart].getAsInt();
 				int gidE2End = lineE2[gidEdgeEnd].getAsInt();
 				List<Geometry> union = new ArrayList<Geometry>();
-				union.add(lines);
+//				union.add(lines);
 				union.add(basin);
 				if(e1.contains(proj1)){
 					if(e1.contains(proj2)){
 						//We have just one edgepart to build
 						//It is based on e1
-						remainingElements.add(buildEdgePart(e1, proj1, proj2, e1.getGID(), gidE1Left,
-							gidE1Right, gidE1Start, gidE1End));
-						Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
-								proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
-						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						union.add(poly);
+						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
+									proj2.getCoordinate()});
+						if(!basin.contains(lsjts)){
+							remainingElements.add(buildEdgePart(e1, proj1, proj2, e1.getGID(), gidE1Left,
+								gidE1Right, gidE1Start, gidE1End));
+							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
+									proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
+							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+							if(!poly.isEmpty()){
+								union.add(poly.convexHull());
+							}
+						}
 					} else {
 						//e2 contains proj2. We must add two edgeparts to the remaining elements.
-						remainingElements.add(buildEdgePart(e1, proj1, lastPoint, e1.getGID(), gidE1Left,
-							gidE1Right, gidE1Start, gidE1End));
-						remainingElements.add(buildEdgePart(e1, proj2, lastPoint, e2.getGID(), gidE2Left,
-							gidE2Right, gidE2Start, gidE2End));
-						Coordinate[] cs = new Coordinate[] {p1.getCoordinate(), p2.getCoordinate(),proj2.getCoordinate(),
+						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
+									lastPoint.getCoordinate()});
+						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
+						if(!basin.contains(lsjts1)){
+							remainingElements.add(buildEdgePart(e1, proj1, lastPoint, e1.getGID(), gidE1Left,
+								gidE1Right, gidE1Start, gidE1End));
+							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(), 
+								projCoord,
 								lastPoint.getCoordinate(), proj1.getCoordinate(),p1.getCoordinate()};
-						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						union.add(poly);
+							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+							if(!poly.isEmpty()){
+								union.add(poly.convexHull());
+							}
+
+						}
+						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
+									lastPoint.getCoordinate()});
+						if(!basin.contains(lsjts2)){
+							remainingElements.add(buildEdgePart(e2, proj2, lastPoint, e2.getGID(), gidE2Left,
+								gidE2Right, gidE2Start, gidE2End));
+							Coordinate[] cs = new Coordinate[] { p2.getCoordinate(),proj2.getCoordinate(),
+									lastPoint.getCoordinate(),projCoord,p2.getCoordinate()};
+							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+							if(!poly.isEmpty()){
+								union.add(poly.convexHull());
+							}
+						}
 					}
 				} else if (e2.contains(proj1)){
 					if(e2.contains(proj2)){
-						remainingElements.add(buildEdgePart(e2, proj1, proj2, e2.getGID(), gidE2Left,
-							gidE2Right, gidE2Start, gidE2End));
-						Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
-								proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
-						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						union.add(poly);
+						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
+									proj2.getCoordinate()});
+						if(!basin.contains(lsjts)){
+							remainingElements.add(buildEdgePart(e2, proj1, proj2, e2.getGID(), gidE2Left,
+								gidE2Right, gidE2Start, gidE2End));
+							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
+									proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
+							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+							if(!poly.isEmpty()){
+								union.add(poly.convexHull());
+							}
+						}
 					} else {
 						//e1 contains proj2. We must add two edgeparts to the remaining elements.
-						remainingElements.add(buildEdgePart(e2, proj1, lastPoint, e2.getGID(), gidE2Left,
-							gidE2Right, gidE2Start, gidE2End));
-						remainingElements.add(buildEdgePart(e1, proj2, lastPoint, e1.getGID(), gidE1Left,
-							gidE1Right, gidE1Start, gidE1End));
-						Coordinate[] cs = new Coordinate[] {p1.getCoordinate(), p2.getCoordinate(), proj2.getCoordinate(),
-								lastPoint.getCoordinate(), proj1.getCoordinate(), p1.getCoordinate()};
-						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						union.add(poly);
+						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
+									lastPoint.getCoordinate()});
+						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
+						if(!basin.contains(lsjts1)){
+							remainingElements.add(buildEdgePart(e2, proj1, lastPoint, e2.getGID(), gidE2Left,
+								gidE2Right, gidE2Start, gidE2End));
+							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),
+								projCoord,
+								lastPoint.getCoordinate(), proj1.getCoordinate(),p1.getCoordinate()};
+							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+							if(!poly.isEmpty()){
+								union.add(poly.convexHull());
+							}
+
+						}
+						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
+									lastPoint.getCoordinate()});
+						if(!basin.contains(lsjts2)){
+							remainingElements.add(buildEdgePart(e1, proj2, lastPoint, e1.getGID(), gidE1Left,
+								gidE1Right, gidE1Start, gidE1End));
+							Coordinate[] cs = new Coordinate[] { p2.getCoordinate(),proj2.getCoordinate(),
+									lastPoint.getCoordinate(),projCoord,p2.getCoordinate()};
+							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+							if(!poly.isEmpty()){
+								union.add(poly.convexHull());
+							}
+						}
 					}
 					
 				}
@@ -532,16 +597,32 @@ public class BasinBuilder {
 			double ratiostart = (ptStart.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
 			double ratioend = (ptEnd.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
 			if(ratiostart<ratioend){
+				if(ratiostart==0){
+					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
+					remainingPoints.add(pp);
+				}
 				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
 			} else {
+				if(ratioend==0){
+					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
+					remainingPoints.add(pp);
+				}
 				return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
 			}
 		} else {
 			double ratiostart = (ptStart.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
 			double ratioend = (ptEnd.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
 			if(ratiostart<ratioend){
+				if(ratiostart==0){
+					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
+					remainingPoints.add(pp);
+				}
 				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
 			} else {
+				if(ratioend==0){
+					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
+					remainingPoints.add(pp);
+				}
 				return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
 			}
 		}

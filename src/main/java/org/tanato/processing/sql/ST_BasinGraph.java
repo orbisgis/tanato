@@ -79,6 +79,10 @@ public class ST_BasinGraph implements CustomQuery  {
 						values[0].getAsInt(), values[1].getAsInt());
 				bb.computeBasin();
 				registerFile(values[2].getAsString(), dsf, bb.getBasin());
+				sds_edges.close();
+				sds_triangles.close();
+				sds_points.close();
+
 			} catch (IOException ex) {
 				Logger.getLogger(ST_BasinGraph.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (NoSuchTableException ex) {
