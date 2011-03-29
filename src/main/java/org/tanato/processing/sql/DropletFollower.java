@@ -681,7 +681,8 @@ public class DropletFollower {
             // No exit found => get the one we can with the greatest slope
             ElementToProcess = getElementsToProcess(aPoint, startElement, withWallConstraint);
             int levelChange = 0;
-
+            maxSlope = 0;
+            
             // Now we process all elements in the array and we keep the one with th greastest slope
             // Except that rivers goes to rivers and ditches goes to ditches or rivers
             // Also, if there is a ditch or a river we prior go to then
@@ -698,19 +699,19 @@ public class DropletFollower {
                     double theSlope = getSlope(anEdge, aPoint);
                     if (anEdge.hasProperty(HydroProperties.RIVER)) {
                         // Go to river when it exists
-                        if ((levelChange < 2) || (theSlope >= maxSlope)) {
+                        if (((levelChange < 2) && (theSlope > 0)) || (theSlope >= maxSlope)) {
                             maxSlope = theSlope;
                             selectedElement = ElementToTest;
                             levelChange = 2;
                         }
                     } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
                         // Go to ditch when we are not in a river
-                        if (((levelChange < 1) || ((levelChange == 1)) && (theSlope >= maxSlope))) {
+                        if (((levelChange < 1) && (theSlope > 0)) || ((levelChange == 1) && (theSlope >= maxSlope) && (theSlope > 0))) {
                             maxSlope = theSlope;
                             selectedElement = ElementToTest;
                             levelChange = 1;
                         }
-                    } else if ((theSlope >= maxSlope) && (levelChange == 0)) {
+                    } else if ((theSlope >= maxSlope) && (levelChange == 0) && (theSlope > 0)) {
                         // We prefer edges to triangles when it is possible
                         maxSlope = theSlope;
                         selectedElement = ElementToTest;
