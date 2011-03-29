@@ -413,11 +413,12 @@ public class DropletFollower {
      * @param aPoint
      * @return theTriangleGID : the triangle the point projects in. null if there is none.
      */
-    private DTriangle getSpottedTriangle(Geometry aPoint) {
+    private DTriangle getSpottedTriangle(Geometry aPoint, DPoint initialPoint) {
         long count_triangles = 0;
         DTriangle found = null;
         try {
             count_triangles = sds_triangles.getRowCount();
+            DTriangle possibleTriangle = null;
 
             // Process triangles until we find it
             Geometry geom = null;
@@ -432,13 +433,21 @@ public class DropletFollower {
                         // Given point is in the triangle
                         int GID = sds_triangles.getInt(i, TINSchema.GID);
                         found = populateTriangleWithGDMS(GID);
+                        double theSlope = getSlope(found, initialPoint);
+                        if (theSlope <= 0) {
+                            possibleTriangle = found;
+                            found = null;
+                        }
                     } else {
                         i++;
                     }
                 } else {
                     i++;
                 }
-
+            }
+            // Test if we founded a flat triangle
+            if (found == null) {
+                found = possibleTriangle;
             }
         } catch (DelaunayError ex) {
             logger.log(Level.SEVERE, "Can't retrieve the geometry.\n", ex);
@@ -659,7 +668,7 @@ public class DropletFollower {
                     } else {
                         DEdge anEdge = (DEdge) ElementToTest;
                         double theSlope = getSlope(anEdge, aPoint);
-                        if (theSlope >= maxSlope) {
+                        if ((theSlope >= maxSlope) && (theSlope > 0)) {
                             // We prefer edges to triangles when it is possible
                             maxSlope = theSlope;
                             selectedElement = ElementToTest;
@@ -840,7 +849,7 @@ public class DropletFollower {
 
         // Find the point on the surface
         DPoint initialPoint = TINFeatureFactory.createDPoint(initialGeometry);
-        DTriangle aTriangle = this.getSpottedTriangle(initialGeometry);
+        DTriangle aTriangle = this.getSpottedTriangle(initialGeometry, initialPoint);
         if (aTriangle != null) {
             // point is on the mesh, in a triangle
             DEdge anEdge = null;            // doplet on an edge
