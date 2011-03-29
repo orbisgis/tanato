@@ -437,6 +437,7 @@ public class DropletFollower {
                         if (theSlope <= 0) {
                             possibleTriangle = found;
                             found = null;
+                            i++;
                         }
                     } else {
                         i++;
