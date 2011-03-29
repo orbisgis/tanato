@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
@@ -27,19 +26,12 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.driverManager.DriverLoadException;
 import org.gdms.driver.gdms.GdmsWriter;
-import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DTriangle;
 import org.jdelaunay.delaunay.DelaunayError;
-import org.jdelaunay.delaunay.display.MeshDrawer;
 import org.jhydrocell.hydronetwork.HydroTINBuilder;
-import org.jhydrocell.hydronetwork.HydroProperties;
-import org.orbisgis.progress.NullProgressMonitor;
-import org.tanato.model.HydroGraphBuilder;
 import org.tanato.model.TINSchema;
 
 /**
@@ -49,7 +41,7 @@ import org.tanato.model.TINSchema;
 public class TINBuilder {
 
         static DataSourceFactory dsf = new DataSourceFactory();
-        static String tinPoints = "/tmp/tinPoint.gdms";
+        static String tinPoints = "/tmp/tinPoints.gdms";
         static String tinEdges = "/tmp/tinEdges.gdms";
         static String tinTriangles = "/tmp/tinTriangles.gdms";
 
@@ -244,50 +236,10 @@ public class TINBuilder {
 
         }
 
-        private static void createHydroGraph() throws Exception {
-                SpatialDataSourceDecorator sdsPoints = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinPoints)));
-                SpatialDataSourceDecorator sdsEdges = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinEdges)));
-                SpatialDataSourceDecorator sdsTriangles = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinTriangles)));
-
-                HydroGraphBuilder hydroGraphBuilder = new HydroGraphBuilder(dsf, sdsTriangles, sdsEdges, sdsPoints);
-                ObjectDriver[] drivers = hydroGraphBuilder.createGraph(new NullProgressMonitor());
-
-
-        }
-
         public static void main(String[] args) throws Exception {
-                //createTIN("/home/ebocher/Documents/projets/ANR/anr_avupur/modelisation_finale/chezine/data/courbesniveau.shp");
-                 createTIN("/home/ebocher/Bureau/demo_tanato/small_courbes.shp");
+                createTIN("/home/ebocher/Documents/projets/ANR/anr_avupur/modelisation_finale/chezine/data/courbesniveau.shp");
+                //  createTIN("/home/ebocher/Bureau/demo_tanato/small_courbes.shp");
 
-                createHydroGraph();
-
-
-//                SpatialDataSourceDecorator sdsTriangles = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinTriangles)));
-//                sdsTriangles.open();
-//
-//                SpatialDataSourceDecorator sdsEdges = new SpatialDataSourceDecorator(dsf.getDataSource(new File(tinEdges)));
-//
-//                sdsEdges.open();
-//
-//                int leftTriangleFieldIndex = sdsEdges.getFieldIndexByName(TINSchema.LEFT_TRIANGLE_FIELD);
-//                int rightTriangleFieldIndex = sdsEdges.getFieldIndexByName(TINSchema.RIGHT_TRIANGLE_FIELD);
-//
-//
-//                for (int i = 0; i < sdsEdges.getRowCount(); i++) {
-//                        int leftGid = sdsEdges.getFieldValue(i, leftTriangleFieldIndex).getAsInt();
-//                        int rightGid = sdsEdges.getFieldValue(i, rightTriangleFieldIndex).getAsInt();
-//
-//                        if (leftGid!=-1){
-//                        System.out.println(sdsTriangles.getGeometry(leftGid-1));
-//                        }
-//                        if(rightGid!=-1){
-//                        System.out.println(sdsTriangles.getGeometry(rightGid-1));
-//                        }
-//
-//                }
-//
-//                sdsEdges.close();
-//                sdsTriangles.close();
 
 
         }
