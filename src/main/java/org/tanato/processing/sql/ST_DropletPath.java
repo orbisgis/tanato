@@ -9,7 +9,6 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,14 +57,10 @@ public class ST_DropletPath implements CustomQuery {
     private SpatialDataSourceDecorator sds_points = null;
     private SpatialDataSourceDecorator sds_edges = null;
     private SpatialDataSourceDecorator sds_triangles = null;
-    private HashMap<Integer, Long> pointsGID2Index = null;
-    private HashMap<Integer, Long> edgesGID2Index = null;
-    private HashMap<Integer, Long> trianglesGID2Index = null;
     private final int maxStagnation = 10;       // to stop iterations on the same point
 
     @Override
     public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
-        ObjectDriver driver = null;
         if (tables.length < 3) {
             // There MUST be at least 3 tables
             throw new ExecutionException("needs points, edges and triangles.");
@@ -623,7 +618,7 @@ public class ST_DropletPath implements CustomQuery {
      * @return the edge that leads to geatest slope
      * @throws DelaunayError
      */
-    private Element turnAroundthePoint(DPoint aPoint, Element anElement) throws DelaunayError, DriverException {
+    private Element turnAroundthePoint(DPoint aPoint, DEdge anElement) throws DelaunayError, DriverException {
         // First get all elements around the point
         // anElement is an element we can start with
         ArrayList<Element> ElementToProcess = new ArrayList<Element>();
@@ -673,22 +668,63 @@ public class ST_DropletPath implements CustomQuery {
         // Now we process all elements in the array and we keep the one with th greastest slope
         double maxSlope = 0;                    // Current value of geatest slope
         Element selectedElement = null;         // the result
+        boolean canChange = true;
 
         for (Element ElementToTest : ElementToProcess) {
             if (ElementToTest instanceof DTriangle) {
                 DTriangle aTriangle = (DTriangle) ElementToTest;
                 double theSlope = getSlope(aTriangle, aPoint);
                 if (theSlope > maxSlope) {
-                    maxSlope = theSlope;
-                    selectedElement = ElementToTest;
+                    if (canChange) {
+                        maxSlope = theSlope;
+                        selectedElement = ElementToTest;
+                    }
                 }
             } else {
                 DEdge anEdge = (DEdge) ElementToTest;
                 double theSlope = getSlope(anEdge, aPoint);
-                if (theSlope >= maxSlope) {
+                if (theSlope > 0) {
+                    if (anEdge.hasProperty(HydroProperties.RIVER)) {
+                        // Go down the river
+                        if (selectedElement == null) {
+                            // no selectedElement yet -> ok
+                            selectedElement = ElementToTest;
+                        } else if (selectedElement instanceof DTriangle) {
+                            // selectedElement is a triangle -> go to the river
+                            selectedElement = ElementToTest;
+                        } else if (!selectedElement.hasProperty(HydroProperties.RIVER)) {
+                            // selectedElement is not a river -> go to the river
+                            selectedElement = ElementToTest;
+                        } else if (theSlope >= maxSlope) {
+                            // two rivers -> keep greater slope
+                            selectedElement = ElementToTest;
+                        }
+                        canChange = false;
+                    }
+                } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
+                    // Go down the ditch
+                    if (selectedElement == null) {
+                        // no selectedElement yet -> ok
+                        selectedElement = ElementToTest;
+                    } else if (selectedElement instanceof DTriangle) {
+                        // selectedElement is a triangle -> go to the ditch
+                        selectedElement = ElementToTest;
+                    } else if (selectedElement.hasProperty(HydroProperties.RIVER)) {
+                        // selectedElement is a river -> stay in the river
+                    } else if (!selectedElement.hasProperty(HydroProperties.DITCH)) {
+                        // selectedElement is neigher a river or a ditch -> go to the ditch
+                        selectedElement = ElementToTest;
+                    } else if (theSlope >= maxSlope) {
+                        // two ditcher -> keep greater slope
+                        selectedElement = ElementToTest;
+                    }
+                    canChange = false;
+                } else if (theSlope >= maxSlope) {
                     // We prefer edges to triangles when it is possible
-                    maxSlope = theSlope;
-                    selectedElement = ElementToTest;
+                    if (canChange) {
+                        maxSlope = theSlope;
+                        selectedElement = ElementToTest;
+                    }
                 }
             }
         }
@@ -792,11 +828,13 @@ public class ST_DropletPath implements CustomQuery {
         // - if we are on an edge, we go to the greatest slope
         //      + if it is a triangle, next element is the triangle
         //      + if it is the edge, we go down the edge. Next element is the lowest point
+        //		NB : Except if the point has some properties (RIVER, DITCH, WALL, ...)
         // - if we are on a point, we look for the greatest slope
         //      + if is is a triangle, we go to the triangle
         //      + if it is an edge, we go to the edge
         //      + if there is none, it is ended
         //      NB : to turn around the point, we MUST have a connected element to the point (edge / triangle)
+        //		NB2 : if point is a SEWER_INPUT, we stop
         //
         // It may happen that we stay on the same same point. That means we are in a hole => we stop iterations
         // if we find such a point
@@ -910,6 +948,8 @@ public class ST_DropletPath implements CustomQuery {
                         // do not have a look on triangles
                     } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
                         // do not have a look on triangles
+                    } else if (anEdge.hasProperty(HydroProperties.WALL)) {
+                        // follow the wall
                     } else {
                         // Check the 2 triangle around the edge
                         DTriangle Left = anEdge.getLeft();
@@ -968,17 +1008,23 @@ public class ST_DropletPath implements CustomQuery {
                     // We turn around aPoint to select the edge that leads to greatest slope
                     aPoint = (DPoint) theElement;
 
-                    // First, we get the element we come from. It might be an edge.
-                    Element selectedElement;
-                    selectedElement = turnAroundthePoint(aPoint, lastElement);
-                    lastElement = theElement;
-                    if (selectedElement != null) {
-                        // We go to a next edge
-                        theElement = selectedElement;
-                    } else {
-                        // End of process: no successor
+                    if (aPoint.hasProperty(HydroProperties.SEWER_INPUT)) {
+                        // go in a hole
                         theElement = null;
                         ended = true;
+                    } else {
+                        // First, we get the element we come from. It might be an edge.
+                        Element selectedElement;
+                        selectedElement = turnAroundthePoint(aPoint, (DEdge) lastElement);
+                        lastElement = theElement;
+                        if (selectedElement != null) {
+                            // We go to a next edge
+                            theElement = selectedElement;
+                        } else {
+                            // End of process: no successor
+                            theElement = null;
+                            ended = true;
+                        }
                     }
                 }
                 if (stagnation > maxStagnation) {
