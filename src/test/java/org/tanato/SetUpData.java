@@ -1,254 +1,199 @@
 package org.tanato;
 
 import java.io.File;
-import java.util.ArrayList;
-
 import junit.framework.TestCase;
 
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceCreationException;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.driver.DriverException;
-import org.gdms.driver.driverManager.DriverLoadException;
-
-import org.tanato.model.*;
 
 public class SetUpData extends TestCase {
 
-	
-	public static String internalSource =  "src/test/resources/data/source/";
-	public static String internalTIN =  "src/test/resources/data/tin/";
-	
-	public static final int FULL_TEST = 1;
-	public static final int TALWEG_TEST = 2;
-	public static final int SIMPLE_TEST = 4;
-	public static final int FACEPARALLELE_TEST = 8;
-	public static final int MERCIERTOPO_TEST = 16;
-	public static final int FULLSMALL_TEST = 32;
-	public static final int TALWEGFACE_TEST = 64;
-	public static final int TMP_TEST = 128;
+        public static String internalSource = "src/test/resources/data/source/";
+        public static String internalTIN = "src/test/resources/data/tin/";
+        public static final int FULL_TEST = 1;
+        public static final int TALWEG_TEST = 2;
+        public static final int SIMPLE_TEST = 4;
+        public static final int FACEPARALLELE_TEST = 8;
+        public static final int MERCIERTOPO_TEST = 16;
+        public static final int FULLSMALL_TEST = 32;
+        public static final int TALWEGFACE_TEST = 64;
+        public static final int TMP_TEST = 128;
+        private static String pathFaces;
+        private static String pathEdges;
+        private static String pathNodes;
+        private static SpatialDataSourceDecorator sdsFaces;
+        private static SpatialDataSourceDecorator sdsEdges;
+        private static SpatialDataSourceDecorator sdsNodes;
+        public static DataSourceFactory dsf = new DataSourceFactory();
 
-	private static String pathFaces;
-	private static String pathEdges;
-	private static String pathNodes;
-	private static SpatialDataSourceDecorator sdsFaces;
-	private static SpatialDataSourceDecorator sdsEdges;
-	private static SpatialDataSourceDecorator sdsNodes;
-	private static ArrayList<ECell> ecells;
-	private static ArrayList<TCell> tcells;
-	private static ArrayList<NCell> ncells;
+        // Initialize the hydrological graph
+        public static void createDataSourcesForTest(int testType) throws Exception {
+                switch (testType) {
+                        case FULL_TEST:
 
-	public static DataSourceFactory dsf = new DataSourceFactory();
+                                buildFullTest();
 
+                                break;
 
+                        case TALWEG_TEST:
 
-	// Initialize the hydrological graph
+                                buildTalweg();
 
-	public static void buildHydrologicalGraph(int testType) {
-		switch (testType) {
-		case FULL_TEST:
+                                break;
 
-			buildFullTest();
+                        case SIMPLE_TEST:
 
-			break;
+                                buildSimpleCase();
 
-		case TALWEG_TEST:
+                                break;
 
-			buildTalweg();
+                        case FACEPARALLELE_TEST:
 
-			break;
+                                buildParalleleFace();
 
-		case SIMPLE_TEST:
+                                break;
 
-			buildSimpleCase();
+                        case MERCIERTOPO_TEST:
 
-			break;
+                                buildMercierTopo();
 
-		case FACEPARALLELE_TEST:
+                                break;
 
-			buildParalleleFace();
+                        case FULLSMALL_TEST:
 
-			break;
+                                buildSmallCompleteCase();
 
-		case MERCIERTOPO_TEST:
+                                break;
 
-			buildMercierTopo();
+                        case TALWEGFACE_TEST:
 
-			break;
+                                buildCasTalwegFace();
+                                break;
 
-		case FULLSMALL_TEST:
 
-			buildSmallCompleteCase();
+                        case TMP_TEST:
 
-			break;
+                                buildTMP();
+                                break;
 
-		case TALWEGFACE_TEST:
 
-			buildCasTalwegFace();
-			break;
+                        default:
+                                break;
+                }
+        }
 
+        //A temporal test data for debug mode
+        private static void buildTMP() throws Exception {
 
-		case TMP_TEST:
+                pathFaces = "/tmp/tinTriangles.gdms";
 
-			buildTMP();
-			break;
+                pathEdges = "/tmp/tinEdges.gdms";
 
+                pathNodes = "/tmp/tinPoints.gdms";
 
-		default:
-			break;
-		}
-	}
+                createDatasources(pathNodes, pathEdges, pathFaces);
 
-	//A temporal test data for debug mode
-	private static void buildTMP() {
 
-		pathFaces = "/tmp/tinfaces.gdms";
+        }
 
-		pathEdges = "/tmp/tinedges.gdms";
+        // Cas talweg triangle
+        private static void buildCasTalwegFace() throws Exception {
 
-		pathNodes = "/tmp/tinnodes.gdms";
+                pathFaces = internalTIN + "cas_talweg_triangle/tinfaces.shp";
 
-		buildHydrologicalGraph();
+                pathEdges = internalTIN + "cas_talweg_triangle/tinedges.shp";
 
+                pathNodes = internalTIN + "cas_talweg_triangle/tinnodes.shp";
 
-	}
+                createDatasources(pathNodes, pathEdges, pathFaces);
+        }
 
-	// Cas talweg triangle
-	private static void buildCasTalwegFace() {
+        // Cas complet taille limitée
+        private static void buildSmallCompleteCase() throws Exception {
 
-		pathFaces = internalTIN+ "cas_talweg_triangle/tinfaces.shp";
+                pathFaces = internalTIN + "cas_complet_petit/tinfaces.shp";
 
-		pathEdges = internalTIN+ "cas_talweg_triangle/tinedges.shp";
+                pathEdges = internalTIN + "cas_complet_petit/tinedges.shp";
 
-		pathNodes = internalTIN +"cas_talweg_triangle/tinnodes.shp";
+                pathNodes = internalTIN + "cas_complet_petit/tinnodes.shp";
 
-		buildHydrologicalGraph();
-	}
+                createDatasources(pathNodes, pathEdges, pathFaces);
+        }
 
-	// Cas complet taille limitée
-	private static void buildSmallCompleteCase() {
+        // Cas avec données Mercier
+        private static void buildMercierTopo() throws Exception {
 
-		pathFaces = internalTIN + "cas_complet_petit/tinfaces.shp";
+                pathFaces = internalTIN + "cas_mercier_topo/tinfaces.shp";
 
-		pathEdges = internalTIN + "cas_complet_petit/tinedges.shp";
+                pathEdges = internalTIN + "cas_mercier_topo/tinedges.shp";
 
-		pathNodes = internalTIN+ "cas_complet_petit/tinnodes.shp";
+                pathNodes = internalTIN + "cas_mercier_topo/tinnodes.shp";
 
-		buildHydrologicalGraph();
-	}
+                createDatasources(pathNodes, pathEdges, pathFaces);
+        }
 
-	// Cas avec données Mercier
-	private static void buildMercierTopo() {
+        // Cas avec face parallele
+        private static void buildParalleleFace() throws Exception {
 
-		pathFaces = internalTIN + "cas_mercier_topo/tinfaces.shp";
+                pathFaces = internalTIN + "cas_face_parallele/tinfaces.shp";
 
-		pathEdges = internalTIN + "cas_mercier_topo/tinedges.shp";
+                pathEdges = internalTIN + "cas_face_parallele/tinedges.shp";
 
-		pathNodes = internalTIN + "cas_mercier_topo/tinnodes.shp";
+                pathNodes = internalTIN + "cas_face_parallele/tinnodes.shp";
 
-		buildHydrologicalGraph();
-	}
+                createDatasources(pathNodes, pathEdges, pathFaces);
+        }
 
-	// Cas avec face parallele
-	private static void buildParalleleFace() {
+        // Cas simple de modélisation
+        private static void buildSimpleCase() throws Exception {
 
-		pathFaces = internalTIN + "cas_face_parallele/tinfaces.shp";
+                pathFaces = internalTIN + "cas_simple/tinfaces.shp";
 
-		pathEdges = internalTIN +  "cas_face_parallele/tinedges.shp";
+                pathEdges = internalTIN + "cas_simple/tinedges.shp";
 
-		pathNodes = internalTIN +  "cas_face_parallele/tinnodes.shp";
+                pathNodes = internalTIN + "cas_simple/tinnodes.shp";
 
-		buildHydrologicalGraph();
-	}
+                createDatasources(pathNodes, pathEdges, pathFaces);
+        }
 
-	// Cas simple de modélisation
+        // Cas talweg continu
+        private static void buildTalweg() {
 
-	private static void buildSimpleCase() {
+                pathFaces = internalTIN + "cas_talweg/tinfaces.shp";
 
-		pathFaces = internalTIN +  "cas_simple/tinfaces.shp";
+                pathEdges = internalTIN + "cas_talweg/tinedges.shp";
 
-		pathEdges = internalTIN +  "cas_simple/tinedges.shp";
+                pathNodes = internalTIN + "cas_talweg/tinnodes.shp";
 
-		pathNodes = internalTIN +  "cas_simple/tinnodes.shp";
 
-		buildHydrologicalGraph();
-	}
 
-	// Cas talweg continu
-	private static void buildTalweg() {
+        }
 
-		pathFaces = internalTIN +  "cas_talweg/tinfaces.shp";
+        private static void buildFullTest() throws Exception {
 
-		pathEdges = internalTIN +  "cas_talweg/tinedges.shp";
+                pathFaces = internalTIN + "cas_complet/tinfaces.shp";
+                pathEdges = internalTIN + "cas_complet/tinedges.shp";
+                pathNodes = internalTIN + "cas_complet/tinnodes.shp";
 
-		pathNodes = internalTIN +  "cas_talweg/tinnodes.shp";
+                createDatasources(pathNodes, pathEdges, pathFaces);
 
-		buildHydrologicalGraph();
+        }
 
-	}
+        public static SpatialDataSourceDecorator getSdsFaces() {
+                return sdsFaces;
+        }
 
-	private static void buildFullTest() {
+        public static SpatialDataSourceDecorator getSdsEdges() {
+                return sdsEdges;
+        }
 
-		pathFaces = internalTIN +  "cas_complet/tinfaces.shp";
-		pathEdges = internalTIN + "cas_complet/tinedges.shp";
-		pathNodes = internalTIN +  "cas_complet/tinnodes.shp";
+        public static SpatialDataSourceDecorator getSdsNodes() {
+                return sdsNodes;
+        }
 
-		buildHydrologicalGraph();
-
-	}
-
-	private static void buildHydrologicalGraph() {
-//		try {
-//			DataSource dsFaces = dsf.getDataSource(new File(pathFaces));
-//
-//			sdsFaces = new SpatialDataSourceDecorator(dsFaces);
-//
-//			DataSource dsEdges = dsf.getDataSource(new File(pathEdges));
-//
-//			sdsEdges = new SpatialDataSourceDecorator(dsEdges);
-//
-//			DataSource dsNodes = dsf.getDataSource(new File(pathNodes));
-//
-//			sdsNodes = new SpatialDataSourceDecorator(dsNodes);
-//
-//			HydroTINModel hydrotinModel = new HydroTINModel(sdsFaces, sdsEdges,
-//					sdsNodes);
-//			// Obtient le graph hydrologique avec l'ensemble des connexions
-//			ecells = hydrotinModel.getEcells();
-//			tcells = hydrotinModel.getTcells();
-//			ncells = hydrotinModel.getNcells();
-//
-//		} catch (DriverLoadException e) {
-//			e.printStackTrace();
-//		} catch (DataSourceCreationException e) {
-//			e.printStackTrace();
-//		} catch (DriverException e) {
-//			e.printStackTrace();
-//		}
-	}
-
-	public static ArrayList<ECell> getEcells() {
-		return ecells;
-	}
-
-	public static ArrayList<TCell> getTcells() {
-		return tcells;
-	}
-
-	public static ArrayList<NCell> getNcells() {
-		return ncells;
-	}
-
-	public static SpatialDataSourceDecorator getSdsFaces() {
-		return sdsFaces;
-	}
-
-	public static SpatialDataSourceDecorator getSdsEdges() {
-		return sdsEdges;
-	}
-
-	public static SpatialDataSourceDecorator getSdsNodes() {
-		return sdsNodes;
-	}
+        private static void createDatasources(String pathNodes, String pathEdges, String pathFaces) throws Exception {
+                sdsNodes = new SpatialDataSourceDecorator(dsf.getDataSource(new File(pathNodes)));
+                sdsEdges = new SpatialDataSourceDecorator(dsf.getDataSource(new File(pathEdges)));
+                sdsFaces = sdsNodes = new SpatialDataSourceDecorator(dsf.getDataSource(new File(pathFaces)));
+        }
 }
