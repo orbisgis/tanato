@@ -107,14 +107,15 @@ public class ST_HydroTIN implements CustomQuery {
                         for (long i = 0; i < count; i++) {
                                 geom = sds.getGeometry(i);
                                 double heightValue = sds.getFieldValue(i, heightIndex).getAsDouble();
-                                if (gidIndex != 1) {
+                                int property = sds.getFieldValue(i, propertyIndex).getAsInt();
+                                if (gidIndex != -1) {
                                         gidIndex = sds.getFieldValue(i, gidIndex).getAsInt();
                                 }
                                 //If rules is used then get property and weight
                                 if (useTriangulationRules) {
-                                        int property = sds.getFieldValue(i, propertyIndex).getAsInt();
                                         int weight = sds.getFieldValue(i, weigthIndex).getAsInt();
                                         weights.put(property, weight);
+                                        notSewer = HydroProperties.check(property, HydroProperties.SEWER);
                                 }
 
                                 //Dot no take into account sewer in the triangulation
@@ -243,6 +244,8 @@ public class ST_HydroTIN implements CustomQuery {
 
 
         }
+
+      
 
         /**
          * We add a geometry to the given list
