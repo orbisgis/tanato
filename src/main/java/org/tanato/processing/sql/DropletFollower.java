@@ -5,6 +5,7 @@ import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Coordinate;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.gdms.data.DataSource;
@@ -543,16 +544,14 @@ public class DropletFollower {
     }
 
     /**
-     * give the edge that leads to geatest slope when turning around aPoint
+     * return all elements to could be processed by turnAroundthePoint
      *
      * @param aPoint an extremity of an edge
      * @param anElement
      * @return the edge that leads to geatest slope
      * @throws DelaunayError
      */
-    private Element turnAroundthePoint(DPoint aPoint, DEdge anElement) throws DelaunayError, DriverException {
-        // First get all elements around the point
-        // anElement is an element we can start with
+    private ArrayList<Element> getElementsToProcess(DPoint aPoint, Element anElement, boolean withWallConstraint) throws DelaunayError, DriverException {
         ArrayList<Element> ElementToProcess = new ArrayList<Element>();
         ElementToProcess.add(anElement);
         int currentElement = 0;
@@ -580,80 +579,124 @@ public class DropletFollower {
             } else {
                 // current element is an edge
                 DEdge anEdge = (DEdge) ElementToTest;
+                if ((!anEdge.hasProperty(HydroProperties.WALL)) || (!withWallConstraint)) {
+                    // We stop on walls
+                    // Add left element
+                    DTriangle Left = anEdge.getLeft();
+                    if (!isElementInArray(ElementToProcess, Left)) {
+                        DTriangle newElement = populateTriangleWithGDMS(Left.getGID());
+                        ElementToProcess.add(newElement);
+                    }
 
-                // Add left element
-                DTriangle Left = anEdge.getLeft();
-                if (!isElementInArray(ElementToProcess, Left)) {
-                    DTriangle newElement = populateTriangleWithGDMS(Left.getGID());
-                    ElementToProcess.add(newElement);
-                }
-
-                // Add right element
-                DTriangle Right = anEdge.getRight();
-                if (!isElementInArray(ElementToProcess, Right)) {
-                    DTriangle newElement = populateTriangleWithGDMS(Right.getGID());
-                    ElementToProcess.add(newElement);
+                    // Add right element
+                    DTriangle Right = anEdge.getRight();
+                    if (!isElementInArray(ElementToProcess, Right)) {
+                        DTriangle newElement = populateTriangleWithGDMS(Right.getGID());
+                        ElementToProcess.add(newElement);
+                    }
                 }
             }
         }
+        return ElementToProcess;
+    }
 
-        // Now we process all elements in the array and we keep the one with th greastest slope
-        double maxSlope = 0;                    // Current value of geatest slope
+    /**
+     * give the edge that leads to geatest slope when turning around aPoint
+     *
+     * @param aPoint an extremity of an edge
+     * @param anElement
+     * @return the edge that leads to geatest slope
+     * @throws DelaunayError
+     */
+    private Element turnAroundthePoint(DPoint aPoint, DEdge anElement, DTriangle previousTriangle) throws DelaunayError, DriverException {
+        // First get all elements around the point
+        // anElement is an element we can start with
         Element selectedElement = null;         // the result
-        boolean canChange = true;
+        ArrayList<Element> ElementToProcess;
+        Element startElement = anElement;
+        boolean withWallConstraint = false;
+        double maxSlope = 0;                    // Current value of geatest slope
+        if (anElement.hasProperty(HydroProperties.RIVER)) {
+            // We are in a river
+            // We stay in the river
+            ElementToProcess = getElementsToProcess(aPoint, anElement, false);
+            for (Element ElementToTest : ElementToProcess) {
+                if (ElementToTest.hasProperty(HydroProperties.RIVER)) {
+                    if (ElementToTest instanceof DTriangle) {
+                        // River goes to river, not in triangke
+                        DTriangle aTriangle = (DTriangle) ElementToTest;
+                        double theSlope = getSlope(aTriangle, aPoint);
+                        if (theSlope > maxSlope) {
+                            maxSlope = theSlope;
+                            selectedElement = ElementToTest;
+                        }
+                    } else {
+                        DEdge anEdge = (DEdge) ElementToTest;
+                        double theSlope = getSlope(anEdge, aPoint);
+                        if (theSlope >= maxSlope) {
+                            // We prefer edges to triangles when it is possible
+                            maxSlope = theSlope;
+                            selectedElement = ElementToTest;
+                        }
+                    }
+                }
+            }
+        } else if (anElement.hasProperty(HydroProperties.DITCH)) {
+            // We are in a ditch
+            // We may go in a river or in a ditch
+            ElementToProcess = getElementsToProcess(aPoint, anElement, false);
+            for (Element ElementToTest : ElementToProcess) {
+                if ((ElementToTest.hasProperty(HydroProperties.RIVER))
+                        || (ElementToTest.hasProperty(HydroProperties.DITCH))) {
+                    if (ElementToTest instanceof DTriangle) {
+                        // River goes to river, not in triangke
+                        DTriangle aTriangle = (DTriangle) ElementToTest;
+                        double theSlope = getSlope(aTriangle, aPoint);
+                        if (theSlope > maxSlope) {
+                            maxSlope = theSlope;
+                            selectedElement = ElementToTest;
+                        }
+                    } else {
+                        DEdge anEdge = (DEdge) ElementToTest;
+                        double theSlope = getSlope(anEdge, aPoint);
+                        if (theSlope >= maxSlope) {
+                            // We prefer edges to triangles when it is possible
+                            maxSlope = theSlope;
+                            selectedElement = ElementToTest;
+                        }
+                    }
+                }
+            }
+        } else if (anElement.hasProperty(HydroProperties.WALL)) {
+            // We were folowwing a wall
+            // Change start element
+            if (previousTriangle != null) {
+                startElement = previousTriangle;
+            }
+            withWallConstraint = true;
+        }
 
-        for (Element ElementToTest : ElementToProcess) {
-            if (ElementToTest instanceof DTriangle) {
-                DTriangle aTriangle = (DTriangle) ElementToTest;
-                double theSlope = getSlope(aTriangle, aPoint);
-                if (theSlope > maxSlope) {
-                    if (canChange) {
+
+        if (selectedElement == null) {
+            // No exit found => get the one we can with the greatest slope
+            ElementToProcess = getElementsToProcess(aPoint, startElement, withWallConstraint);
+
+            // Now we process all elements in the array and we keep the one with th greastest slope
+            // Except that rivers goes to rivers and ditches goes to ditches or rivers
+            // Also, if there is a ditch or a river we prior go to then
+            for (Element ElementToTest : ElementToProcess) {
+                if (ElementToTest instanceof DTriangle) {
+                    DTriangle aTriangle = (DTriangle) ElementToTest;
+                    double theSlope = getSlope(aTriangle, aPoint);
+                    if (theSlope > maxSlope) {
                         maxSlope = theSlope;
                         selectedElement = ElementToTest;
                     }
-                }
-            } else {
-                DEdge anEdge = (DEdge) ElementToTest;
-                double theSlope = getSlope(anEdge, aPoint);
-                if (theSlope > 0) {
-                    if (anEdge.hasProperty(HydroProperties.RIVER)) {
-                        // Go down the river
-                        if (selectedElement == null) {
-                            // no selectedElement yet -> ok
-                            selectedElement = ElementToTest;
-                        } else if (selectedElement instanceof DTriangle) {
-                            // selectedElement is a triangle -> go to the river
-                            selectedElement = ElementToTest;
-                        } else if (!selectedElement.hasProperty(HydroProperties.RIVER)) {
-                            // selectedElement is not a river -> go to the river
-                            selectedElement = ElementToTest;
-                        } else if (theSlope >= maxSlope) {
-                            // two rivers -> keep greater slope
-                            selectedElement = ElementToTest;
-                        }
-                        canChange = false;
-                    }
-                } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
-                    // Go down the ditch
-                    if (selectedElement == null) {
-                        // no selectedElement yet -> ok
-                        selectedElement = ElementToTest;
-                    } else if (selectedElement instanceof DTriangle) {
-                        // selectedElement is a triangle -> go to the ditch
-                        selectedElement = ElementToTest;
-                    } else if (selectedElement.hasProperty(HydroProperties.RIVER)) {
-                        // selectedElement is a river -> stay in the river
-                    } else if (!selectedElement.hasProperty(HydroProperties.DITCH)) {
-                        // selectedElement is neigher a river or a ditch -> go to the ditch
-                        selectedElement = ElementToTest;
-                    } else if (theSlope >= maxSlope) {
-                        // two ditcher -> keep greater slope
-                        selectedElement = ElementToTest;
-                    }
-                    canChange = false;
-                } else if (theSlope >= maxSlope) {
-                    // We prefer edges to triangles when it is possible
-                    if (canChange) {
+                } else {
+                    DEdge anEdge = (DEdge) ElementToTest;
+                    double theSlope = getSlope(anEdge, aPoint);
+                    if (theSlope >= maxSlope) {
+                        // We prefer edges to triangles when it is possible
                         maxSlope = theSlope;
                         selectedElement = ElementToTest;
                     }
@@ -793,8 +836,10 @@ public class DropletFollower {
             int stagnation = 1;     // we count how many times we are on the same point
 
             // The current element we are in
-            Element theElement = aTriangle; // current processed element
-            Element lastElement = null;     // last Element we were in
+            Element theElement = aTriangle;     // current processed element
+            Element lastElement = null;         // last Element we were in
+            DTriangle previousTriangle = null;  // to manawe walls we we are folowwing it
+            int wallSide = 0;
 
             boolean ended = false;
             while (!ended) {
@@ -861,6 +906,8 @@ public class DropletFollower {
                         }
                         // set next element data
                         theElement = populateEdgeWithGDMS(intersectedEdge.getGID());
+                        previousTriangle = aTriangle;
+                        wallSide = 0;
                     } else {
                         // there is a problem
                         // there is no intersection with the triangle
@@ -875,18 +922,63 @@ public class DropletFollower {
 
                     // First, get edge slope this value is positive or equal to zero
                     double maxSlope = getSlope(anEdge, aPoint);
+                    DTriangle Left = anEdge.getLeft();
+                    DTriangle Right = anEdge.getRight();
 
                     if (anEdge.hasProperty(HydroProperties.RIVER)) {
                         // do not have a look on triangles
+                        previousTriangle = null;
+                        wallSide = 0;
                     } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
                         // do not have a look on triangles
+                        previousTriangle = null;
+                        wallSide = 0;
                     } else if (anEdge.hasProperty(HydroProperties.WALL)) {
-                        // follow the wall
+                        // following the wall
+                        if (previousTriangle != null) {
+                            // We arrived on the edge with a triangle
+                            if (Right == null) {
+                                // Come from left
+                                wallSide = 1;
+                            }
+                            else if (Left == null) {
+                                // Come from right
+                                wallSide = 2;
+                            }
+                            else if (previousTriangle.getGID() == Left.getGID()) {
+                                // Come from left
+                                wallSide = 1;
+                            }
+                            else {
+                                // Come from right
+                                wallSide = 2;
+                            }
+                        }
+                        else {
+                            // We come from another edge (last one was a point)
+                            // Define the new value for previousTriangle
+                            if (wallSide == 1) {
+                                // Stay left
+                                if (aPoint.getGID() == anEdge.getStartPoint().getGID()) {
+                                    previousTriangle = Left;
+                                }
+                                else {
+                                    previousTriangle = Right;
+                                }
+                            }
+                            else {
+                                // Stay right
+                                if (aPoint.getGID() == anEdge.getStartPoint().getGID()) {
+                                    previousTriangle = Right;
+                                }
+                                else {
+                                    previousTriangle = Left;
+                                }
+                            }
+                        }
+                        // previousTriangle Always have a value => we can go to the point
                     } else {
                         // Check the 2 triangle around the edge
-                        DTriangle Left = anEdge.getLeft();
-                        DTriangle Right = anEdge.getRight();
-
                         if (Left != null) {
                             // get slope
                             // slope is positive only if droplet can go doan the triangle
@@ -906,6 +998,8 @@ public class DropletFollower {
                                 nextElement = Right;
                             }
                         }
+                        previousTriangle = null;
+                        wallSide = 0;
                     }
 
                     lastElement = theElement;
@@ -947,11 +1041,12 @@ public class DropletFollower {
                     } else {
                         // First, we get the element we come from. It might be an edge.
                         Element selectedElement;
-                        selectedElement = turnAroundthePoint(aPoint, (DEdge) lastElement);
+                        selectedElement = turnAroundthePoint(aPoint, (DEdge) lastElement, previousTriangle);
                         lastElement = theElement;
                         if (selectedElement != null) {
                             // We go to a next edge
                             theElement = selectedElement;
+                            previousTriangle = null;
                         } else {
                             // End of process: no successor
                             theElement = null;

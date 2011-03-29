@@ -70,7 +70,7 @@ public class ST_DropletPath implements CustomQuery {
                 } else if (!testPoint.getGeometryType().equals("Point")) {
                     throw new ExecutionException("invalid point geometry.");
                 }
-                
+
                 // process path
                 ArrayList<DPoint> Result = aDroplet.dropletFollows(testPoint);
 
