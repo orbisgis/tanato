@@ -73,23 +73,29 @@ public class ST_HydroTIN implements CustomQuery {
                         //We need to read our source.
                         SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
                         sds.open();
-                        boolean useTriangulationRules = false;
-                        Map<Integer, Integer> weights = new HashMap<Integer, Integer>();
-                        int propertyIndex = -1;
-                        int weigthIndex = -1;
-                        if (values[3].getAsBoolean()) {
-                                propertyIndex = ds.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
-                                weigthIndex = ds.getFieldIndexByName(TINSchema.WEIGTH_FIELD);
-                                if ((propertyIndex != -1) && (weigthIndex != -1)) {
-                                        useTriangulationRules = true;
-                                }
+                        boolean useTriangulationRules = values[2].getAsBoolean();
+                        HashMap<Integer, Integer> weights = new HashMap<Integer, Integer>();
+                        
+                        int propertyIndex = sds.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
+                        int heightIndex = sds.getFieldIndexByName(TINSchema.HEIGHT_FIELD);
+                        int weigthIndex = sds.getFieldIndexByName(TINSchema.WEIGTH_FIELD);
+                        int gidIndex = sds.getFieldIndexByName(TINSchema.GID);
 
+
+                        if ((propertyIndex==-1)||(heightIndex==-1)){
+                                  throw new IllegalArgumentException("The table must contains a property and height fields");
                         }
+                        if (useTriangulationRules) {                                
+                                if ((weigthIndex==-1)){
+                                        throw new IllegalArgumentException("The table must contains a weight field that defines rules weight.");
+                                }
+                        }
+                                                
 
                         //We retrieve the values to know how we are supposed to proceed.
                         boolean inter = values[0].getAsBoolean();
                         boolean flat = values[1].getAsBoolean();
-                        String name = values[4].getAsString();
+                        String name = values[3].getAsString();
                         long count = sds.getRowCount();
                         Geometry geom = null;
                         //We prepare our input structures.
@@ -100,94 +106,68 @@ public class ST_HydroTIN implements CustomQuery {
                         //We fill the input structures with our table.
                         for (long i = 0; i < count; i++) {
                                 geom = sds.getGeometry(i);
+                                double heightValue = sds.getFieldValue(i, heightIndex).getAsDouble();
+                                if (gidIndex!=1){
+                                        gidIndex = sds.getFieldValue(i, gidIndex).getAsInt();
+                                }
                                 //If rules is used then get property and weight
                                 if (useTriangulationRules) {
                                         int property = sds.getFieldValue(i, propertyIndex).getAsInt();
                                         int weight = sds.getFieldValue(i, weigthIndex).getAsInt();
                                         weights.put(property, weight);
-                                        
-
-                                        switch (property) {
-                                                case HydroProperties.DITCH:
-                                                        propertyValue = HydroProperties.DITCH;
-                                                        break;
-                                                case HydroProperties.LEVEL:
-                                                        propertyValue = HydroProperties.LEVEL;
-                                                        break;
-                                                case HydroProperties.RIVER:
-                                                        propertyValue = HydroProperties.RIVER;
-                                                        break;
-                                                case HydroProperties.SEWER_INPUT:
-                                                        notSewer = true;
-                                                        break;
-                                                case HydroProperties.SEWER:
-                                                        notSewer = true;
-                                                        break;
-                                                case HydroProperties.SEWER_OUTPUT:
-                                                        notSewer = true;
-                                                        break;
-                                                case HydroProperties.WALL:
-                                                        propertyValue = HydroProperties.WALL;
-                                                        break;
-                                                case HydroProperties.URBAN_PARCEL:
-                                                        propertyValue = HydroProperties.URBAN_PARCEL;
-                                                        break;
-                                                case HydroProperties.RURAL_PARCEL:
-                                                        propertyValue = HydroProperties.RURAL_PARCEL;
-                                                        break;
-                                                case HydroProperties.ROAD:
-                                                        propertyValue = HydroProperties.ROAD;
-                                                        break;
-                                                default:
-                                                        propertyValue = HydroProperties.NONE;
-                                                        break;
-                                        }
                                 }
+
                                 //Dot no take into account sewer in the triangulation
                                 if (!notSewer) {
                                         if (geom instanceof GeometryCollection) {
                                                 final int nbOfGeometries = geom.getNumGeometries();
 
                                                 for (int j = 0; j < nbOfGeometries; j++) {
-                                                        addGeometry(geom.getGeometryN(j), pointsToAdd, edges, propertyValue);
+                                                        addGeometry(geom.getGeometryN(j), pointsToAdd, edges, propertyValue, heightValue,gidIndex);
                                                 }
 
                                         }
                                 }
-
-                                //We have filled the input of our mesh. We can close our source.
-                                sds.close();
-                                Collections.sort(edges);
-                                HydroTINBuilder mesh = new HydroTINBuilder();
-
-                                //We actually fill the mesh
-                                mesh.setPoints(pointsToAdd);
-                                mesh.setConstraintEdges(edges);
-                                if (inter) {
-                                        //If needed, we use the intersection algorithm
-                                        mesh.forceConstraintIntegrity();
-                                }
-                                //we process delaunay
-                                mesh.processDelaunay();
-                                if (flat) {
-                                        //If needed, we remove flat triangles.
-                                        mesh.removeFlatTriangles();
-                                }
-
-                                mesh.morphologicalQualification();
-
-                                //And we write and register our results.
-                                String edgesOut = name + "_edges";
-                                String pointsOut = name + "_points";
-                                String trianglesOut = name + "_triangles";
-
-                                registerEdges(edgesOut, dsf, mesh);
-
-                                registerPoints(pointsOut, dsf, mesh);
-
-                                registerTriangles(trianglesOut, dsf, mesh);
-
                         }
+
+                        //We have filled the input of our mesh. We can close our source.
+                        sds.close();
+                        Collections.sort(edges);
+                        HydroTINBuilder mesh = new HydroTINBuilder();
+                        if (useTriangulationRules){
+                        mesh.setWeights(weights);
+                        }
+
+                        //We actually fill the mesh
+                        //if (pointsToAdd.size() > 3) {
+                                mesh.setPoints(pointsToAdd);
+                        //}
+                        mesh.setConstraintEdges(edges);
+                        if (inter) {
+                                //If needed, we use the intersection algorithm
+                                mesh.forceConstraintIntegrity();
+                        }
+                        //we process delaunay
+                        mesh.processDelaunay();
+                        if (flat) {
+                                //If needed, we remove flat triangles.
+                                mesh.removeFlatTriangles();
+                        }
+
+                        mesh.morphologicalQualification();
+
+                        //And we write and register our results.
+                        String edgesOut = name + "_edges";
+                        String pointsOut = name + "_points";
+                        String trianglesOut = name + "_triangles";
+
+                        registerEdges(edgesOut, dsf, mesh);
+
+                        registerPoints(pointsOut, dsf, mesh);
+
+                        registerTriangles(trianglesOut, dsf, mesh);
+
+
                 } catch (IOException ex) {
                         logger.log(Level.SEVERE, "Failed to write the file containing the edges.\n", ex);
 
@@ -224,7 +204,7 @@ public class ST_HydroTIN implements CustomQuery {
 
         @Override
         public String getSqlOrder() {
-                return "SELECT ST_HydroTIN(true, true, tinName) FROM source_table;";
+                return "SELECT ST_HydroTIN(true, true, false, tinName) FROM source_table;";
 
 
         }
@@ -270,17 +250,15 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue) {
+        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, double height , int gid_source) {
                 if (geom instanceof Point) {
-                        addPoint(pointsToAdd, (Point) geom, propertyValue);
-
+                        addPoint(pointsToAdd, (Point) geom, propertyValue, height,gid_source);
 
                 } else if (geom instanceof LineString) {
-                        addGeometry(edges, geom, propertyValue);
-
+                        addGeometry(edges, geom, propertyValue,height,gid_source);
 
                 } else if (geom instanceof Polygon) {
-                        addGeometry(edges, geom, propertyValue);
+                        addGeometry(edges, geom, propertyValue,height,gid_source);
 
 
                 }
@@ -291,10 +269,12 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addPoint(List<DPoint> points, Point geom, int propertyValue) {
+        private void addPoint(List<DPoint> points, Point geom, int propertyValue,  double height , int gid_source) {
                 try {
                         DPoint dPoint = TINFeatureFactory.createDPoint(geom.getCoordinate());
                         dPoint.setProperty(propertyValue);
+                        dPoint.setExternalGID(gid_source);
+                        dPoint.setHeight(height);
                         points.add(dPoint);
 
 
@@ -306,7 +286,7 @@ public class ST_HydroTIN implements CustomQuery {
 
         }
 
-        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue) {
+        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, double height , int gid_source) {
 
                 Coordinate c1 = geometry.getCoordinates()[0];
                 Coordinate c2;
@@ -320,7 +300,9 @@ public class ST_HydroTIN implements CustomQuery {
                         try {
                                 DEdge edge = new DEdge(new DPoint(c1), new DPoint(c2));
                                 edge.setProperty(propertyValue);
-                                edges.add(new DEdge(new DPoint(c1), new DPoint(c2)));
+                                edge.setExternalGID(gid_source);
+                                edge.setHeight(height);
+                                edges.add(edge);
                         } catch (DelaunayError d) {
                                 logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n", d);
 

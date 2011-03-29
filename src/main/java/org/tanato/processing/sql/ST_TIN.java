@@ -111,11 +111,11 @@ public class ST_TIN implements CustomQuery {
                 Collections.sort(edges);
 
                 ConstrainedMesh mesh = new ConstrainedMesh();
+                mesh.setVerbose(true);
                 try {
                         //We actually fill the mesh
                         mesh.setPoints(pointsToAdd);
                         mesh.setConstraintEdges(edges);
-                        System.out.println(mesh.getConstraintEdges().size());
                         if (inter) {
                                 //If needed, we use the intersection algorithm
                                 mesh.forceConstraintIntegrity();
