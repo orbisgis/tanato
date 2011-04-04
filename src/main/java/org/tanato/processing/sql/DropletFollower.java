@@ -61,26 +61,16 @@ public abstract class DropletFollower implements CustomQuery {
                         // There MUST be at least 3 tables
                         throw new ExecutionException("needs points, edges and triangles.");
                 } else {
-                        ArrayList<DPoint> Result = null;
+                        ArrayList<DPoint> result = null;
 
                         try {
-                                // Set informations from tables
+                                // Set informations from tables and Values
                                 populateData(dsf, pm, tables);
-
-                                // Get argument : a point geometry and the pathName
-                                Geometry testPoint = values[0].getAsGeometry();
-                                if (!testPoint.isValid()) {
-                                        throw new ExecutionException("invalid point geometry.");
-                                } else if (!testPoint.getGeometryType().equals("Point")) {
-                                        throw new ExecutionException("invalid point geometry.");
-                                }
+                                Geometry testPoint = getInitiaPoint(values[0]);
 
                                 // process path
-                                Result = dropletFollows(testPoint);
-                        } catch (NoSuchTableException ex) {
-                                Logger.getLogger(ST_DropletPath.class.getName()).log(Level.SEVERE, null, ex);
-                        } catch (IndexException ex) {
-                                Logger.getLogger(ST_DropletPath.class.getName()).log(Level.SEVERE, null, ex);
+                                result = dropletFollows(testPoint);
+
                         } catch (DriverException ex) {
                                 logger.log(Level.SEVERE, "There has been an error while opening a table, or counting its lines.\n", ex);
                         } catch (DelaunayError ex) {
@@ -88,20 +78,14 @@ public abstract class DropletFollower implements CustomQuery {
                         }
 
                         // close drivers
-                        try {
-                                closeData();
-                        } catch (DriverException ex) {
-                                logger.log(Level.SEVERE, "There has been an error while closing a table.\n", ex);
-                        }
+                        closeData();
 
                         // create value
-                        if (Result != null) {
+                        if (result != null) {
                                 try {
-                                        return createDataSource(dsf, Result);
+                                        return createDataSource(dsf, result);
                                 } catch (DriverException ex) {
                                         logger.log(Level.SEVERE, "There has been an error while opening a table, or counting its lines.\n", ex);
-                                } catch (IOException ex) {
-                                        logger.log(Level.SEVERE, "Failed to write the result file.\n", ex);
                                 }
                         }
                 }
@@ -130,42 +114,65 @@ public abstract class DropletFollower implements CustomQuery {
          * save Results in a file
          *
          * @param pathName
-         * @param Result
+         * @param result
          */
-        protected abstract DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> Result) throws IOException, DriverException;
+        protected abstract DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException;
 
         // ----------------------------------------------------------------
         // UTILITIES
         // ----------------------------------------------------------------
         /**
-         * get Table Informations
+         * Populate a decorator
+         * @param dsf
+         * @param pm
+         * @param aTable
+         * @return
+         * @throws DriverException
+         * @throws ExecutionException
+         */
+        private SpatialDataSourceDecorator populateDecorator(DataSourceFactory dsf, IProgressMonitor pm, DataSource aTable) throws DriverException, ExecutionException {
+                // Open it
+                SpatialDataSourceDecorator aSourceGenerator = new SpatialDataSourceDecorator(aTable);
+                aSourceGenerator.open();
+
+                // Generate index on GID
+                try {
+                        if (!dsf.getIndexManager().isIndexed(aTable.getName(), TINSchema.GID)) {
+                                dsf.getIndexManager().buildIndex(aTable.getName(), TINSchema.GID, pm);
+                        }
+                } catch (IndexException ex) {
+                        throw new ExecutionException("Unable to create index.",ex);
+                } catch (NoSuchTableException ex) {
+                        throw new ExecutionException("Unable to create index.",ex);
+                }
+                return aSourceGenerator;
+        }
+
+        /**
+         * Get table informations and put them in appropriate structures
+         * @param dsf
+         * @param pm
          * @param tables
          * @throws ExecutionException
          * @throws DriverException
          */
-        private void populateData(DataSourceFactory dsf, IProgressMonitor pm, DataSource[] tables) throws ExecutionException, DriverException, NoSuchTableException, IndexException {
-                // First is points
-                DataSource ds_points = tables[0];
-                sdsPoints = new SpatialDataSourceDecorator(ds_points);
-                sdsPoints.open();
-                if (!dsf.getIndexManager().isIndexed(ds_points.getName(), TINSchema.GID)) {
-                        dsf.getIndexManager().buildIndex(ds_points.getName(), TINSchema.GID, pm);
-                }
+        private void populateData(DataSourceFactory dsf, IProgressMonitor pm, DataSource[] tables) throws DriverException, ExecutionException {
+                sdsPoints = populateDecorator(dsf, pm, tables[0]);
+                sdsEdges = populateDecorator(dsf, pm, tables[1]);
+                sdsTriangles = populateDecorator(dsf, pm, tables[2]);
+        }
 
-                // second is edges
-                DataSource ds_edges = tables[1];
-                sdsEdges = new SpatialDataSourceDecorator(ds_edges);
-                sdsEdges.open();
-                if (!dsf.getIndexManager().isIndexed(sdsEdges.getName(), TINSchema.GID)) {
-                        dsf.getIndexManager().buildIndex(sdsEdges.getName(), TINSchema.GID, pm);
-                }
-
-                // third is triangles
-                DataSource ds_triangles = tables[2];
-                sdsTriangles = new SpatialDataSourceDecorator(ds_triangles);
-                sdsTriangles.open();
-                if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GID)) {
-                        dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GID, pm);
+        /**
+         * close decorator
+         * @param aDecorator
+         */
+        private void closeDecorator(SpatialDataSourceDecorator aDecorator) {
+                if (aDecorator != null) {
+                        try {
+                                aDecorator.close();
+                        } catch (DriverException ex) {
+                                logger.log(Level.SEVERE, "There has been an error while closing a table.\n", ex);
+                        }
                 }
         }
 
@@ -173,26 +180,45 @@ public abstract class DropletFollower implements CustomQuery {
          * Close tables
          * @throws DriverException
          */
-        private void closeData() throws DriverException {
-                if (this.sdsPoints != null) {
-                        this.sdsPoints.close();
-                        this.sdsPoints = null;
+        private void closeData() {
+                closeDecorator(this.sdsPoints);
+                this.sdsPoints = null;
+
+                closeDecorator(this.sdsEdges);
+                this.sdsEdges = null;
+
+                closeDecorator(this.sdsTriangles);
+                this.sdsTriangles = null;
+        }
+
+        /**
+         * Get initia point from values
+         * @param values
+         * @return
+         * @throws ExecutionException
+         */
+        private Geometry getInitiaPoint(Value theValue) throws ExecutionException {
+                Geometry testPoint = theValue.getAsGeometry();
+                if (!testPoint.isValid()) {
+                        throw new ExecutionException("invalid point geometry.");
+                } else if (!testPoint.getGeometryType().equals("Point")) {
+                        throw new ExecutionException("invalid point geometry.");
                 }
-                if (this.sdsEdges != null) {
-                        this.sdsEdges.close();
-                        this.sdsEdges = null;
-                }
-                if (this.sdsTriangles != null) {
-                        this.sdsTriangles.close();
-                        this.sdsTriangles = null;
-                }
+                return testPoint;
         }
 
         // ----------------------------------------------------------------
         // PRIVATE METHODS
         // ----------------------------------------------------------------
-        private long getElementIndex(SpatialDataSourceDecorator sds, int GID) throws DriverException {
-                DefaultAlphaQuery DefaultAlphaQuery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(GID));
+        /**
+         * Get an ilement from its GID
+         * @param sds
+         * @param theGID
+         * @return
+         * @throws DriverException
+         */
+        private long getElementIndex(SpatialDataSourceDecorator sds, int theGID) throws DriverException {
+                DefaultAlphaQuery DefaultAlphaQuery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(theGID));
                 Iterator<Integer> queryResult = sds.queryIndex(DefaultAlphaQuery);
                 if (queryResult == null) {
                         return -1;
@@ -205,29 +231,29 @@ public abstract class DropletFollower implements CustomQuery {
 
         /**
          * Get index position of a Triangle
-         * @param GID
+         * @param theGID
          * @return
          */
-        private long getTriangleIndex(int GID) throws DriverException {
-                return getElementIndex(sdsTriangles, GID);
+        private long getTriangleIndex(int theGID) throws DriverException {
+                return getElementIndex(sdsTriangles, theGID);
         }
 
         /**
          * Get index position of an Edge
-         * @param GID
+         * @param theGID
          * @return
          */
-        private long getEdgeIndex(int GID) throws DriverException {
-                return getElementIndex(sdsEdges, GID);
+        private long getEdgeIndex(int theGID) throws DriverException {
+                return getElementIndex(sdsEdges, theGID);
         }
 
         /**
          * Get index position of a Point
-         * @param GID
+         * @param theGID
          * @return
          */
-        private long getPointIndex(int GID) throws DriverException {
-                return getElementIndex(sdsPoints, GID);
+        private long getPointIndex(int theGID) throws DriverException {
+                return getElementIndex(sdsPoints, theGID);
         }
 
         /**
@@ -237,48 +263,47 @@ public abstract class DropletFollower implements CustomQuery {
          * @throws DriverException
          * @throws DelaunayError
          */
-        private DTriangle populateTriangleWithGDMS(int GID) throws DriverException, DelaunayError {
+        private DTriangle populateTriangleWithGDMS(int theGID) throws DriverException, DelaunayError {
                 DTriangle aTriangle;
-                long tIndex = getTriangleIndex(GID);
+                long tIndex = getTriangleIndex(theGID);
 
                 // Create edges
                 DEdge Edge0 = new DEdge();
-                int E_GID_0 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_0_GID_FIELD);
-                long e0Index = getEdgeIndex(E_GID_0);
-                Edge0.setGID(E_GID_0);
+                int eGID0 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_0_GID_FIELD);
+                long e0Index = getEdgeIndex(eGID0);
+                Edge0.setGID(eGID0);
 
                 DEdge Edge1 = new DEdge();
-                int E_GID_1 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_1_GID_FIELD);
-                long e1Index = getEdgeIndex(E_GID_1);
-                Edge1.setGID(E_GID_1);
+                int eGID1 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_1_GID_FIELD);
+                long e1Index = getEdgeIndex(eGID1);
+                Edge1.setGID(eGID1);
 
                 DEdge Edge2 = new DEdge();
-                int E_GID_2 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_2_GID_FIELD);
-                long e2Index = getEdgeIndex(E_GID_2);
-                Edge2.setGID(E_GID_2);
+                int eGID2 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_2_GID_FIELD);
+                long e2Index = getEdgeIndex(eGID2);
+                Edge2.setGID(eGID2);
 
                 // Create Points
-
                 DPoint Point0 = new DPoint();
                 Edge0.setStartPoint(Point0);
-                int P_GID_0 = sdsEdges.getInt(e0Index, TINSchema.STARTPOINT_NODE_FIELD);
-                long p0Index = getPointIndex(P_GID_0);
-                Point0.setGID(P_GID_0);
+                int pGID0 = sdsEdges.getInt(e0Index, TINSchema.STARTPOINT_NODE_FIELD);
+                long p0Index = getPointIndex(pGID0);
+                Point0.setGID(pGID0);
 
                 DPoint Point1 = new DPoint();
                 Edge0.setEndPoint(Point1);
-                int P_GID_1 = sdsEdges.getInt(e0Index, TINSchema.ENDPOINT_NODE_FIELD);
-                long p1Index = getPointIndex(P_GID_1);
-                Point1.setGID(P_GID_1);
+                int pGID1 = sdsEdges.getInt(e0Index, TINSchema.ENDPOINT_NODE_FIELD);
+                long p1Index = getPointIndex(pGID1);
+                Point1.setGID(pGID1);
 
-                int P_GID_2;
+                int pGID2;
                 DPoint Point2 = new DPoint();
-                if (sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD) == P_GID_0) {
+                if (sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID0) {
                         // Edge1 is 0-2
                         Edge1.setStartPoint(Point0);
                         Edge1.setEndPoint(Point2);
                         // Edge2 cannot contain 0
-                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == P_GID_1) {
+                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID1) {
                                 // Edge2 is 1-2
                                 Edge2.setStartPoint(Point1);
                                 Edge2.setEndPoint(Point2);
@@ -287,14 +312,14 @@ public abstract class DropletFollower implements CustomQuery {
                                 Edge2.setStartPoint(Point2);
                                 Edge2.setEndPoint(Point1);
                         }
-                        P_GID_2 = sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD);
+                        pGID2 = sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD);
 
-                } else if (sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD) == P_GID_1) {
+                } else if (sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID1) {
                         // Edge1 is 1-2
                         Edge1.setStartPoint(Point1);
                         Edge1.setEndPoint(Point2);
                         // Edge2 cannot contain 1
-                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == P_GID_0) {
+                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID0) {
                                 // Edge2 is 0-2
                                 Edge2.setStartPoint(Point0);
                                 Edge2.setEndPoint(Point2);
@@ -303,14 +328,14 @@ public abstract class DropletFollower implements CustomQuery {
                                 Edge2.setStartPoint(Point2);
                                 Edge2.setEndPoint(Point0);
                         }
-                        P_GID_2 = sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD);
+                        pGID2 = sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD);
 
-                } else if (sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD) == P_GID_0) {
+                } else if (sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD) == pGID0) {
                         // Edge1 is 2-0
                         Edge1.setStartPoint(Point2);
                         Edge1.setEndPoint(Point0);
                         // Edge2 cannot contain 0
-                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == P_GID_1) {
+                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID1) {
                                 // Edge2 is 1-2
                                 Edge2.setStartPoint(Point1);
                                 Edge2.setEndPoint(Point2);
@@ -319,14 +344,14 @@ public abstract class DropletFollower implements CustomQuery {
                                 Edge2.setStartPoint(Point2);
                                 Edge2.setEndPoint(Point1);
                         }
-                        P_GID_2 = sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
+                        pGID2 = sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
 
                 } else {
                         // Edge1 is 2-1
                         Edge1.setStartPoint(Point2);
                         Edge1.setEndPoint(Point1);
                         // Edge2 cannot contain 1
-                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == P_GID_0) {
+                        if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID0) {
                                 // Edge2 is 0-2
                                 Edge2.setStartPoint(Point0);
                                 Edge2.setEndPoint(Point2);
@@ -335,10 +360,10 @@ public abstract class DropletFollower implements CustomQuery {
                                 Edge2.setStartPoint(Point2);
                                 Edge2.setEndPoint(Point0);
                         }
-                        P_GID_2 = sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
+                        pGID2 = sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
                 }
-                long p2Index = getPointIndex(P_GID_2);
-                Point2.setGID(P_GID_2);
+                long p2Index = getPointIndex(pGID2);
+                Point2.setGID(pGID2);
 
                 // Set points location
                 Coordinate coord;
@@ -361,17 +386,17 @@ public abstract class DropletFollower implements CustomQuery {
                 aTriangle = new DTriangle(Edge0, Edge1, Edge2);
 
                 // Set edges triangles connection
-                if (sdsEdges.getInt(e0Index, TINSchema.LEFT_TRIANGLE_FIELD) == GID) {
+                if (sdsEdges.getInt(e0Index, TINSchema.LEFT_TRIANGLE_FIELD) == theGID) {
                         Edge0.setLeft(aTriangle);
                 } else {
                         Edge0.setRight(aTriangle);
                 }
-                if (sdsEdges.getInt(e1Index, TINSchema.LEFT_TRIANGLE_FIELD) == GID) {
+                if (sdsEdges.getInt(e1Index, TINSchema.LEFT_TRIANGLE_FIELD) == theGID) {
                         Edge1.setLeft(aTriangle);
                 } else {
                         Edge1.setRight(aTriangle);
                 }
-                if (sdsEdges.getInt(e2Index, TINSchema.LEFT_TRIANGLE_FIELD) == GID) {
+                if (sdsEdges.getInt(e2Index, TINSchema.LEFT_TRIANGLE_FIELD) == theGID) {
                         Edge2.setLeft(aTriangle);
                 } else {
                         Edge2.setRight(aTriangle);
@@ -488,7 +513,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param aPoint2
          * @return distance
          */
-        private static double distanceBetween(DPoint aPoint1, DPoint aPoint2) {
+        private static final double distanceBetween(DPoint aPoint1, DPoint aPoint2) {
                 return (aPoint1.getX() - aPoint2.getX()) * (aPoint1.getX() - aPoint2.getX())
                         + (aPoint1.getY() - aPoint2.getY()) * (aPoint1.getY() - aPoint2.getY())
                         + (aPoint1.getZ() - aPoint2.getZ()) * (aPoint1.getZ() - aPoint2.getZ());
@@ -552,7 +577,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param Reference
          * @return
          */
-        private static double getSlope(DEdge anEdge, DPoint Reference) throws DelaunayError {
+        private static final double getSlope(DEdge anEdge, DPoint Reference) throws DelaunayError {
                 double slope = 0.0;
 
                 // Slope is the edge one
@@ -575,7 +600,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param Reference
          * @return
          */
-        private static double getSlope(DTriangle aTriangle, DPoint Reference) throws DelaunayError {
+        private static final double getSlope(DTriangle aTriangle, DPoint Reference) throws DelaunayError {
                 double slope = 0.0;
 
                 // Check if ther is an intersection with one edhe
@@ -610,7 +635,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param ElementToProcess
          * @param anElement
          */
-        private static boolean isElementInArray(ArrayList<Element> ElementToProcess, Element anElement) {
+        private static final boolean isElementInArray(ArrayList<Element> ElementToProcess, Element anElement) {
                 int size = ElementToProcess.size();
                 int i = 0;
                 boolean found = false;
@@ -837,7 +862,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @return intersection
          * @throws DelaunayError
          */
-        private static DPoint getIntersection(DPoint point1, DPoint v1, DEdge anEdge) throws DelaunayError {
+        private static final DPoint getIntersection(DPoint point1, DPoint v1, DEdge anEdge) throws DelaunayError {
                 DPoint intersection = null;
                 DPoint p3 = anEdge.getPointLeft();
                 DPoint p4 = anEdge.getPointRight();
@@ -915,7 +940,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @return thePath : list of DEdge that defines the path the droplet follows
          * @throws DelaunayError
          */
-        protected ArrayList<DPoint> dropletFollows(Geometry initialGeometry) throws DriverException, DelaunayError {
+        private ArrayList<DPoint> dropletFollows(Geometry initialGeometry) throws DriverException, DelaunayError {
                 // First we have to find the triangle that contains the point
                 // Then
                 // - if we have a triangle, we foloow the slope to the next edge

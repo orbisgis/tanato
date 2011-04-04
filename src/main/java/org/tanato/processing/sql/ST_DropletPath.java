@@ -39,13 +39,13 @@ public class ST_DropletPath extends DropletFollower {
         }
 
         @Override
-        protected DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> Result) throws IOException, DriverException {
+        protected DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException {
 
                 DiskBufferDriver writer = new DiskBufferDriver(dsf, getMetadata(null));
                 GeometryFactory gf = new GeometryFactory();
                 Coordinate[] coords = new Coordinate[1];
                 int i = 0;
-                for (DPoint aPoint : Result) {
+                for (DPoint aPoint : result) {
                         coords[0] = aPoint.getCoordinate();
                         CoordinateSequence cs = new CoordinateArraySequence(coords);
                         Point thePoint = new Point(cs, gf);
