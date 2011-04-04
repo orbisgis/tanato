@@ -20,14 +20,14 @@ import org.orbisgis.progress.IProgressMonitor;
 
 public class ST_TINPropertyHelp implements CustomQuery {
 
-        final String TOPOGRAPHIC = "topographic";
-        final String MORPHOLOGIC = "morphologic";
-        final String TOPOLOGIC = "topologic";
-        final String NONE = "none";
-	final String ANY = "any";
+        static final String TOPOGRAPHIC = "topographic";
+        static final String MORPHOLOGIC = "morphologic";
+        static final String TOPOLOGIC = "topologic";
+        static final String NONE = "none";
+	static final String ANY = "any";
 
         @Override
-        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
+        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
                 Value[] values, IProgressMonitor pm) throws ExecutionException {
 
                 try {
@@ -144,33 +144,33 @@ public class ST_TINPropertyHelp implements CustomQuery {
         }
 
         @Override
-        public TableDefinition[] getTablesDefinitions() {
+        public final TableDefinition[] getTablesDefinitions() {
                 return new TableDefinition[0];
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Create a table with all property value and text representation used by the mesh.";
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments()};
         }
 
         @Override
-        public Metadata getMetadata(Metadata[] tables) throws DriverException {
+        public final Metadata getMetadata(Metadata[] tables) throws DriverException {
 
                 return null;
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_TINPropertyHelp";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_TINPropertyHelp()";
         }
 }

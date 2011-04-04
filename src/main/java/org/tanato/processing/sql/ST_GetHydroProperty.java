@@ -23,8 +23,6 @@ import org.jhydrocell.hydronetwork.HydroProperties;
  */
 public class ST_GetHydroProperty implements Function {
 
-        GeometryFactory gf = new GeometryFactory();
-
         @Override
         public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 return ValueFactory.createValue(HydroProperties.toString(values[0].getAsInt()));

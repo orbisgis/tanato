@@ -17,7 +17,7 @@ public class HydroLineUtil {
 
 	private LineString geom;
 
-	GeometryFactory gf = new GeometryFactory();
+	private GeometryFactory gf = new GeometryFactory();
 
 	public HydroLineUtil(LineString geom) {
 		this.geom = geom;

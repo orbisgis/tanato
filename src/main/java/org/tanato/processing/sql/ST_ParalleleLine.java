@@ -24,7 +24,7 @@ import org.gdms.sql.function.FunctionException;
  */
 public class ST_ParalleleLine implements Function {
 
-        GeometryFactory gf = new GeometryFactory();
+        private GeometryFactory gf = new GeometryFactory();
 
         @Override
         public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {

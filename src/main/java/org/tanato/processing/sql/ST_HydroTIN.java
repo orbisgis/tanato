@@ -63,7 +63,7 @@ public class ST_HydroTIN implements CustomQuery {
         private static final Logger logger = Logger.getLogger(ST_HydroTIN.class.getName());
 
         @Override
-        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
+        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
                 Value[] values, IProgressMonitor pm) throws ExecutionException {
 
                 try {
@@ -187,14 +187,14 @@ public class ST_HydroTIN implements CustomQuery {
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_HydroTIN";
 
 
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Compute a TIN based on constraints. "
                         + "Several options can be activated : flat triangle removal, intersection detection";
 
@@ -202,7 +202,7 @@ public class ST_HydroTIN implements CustomQuery {
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_HydroTIN(true, true, false, tinName) FROM source_table;";
 
 
@@ -220,7 +220,7 @@ public class ST_HydroTIN implements CustomQuery {
          * @return
          */
         @Override
-        public TableDefinition[] getTablesDefinitions() {
+        public final TableDefinition[] getTablesDefinitions() {
                 return new TableDefinition[]{TableDefinition.GEOMETRY};
 
 
@@ -238,7 +238,7 @@ public class ST_HydroTIN implements CustomQuery {
          * @return
          */
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.BOOLEAN, Argument.STRING)};
 
 

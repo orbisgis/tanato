@@ -96,7 +96,7 @@ public class ST_TIN implements CustomQuery {
                                 addMultiPoint(pointsToAdd, (MultiPoint) geom);
                         } else if (geom instanceof GeometryCollection) {
                                 addGeometryCollection(edges, (GeometryCollection) geom);
-                        } else if (geom instanceof Geometry) {
+                        } else {
                                 addGeometry(edges, (Geometry) geom);
                         }
                 }

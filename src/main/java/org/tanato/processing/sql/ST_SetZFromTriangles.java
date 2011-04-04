@@ -122,7 +122,7 @@ public class ST_SetZFromTriangles implements CustomQuery {
 
         private class TINZFilter implements CoordinateSequenceFilter {
 
-                boolean done = false;
+                private boolean done = false;
                 private final ArrayList<DTriangle> triangles;
 
                 public TINZFilter(ArrayList<DTriangle> triangles) {

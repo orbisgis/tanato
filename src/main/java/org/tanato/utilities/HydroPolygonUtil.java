@@ -30,7 +30,7 @@ public class HydroPolygonUtil {
          * @return normal vector (that pointing to the sky --> z>0) of the face
          *
          */
-        public Coordinate getNormal() {
+        public final Coordinate getNormal() {
 
                 Coordinate n = new Coordinate();
                 // vecteurs directeurs du triangle
@@ -61,7 +61,7 @@ public class HydroPolygonUtil {
          *
          * @return steepest path vector of the face also direction
          */
-        public Coordinate get3DVector() {
+        public final Coordinate get3DVector() {
                 if (pente == null) {
                         pente = new Coordinate(0, 0, 0);
                         // on recupere le vecteur normal
@@ -104,7 +104,7 @@ public class HydroPolygonUtil {
          * @return pente du vecteur de plus forte pente de la face (dz/distance
          *         horizontale)
          */
-        public double getSlope() {
+        public final double getSlope() {
                 if (Math.abs(valeurPente + 1.0) < MathUtil.EPSILON) {
                         double d = 0.0;
                         Coordinate pc = get3DVector();
@@ -133,15 +133,15 @@ public class HydroPolygonUtil {
          * @param myEdge
          * @return
          */
-        public boolean getPenteVersEdge(LineString lineSegment) {
+        public final boolean getPenteVersEdge(LineString lineSegment) {
                 boolean res = false;
 
                 // on determine les sommets A,B et C du triangle et on calle AB (ou BA)
                 // sur e
-                Coordinate A = lineSegment.getStartPoint().getCoordinate();
-                Coordinate B = lineSegment.getEndPoint().getCoordinate();
+                Coordinate a = lineSegment.getStartPoint().getCoordinate();
+                Coordinate b = lineSegment.getEndPoint().getCoordinate();
                 int i = 0;
-                while (!(i == 4 || (!p.getCoordinates()[i].equals3D(A) && !p.getCoordinates()[i].equals3D(B)))) {
+                while (!(i == 4 || (!p.getCoordinates()[i].equals3D(a) && !p.getCoordinates()[i].equals3D(b)))) {
                         i++;
                 }
                 // Assert.isTrue(i!=4,"edge n'appartenant pas au triangle");
@@ -149,21 +149,21 @@ public class HydroPolygonUtil {
                         return res;
                 }// e n'appartient pas au triangle
 
-                Coordinate C = p.getCoordinates()[i];
-                Coordinate AB = MathUtil.differenceVectoriel(B, A);
-                Coordinate AC = MathUtil.differenceVectoriel(C, A);
+                Coordinate c = p.getCoordinates()[i];
+                Coordinate ab = MathUtil.differenceVectoriel(b, a);
+                Coordinate ac = MathUtil.differenceVectoriel(c, a);
                 // orientation CCW
-                if (MathUtil.vectorProduct(AB, AC).z < 0) {
+                if (MathUtil.vectorProduct(ab, ac).z < 0) {
                         // echange A et B
-                        Coordinate D = A;
-                        A = B;
-                        B = D;
-                        AB = MathUtil.differenceVectoriel(B, A);
+                        Coordinate d = a;
+                        a = b;
+                        b = d;
+                        ab = MathUtil.differenceVectoriel(b, a);
                 }
                 // test d'intersection entre AB et P
-                Coordinate P = this.get3DVector();
+                Coordinate pv = this.get3DVector();
 
-                res = MathUtil.vectorProduct(AB, P).z < 0;
+                res = MathUtil.vectorProduct(ab, pv).z < 0;
 
                 return res;
         }
@@ -173,7 +173,7 @@ public class HydroPolygonUtil {
          *
          * @return
          */
-        public double getSlopeInDegree() {
+        public final double getSlopeInDegree() {
                 return Math.abs(getSlope()) * 100;
         }
 
@@ -181,7 +181,7 @@ public class HydroPolygonUtil {
          * Retrieve the centroid of the triangle.
          * @return
          */
-        public Coordinate getCentroid() {
+        public final Coordinate getCentroid() {
                 return new Coordinate(p.getInteriorPoint().getX(), p.getInteriorPoint().getY());
         }
 
@@ -190,7 +190,7 @@ public class HydroPolygonUtil {
          * @return angle entre le nord et la direction de plus forte pente (sens
          *         descendant) de la face (en degres)
          */
-        public double getSlopeAzimut() {
+        public final double getSlopeAzimut() {
                 if (orientationPente == -1.) {
                         Coordinate c1 = new Coordinate(0.0, 0.0, 0.0);
                         Coordinate c2 = this.get3DVector();
@@ -199,94 +199,90 @@ public class HydroPolygonUtil {
                         }
                         // l'ordre des coordonnees correspond a l'orientation de l'arc
                         // "sommet haut vers sommet bas"
-                        double angleAxeX_rad = Angle.angle(c1, c2);
+                        double angleAxeXRad = Angle.angle(c1, c2);
                         // on considere que l'axe nord correspond a l'axe Y positif
-                        double angleAxeNord_rad = Angle.PI_OVER_2 - angleAxeX_rad;
-                        double angleAxeNord_deg = Angle.toDegrees(angleAxeNord_rad);
+                        double angleAxeNordRad = Angle.PI_OVER_2 - angleAxeXRad;
+                        double angleAxeNordDeg = Angle.toDegrees(angleAxeNordRad);
                         // on renvoie toujours une valeur d'angle >= 0
-                        orientationPente = angleAxeNord_deg < 0.0 ? 360.0 + angleAxeNord_deg
-                                : angleAxeNord_deg;
+                        orientationPente = angleAxeNordDeg < 0.0 ? 360.0 + angleAxeNordDeg
+                                : angleAxeNordDeg;
                 }
                 return orientationPente;
         }
 
-        public LineString getLigneSeparatrice() {
+        public final LineString getLigneSeparatrice() {
 
-                CoordinateList line = null;
-                if (line == null) {
-                        line = new CoordinateList();
+                CoordinateList line = new CoordinateList();
 
-                        Coordinate coordA = triangle.p0;
-                        Coordinate coordB = triangle.p1;
-                        Coordinate coordC = triangle.p2;
+		Coordinate coordA = triangle.p0;
+		Coordinate coordB = triangle.p1;
+		Coordinate coordC = triangle.p2;
 
-                        LineString edgeAB = gf.createLineString(new Coordinate[]{coordA,
-                                        coordB});
-                        LineString edgeBC = gf.createLineString(new Coordinate[]{coordB,
-                                        coordC});
-                        LineString edgeAC = gf.createLineString(new Coordinate[]{coordC,
-                                        coordA});
+		LineString edgeAB = gf.createLineString(new Coordinate[]{coordA,
+				coordB});
+		LineString edgeBC = gf.createLineString(new Coordinate[]{coordB,
+				coordC});
+		LineString edgeAC = gf.createLineString(new Coordinate[]{coordC,
+				coordA});
 
-                        boolean PversAB = getPenteVersEdge(edgeAB);
-                        boolean PversBC = getPenteVersEdge(edgeBC);
-                        boolean PversAC = getPenteVersEdge(edgeAC);
+		boolean pVersAB = getPenteVersEdge(edgeAB);
+		boolean pVersBC = getPenteVersEdge(edgeBC);
+		boolean pVersAC = getPenteVersEdge(edgeAC);
 
-                        if (PversAB) {
-                                if (PversAC) {
-                                        // ligne de separation coupe BC
-                                        Coordinate iBC = getPenteEdgeIntersect(edgeBC, coordA);
+		if (pVersAB) {
+			if (pVersAC) {
+				// ligne de separation coupe BC
+				Coordinate iBC = getPenteEdgeIntersect(edgeBC, coordA);
 
-                                        if (coordA.z > iBC.z) {
-                                                line.add(coordA);
-                                                line.add(iBC);
-                                        } else if (coordA.z < iBC.z) {
-                                                line.add(iBC);
-                                                line.add(coordA);
-                                        } else {
-                                                line.add(coordA);
-                                                line.add(iBC);
-                                        }
+				if (coordA.z > iBC.z) {
+					line.add(coordA);
+					line.add(iBC);
+				} else if (coordA.z < iBC.z) {
+					line.add(iBC);
+					line.add(coordA);
+				} else {
+					line.add(coordA);
+					line.add(iBC);
+				}
 
-                                } else if (PversBC) {
-                                        // ligne de separation coupe AC
-                                        Coordinate iAC = getPenteEdgeIntersect(edgeAC, coordB);
-                                        if (coordB.z > iAC.z) {
-                                                line.add(coordB);
-                                                line.add(iAC);
-                                        } else if (coordB.z < iAC.z) {
-                                                line.add(iAC);
-                                                line.add(coordB);
-                                        } else {
-                                                line.add(coordB);
-                                                line.add(iAC);
-                                        }
+			} else if (pVersBC) {
+				// ligne de separation coupe AC
+				Coordinate iAC = getPenteEdgeIntersect(edgeAC, coordB);
+				if (coordB.z > iAC.z) {
+					line.add(coordB);
+					line.add(iAC);
+				} else if (coordB.z < iAC.z) {
+					line.add(iAC);
+					line.add(coordB);
+				} else {
+					line.add(coordB);
+					line.add(iAC);
+				}
 
-                                }
-                        } else if (PversBC) {
-                                if (PversAC) {
-                                        // ligne de separation porte par AB
-                                        Coordinate iAB = getPenteEdgeIntersect(edgeAB, coordC);
+			}
+		} else if (pVersBC) {
+			if (pVersAC) {
+				// ligne de separation porte par AB
+				Coordinate iAB = getPenteEdgeIntersect(edgeAB, coordC);
 
-                                        if (coordC.z > iAB.z) {
-                                                line.add(coordC);
-                                                line.add(iAB);
-                                        } else if (coordC.z < iAB.z) {
-                                                line.add(iAB);
-                                                line.add(coordC);
-                                        } else {
-                                                line.add(coordC);
-                                                line.add(iAB);
-                                        }
-                                }
-                        }
-
-                }
+				if (coordC.z > iAB.z) {
+					line.add(coordC);
+					line.add(iAB);
+				} else if (coordC.z < iAB.z) {
+					line.add(iAB);
+					line.add(coordC);
+				} else {
+					line.add(coordC);
+					line.add(iAB);
+				}
+			}
+		}
 
                 return gf.createLineString(line.toCoordinateArray());
 
         }
 
-        public Coordinate getSharedPoint() {
+        public final Coordinate getSharedPoint() {
 
                 Coordinate sharedPOint = null;
                 Coordinate coordA = triangle.p0;
@@ -300,20 +296,20 @@ public class HydroPolygonUtil {
                 LineString edgeAC = gf.createLineString(new Coordinate[]{coordC,
                                 coordA});
 
-                boolean PversAB = getPenteVersEdge(edgeAB);
-                boolean PversBC = getPenteVersEdge(edgeBC);
-                boolean PversAC = getPenteVersEdge(edgeAC);
+                boolean pVersAB = getPenteVersEdge(edgeAB);
+                boolean pVersBC = getPenteVersEdge(edgeBC);
+                boolean pVersAC = getPenteVersEdge(edgeAC);
 
-                if (PversAB) {
-                        if (PversAC) {
+                if (pVersAB) {
+                        if (pVersAC) {
                                 sharedPOint = coordA;
 
-                        } else if (PversBC) {
+                        } else if (pVersBC) {
                                 sharedPOint = coordB;
 
                         }
-                } else if (PversBC) {
-                        if (PversAC) {
+                } else if (pVersBC) {
+                        if (pVersAC) {
                                 sharedPOint = coordC;
 
                         }
@@ -323,15 +319,15 @@ public class HydroPolygonUtil {
 
         }
 
-        public Coordinate getPenteEdgeIntersect(LineString e, Coordinate p) {
+        public final Coordinate getPenteEdgeIntersect(LineString e, Coordinate pt) {
                 Coordinate i = null;
 
                 Coordinate eVector = MathUtil.getVector(e.getStartPoint().getCoordinate(), e.getEndPoint().getCoordinate());
 
                 // Coordinate AB = MathUtil.DifferenceVectoriel(B, A);
-                Coordinate P = this.get3DVector();
+                Coordinate pv = this.get3DVector();
                 i = MathUtil.calculIntersection(e.getStartPoint().getCoordinate(),
-                        eVector, p, P);
+                        eVector, pt, pv);
                 Assert.isTrue(i != null,
                         "Intersection detectee mais non verifiee par calcul");
 

@@ -15,13 +15,9 @@ public class GeomUtil {
 
 		double startZ = lineString.getStartPoint().getCoordinate().z;
 		double endZ = lineString.getEndPoint().getCoordinate().z;
-		if (Double.isNaN(startZ) || Double.isNaN(endZ)){
-
-		}
-		else {
-			if (startZ < endZ){
-				lineString = (LineString) lineString.reverse();
-			}
+		if ((!Double.isNaN(startZ) && !Double.isNaN(endZ)) && startZ < endZ){
+				LineString lineStringBis = (LineString) lineString.reverse();
+				return lineStringBis;
 		}
 
 		return lineString;

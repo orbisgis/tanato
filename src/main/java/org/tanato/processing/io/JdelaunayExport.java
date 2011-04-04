@@ -36,7 +36,7 @@ import org.jdelaunay.delaunay.DelaunayError;
  */
 public class JdelaunayExport {
 
-	static DataSourceFactory dsf = new DataSourceFactory();
+	private static DataSourceFactory dsf = new DataSourceFactory();
 	
 	public static void exportGDMS(ConstrainedMesh aMesh, String path) throws DriverException, DelaunayError
 	{
@@ -141,13 +141,13 @@ public class JdelaunayExport {
 	
 	private static void saveDriver(String name, ObjectDriver driver) throws DriverException
 	{
-			DataSourceFactory dsf = new DataSourceFactory();
+			DataSourceFactory dsfbis = new DataSourceFactory();
 			File gdmsFile = new File(name);
 			gdmsFile.delete();
-			dsf.getSourceManager().register(name, gdmsFile);
-			DataSource ds = dsf.getDataSource(driver);
+			dsfbis.getSourceManager().register(name, gdmsFile);
+			DataSource ds = dsfbis.getDataSource(driver);
 			ds.open();
-				dsf.saveContents(name, ds);
+				dsfbis.saveContents(name, ds);
 			ds.close();
 	}
 	

@@ -5,7 +5,6 @@
 
 package org.tanato.processing.sql;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import java.io.File;
@@ -49,27 +48,27 @@ public class ST_BasinGraph implements CustomQuery  {
 	private SpatialDataSourceDecorator sdsTriangles = null;
 	
 	@Override
-	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+	public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
 		if (tables.length < 3) {
 		    // There MUST be at least 3 tables
 		    throw new ExecutionException("needs points, edges and triangles.");
 		} else {
 			try {
 				// First is points
-				DataSource ds_points = tables[0];
-				sdsPoints = new SpatialDataSourceDecorator(ds_points);
+				DataSource dsPoints = tables[0];
+				sdsPoints = new SpatialDataSourceDecorator(dsPoints);
 				sdsPoints.open();
-				if (!dsf.getIndexManager().isIndexed(ds_points.getName(), TINSchema.GID)) {
-					dsf.getIndexManager().buildIndex(ds_points.getName(), TINSchema.GID, pm);
+				if (!dsf.getIndexManager().isIndexed(dsPoints.getName(), TINSchema.GID)) {
+					dsf.getIndexManager().buildIndex(dsPoints.getName(), TINSchema.GID, pm);
 				}
-				DataSource ds_edges = tables[1];
-				sdsEdges = new SpatialDataSourceDecorator(ds_edges);
+				DataSource dsEdges = tables[1];
+				sdsEdges = new SpatialDataSourceDecorator(dsEdges);
 				sdsEdges.open();
 				if (!dsf.getIndexManager().isIndexed(sdsEdges.getName(), TINSchema.GID)) {
 					dsf.getIndexManager().buildIndex(sdsEdges.getName(), TINSchema.GID, pm);
 				}
-				DataSource ds_triangles = tables[2];
-				sdsTriangles = new SpatialDataSourceDecorator(ds_triangles);
+				DataSource dsTriangles = tables[2];
+				sdsTriangles = new SpatialDataSourceDecorator(dsTriangles);
 				sdsTriangles.open();
 				if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GID)) {
 					dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GID, pm);
@@ -96,32 +95,32 @@ public class ST_BasinGraph implements CustomQuery  {
 	}
 
 	@Override
-	public String getName() {
+	public final String getName() {
 		return "ST_BasinGraph";
 	}
 
 	@Override
-	public String getDescription() {
+	public final String getDescription() {
 		return "Compute the basin graph of an element of a TIN DEM";
 	}
 
 	@Override
-	public String getSqlOrder() {
+	public final String getSqlOrder() {
 		return "SELECT ST_BasinGraph(555,0,'out') FROM points, edges, triangles;";
 	}
 
 	@Override
-	public Metadata getMetadata(Metadata[] tables) throws DriverException {
+	public final Metadata getMetadata(Metadata[] tables) throws DriverException {
                 return null;
 	}
 
 	@Override
-	public TableDefinition[] getTablesDefinitions() {
+	public final TableDefinition[] getTablesDefinitions() {
         return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
 	}
 
 	@Override
-	public Arguments[] getFunctionArguments() {
+	public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.INT, Argument.INT, Argument.STRING)};
 	}
 	

@@ -30,7 +30,7 @@ import org.tanato.factory.TINFeatureFactory;
  */
 public class ST_TINSlopeDirection implements Function {
 
-        GeometryFactory gf = new GeometryFactory();
+        private GeometryFactory gf = new GeometryFactory();
 
         @Override
         public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {

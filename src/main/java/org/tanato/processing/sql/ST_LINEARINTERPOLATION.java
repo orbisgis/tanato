@@ -28,7 +28,7 @@ import org.gdms.sql.function.FunctionException;
  */
 public class ST_LINEARINTERPOLATION implements Function {
 
-        GeometryFactory gf = new GeometryFactory();
+        private GeometryFactory gf = new GeometryFactory();
 
         @Override
         public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
@@ -126,10 +126,12 @@ public class ST_LINEARINTERPOLATION implements Function {
 
                 }
 
+		@Override
                 public boolean isGeometryChanged() {
                         return true;
                 }
 
+		@Override
                 public boolean isDone() {
                         return done;
                 }

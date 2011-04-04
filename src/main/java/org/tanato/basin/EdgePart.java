@@ -5,9 +5,6 @@
 
 package org.tanato.basin;
 
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.DPoint;
-
 /**
  *
  * @author alexis
