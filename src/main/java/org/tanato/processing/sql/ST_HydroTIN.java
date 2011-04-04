@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.gdms.data.DataSource;
@@ -107,15 +106,15 @@ public class ST_HydroTIN implements CustomQuery {
                         for (long i = 0; i < count; i++) {
                                 geom = sds.getGeometry(i);
                                 double heightValue = sds.getFieldValue(i, heightIndex).getAsDouble();
-                                int property = sds.getFieldValue(i, propertyIndex).getAsInt();
+                                propertyValue = sds.getFieldValue(i, propertyIndex).getAsInt();
                                 if (gidIndex != -1) {
                                         gidIndex = sds.getFieldValue(i, gidIndex).getAsInt();
                                 }
                                 //If rules is used then get property and weight
                                 if (useTriangulationRules) {
                                         int weight = sds.getFieldValue(i, weigthIndex).getAsInt();
-                                        weights.put(property, weight);
-                                        notSewer = HydroProperties.check(property, HydroProperties.SEWER);
+                                        weights.put(propertyValue, weight);
+                                        notSewer = HydroProperties.check(propertyValue, HydroProperties.SEWER);
                                 }
 
                                 //Dot no take into account sewer in the triangulation
@@ -337,8 +336,15 @@ public class ST_HydroTIN implements CustomQuery {
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT)},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.LEFT_TRIANGLE_FIELD, TINSchema.RIGHT_TRIANGLE_FIELD,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
+                        new String[]{	TINSchema.GEOM_FIELD,
+					TINSchema.GID,
+					TINSchema.STARTPOINT_NODE_FIELD,
+					TINSchema.ENDPOINT_NODE_FIELD,
+					TINSchema.LEFT_TRIANGLE_FIELD,
+					TINSchema.RIGHT_TRIANGLE_FIELD,
+					TINSchema.HEIGHT_FIELD,
+					TINSchema.PROPERTY_FIELD,
+					TINSchema.GID_SOURCE_FIELD});
 
 
                 int triangleCount = mesh.getEdges().size();
@@ -380,8 +386,11 @@ public class ST_HydroTIN implements CustomQuery {
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
+                        new String[]{	TINSchema.GEOM_FIELD,
+					TINSchema.GID,
+					TINSchema.HEIGHT_FIELD,
+					TINSchema.PROPERTY_FIELD,
+					TINSchema.GID_SOURCE_FIELD});
 
 
                 int triangleCount = mesh.getPoints().size();
