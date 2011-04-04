@@ -61,7 +61,7 @@ public class ST_TIN implements CustomQuery {
         private static final Logger logger = Logger.getLogger(ST_TIN.class.getName());
 
         @Override
-        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
+        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
                 Value[] values, IProgressMonitor pm) throws ExecutionException {
                 DataSource ds = tables[0];
                 //We need to read our source.
@@ -158,22 +158,22 @@ public class ST_TIN implements CustomQuery {
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_TIN";
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Compute a TIN from the lines of the geometry given in argument.";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_TIN(false, true, tinName) FROM source_table;";
         }
 
         @Override
-        public Metadata getMetadata(Metadata[] tables) throws DriverException {
+        public final Metadata getMetadata(Metadata[] tables) throws DriverException {
                 return null;
         }
 
@@ -182,7 +182,7 @@ public class ST_TIN implements CustomQuery {
          * @return
          */
         @Override
-        public TableDefinition[] getTablesDefinitions() {
+        public final TableDefinition[] getTablesDefinitions() {
                 return new TableDefinition[]{TableDefinition.GEOMETRY};
         }
 
@@ -195,7 +195,7 @@ public class ST_TIN implements CustomQuery {
          * @return
          */
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.STRING)};
         }
 

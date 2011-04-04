@@ -15,28 +15,33 @@ import com.vividsolutions.jts.geom.LineString;
 
 public class ST_EndPoint implements Function {
 
-        public String getName() {
+	@Override
+        public final String getName() {
                 return "ST_EndPoint";
         }
 
-        public Type getType(Type[] types) {
+	@Override
+        public final Type getType(Type[] types) {
                 return TypeFactory.createType(Type.GEOMETRY);
         }
 
-        public boolean isAggregate() {
+	@Override
+        public final boolean isAggregate() {
                 return false;
         }
 
-        public String getDescription() {
+	@Override
+        public final String getDescription() {
                 return "Returns the last point of a LINESTRING geometry as a POINT or NULL if the input parameter is not a LINESTRING.";
         }
 
-        public String getSqlOrder() {
+	@Override
+        public final String getSqlOrder() {
                 return "select ST_EndPoint(geometry geomA) from myTable;";
         }
 
         @Override
-        public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
+        public final Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
                 final Geometry g = args[0].getAsGeometry();
                 if (g instanceof LineString) {
                         LineString line = (LineString) g;
@@ -45,11 +50,13 @@ public class ST_EndPoint implements Function {
                 return ValueFactory.createNullValue();
         }
 
-        public Value getAggregateResult() {
+	@Override
+        public final Value getAggregateResult() {
                 return null;
         }
 
-        public Arguments[] getFunctionArguments() {
+	@Override
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.GEOMETRY)};
         }
 }

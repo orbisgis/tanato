@@ -11,7 +11,6 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiLineString;
-import java.util.ArrayList;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.InvalidTypeException;
 import org.gdms.data.types.Type;
@@ -32,7 +31,7 @@ public class ST_LINEARINTERPOLATION implements Function {
         GeometryFactory gf = new GeometryFactory();
 
         @Override
-        public Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
+        public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 Geometry geom = values[0].getAsGeometry();
                 if (geom instanceof MultiLineString) {
                         int nbGeom = geom.getNumGeometries();
@@ -59,37 +58,37 @@ public class ST_LINEARINTERPOLATION implements Function {
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_LINEARINTERPOLATION";
         }
 
         @Override
-        public boolean isAggregate() {
+        public final boolean isAggregate() {
                 return false;
         }
 
         @Override
-        public Value getAggregateResult() {
+        public final Value getAggregateResult() {
                 return null;
         }
 
         @Override
-        public Type getType(Type[] types) throws InvalidTypeException {
+        public final Type getType(Type[] types) throws InvalidTypeException {
                 return TypeFactory.createType(Type.GEOMETRY);
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Update the z coordinates of a geometry based on a linear interpolation between first and last coordinates.";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_LINEARINTERPOLATION(the_geom) FROM table";
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.GEOMETRY)};
 
         }

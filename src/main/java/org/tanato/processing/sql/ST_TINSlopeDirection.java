@@ -33,7 +33,7 @@ public class ST_TINSlopeDirection implements Function {
         GeometryFactory gf = new GeometryFactory();
 
         @Override
-        public Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
+        public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 try {
                         Geometry geom = values[0].getAsGeometry();
                         DTriangle dTriangle = TINFeatureFactory.createDTriangle(geom);
@@ -52,37 +52,37 @@ public class ST_TINSlopeDirection implements Function {
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_TINSlopeDirection";
         }
 
         @Override
-        public boolean isAggregate() {
+        public final boolean isAggregate() {
                 return false;
         }
 
         @Override
-        public Value getAggregateResult() {
+        public final Value getAggregateResult() {
                 return null;
         }
 
         @Override
-        public Type getType(Type[] types) throws InvalidTypeException {
+        public final Type getType(Type[] types) throws InvalidTypeException {
                 return TypeFactory.createType(Type.GEOMETRY);
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Compute the steepest vector director for a triangle";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_TINSlopeDirection(the_geom) FROM table";
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.GEOMETRY)};
 
         }

@@ -31,7 +31,6 @@ import org.gdms.sql.customQuery.CustomQuery;
 import org.gdms.sql.customQuery.TableDefinition;
 import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.Arguments;
-import org.jdelaunay.delaunay.DPoint;
 import org.orbisgis.progress.IProgressMonitor;
 import org.tanato.basin.BasinBuilder;
 import org.tanato.model.TINSchema;
@@ -45,9 +44,9 @@ public class ST_BasinGraph implements CustomQuery  {
 
 	private static final Logger logger = Logger.getLogger(ST_BasinGraph.class.getName());
 	// Table informations to navigate
-	private SpatialDataSourceDecorator sds_points = null;
-	private SpatialDataSourceDecorator sds_edges = null;
-	private SpatialDataSourceDecorator sds_triangles = null;
+	private SpatialDataSourceDecorator sdsPoints = null;
+	private SpatialDataSourceDecorator sdsEdges = null;
+	private SpatialDataSourceDecorator sdsTriangles = null;
 	
 	@Override
 	public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
@@ -58,30 +57,30 @@ public class ST_BasinGraph implements CustomQuery  {
 			try {
 				// First is points
 				DataSource ds_points = tables[0];
-				sds_points = new SpatialDataSourceDecorator(ds_points);
-				sds_points.open();
+				sdsPoints = new SpatialDataSourceDecorator(ds_points);
+				sdsPoints.open();
 				if (!dsf.getIndexManager().isIndexed(ds_points.getName(), TINSchema.GID)) {
 					dsf.getIndexManager().buildIndex(ds_points.getName(), TINSchema.GID, pm);
 				}
 				DataSource ds_edges = tables[1];
-				sds_edges = new SpatialDataSourceDecorator(ds_edges);
-				sds_edges.open();
-				if (!dsf.getIndexManager().isIndexed(sds_edges.getName(), TINSchema.GID)) {
-					dsf.getIndexManager().buildIndex(sds_edges.getName(), TINSchema.GID, pm);
+				sdsEdges = new SpatialDataSourceDecorator(ds_edges);
+				sdsEdges.open();
+				if (!dsf.getIndexManager().isIndexed(sdsEdges.getName(), TINSchema.GID)) {
+					dsf.getIndexManager().buildIndex(sdsEdges.getName(), TINSchema.GID, pm);
 				}
 				DataSource ds_triangles = tables[2];
-				sds_triangles = new SpatialDataSourceDecorator(ds_triangles);
-				sds_triangles.open();
-				if (!dsf.getIndexManager().isIndexed(sds_triangles.getName(), TINSchema.GID)) {
-					dsf.getIndexManager().buildIndex(sds_triangles.getName(), TINSchema.GID, pm);
+				sdsTriangles = new SpatialDataSourceDecorator(ds_triangles);
+				sdsTriangles.open();
+				if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GID)) {
+					dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GID, pm);
 				}
-				BasinBuilder bb = new BasinBuilder(dsf, sds_points, sds_edges, sds_triangles, 
+				BasinBuilder bb = new BasinBuilder(dsf, sdsPoints, sdsEdges, sdsTriangles,
 						values[0].getAsInt(), values[1].getAsInt());
 				bb.computeBasin();
 				registerFile(values[2].getAsString(), dsf, bb.getBasin());
-				sds_edges.close();
-				sds_triangles.close();
-				sds_points.close();
+				sdsEdges.close();
+				sdsTriangles.close();
+				sdsPoints.close();
 
 			} catch (IOException ex) {
 				Logger.getLogger(ST_BasinGraph.class.getName()).log(Level.SEVERE, null, ex);

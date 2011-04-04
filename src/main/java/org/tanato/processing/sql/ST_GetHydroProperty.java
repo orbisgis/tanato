@@ -26,42 +26,42 @@ public class ST_GetHydroProperty implements Function {
         GeometryFactory gf = new GeometryFactory();
 
         @Override
-        public Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
+        public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 return ValueFactory.createValue(HydroProperties.toString(values[0].getAsInt()));
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_GetHydroProperty";
         }
 
         @Override
-        public boolean isAggregate() {
+        public final boolean isAggregate() {
                 return false;
         }
 
         @Override
-        public Value getAggregateResult() {
+        public final Value getAggregateResult() {
                 return null;
         }
 
         @Override
-        public Type getType(Type[] types) throws InvalidTypeException {
+        public final Type getType(Type[] types) throws InvalidTypeException {
                 return TypeFactory.createType(Type.STRING);
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Get the hydro property as string";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_GetHydroProperty(propertyField) FROM table";
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.INT)};
 
         }

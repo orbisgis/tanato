@@ -42,7 +42,7 @@ import org.tanato.factory.TINFeatureFactory;
 public class ST_SetZFromTriangles implements CustomQuery {
 
         @Override
-        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
 
 
                 DataSource ds = tables[0];
@@ -111,12 +111,12 @@ public class ST_SetZFromTriangles implements CustomQuery {
         }
 
         @Override
-        public Metadata getMetadata(Metadata[] tables) throws DriverException {
+        public final Metadata getMetadata(Metadata[] tables) throws DriverException {
                 return tables[1];
         }
 
         @Override
-        public TableDefinition[] getTablesDefinitions() {
+        public final TableDefinition[] getTablesDefinitions() {
                 return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
         }
 
@@ -167,22 +167,22 @@ public class ST_SetZFromTriangles implements CustomQuery {
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_SetZFromTriangles";
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Set a z to the geometry based on triangle interpolation";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_SetZFromTriangles() FROM triangles, tableTobeInterpolate";
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments()};
 
         }

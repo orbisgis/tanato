@@ -20,7 +20,8 @@ import com.vividsolutions.jts.geom.MultiLineString;
 
 public class ST_SetZToExtremities implements Function {
 
-        public Value evaluate(DataSourceFactory dsf, Value[] args) throws FunctionException {
+	@Override
+        public final Value evaluate(DataSourceFactory dsf, Value[] args) throws FunctionException {
 
                 Geometry geom = args[0].getAsGeometry();
                 double startZ = args[1].getAsDouble();
@@ -42,26 +43,31 @@ public class ST_SetZToExtremities implements Function {
 
         }
 
-        public String getDescription() {
+	@Override
+        public final String getDescription() {
                 return "This function modify (or set) the z component of each vertex extremities lines"
                         + " given by a two fields.";
         }
 
-        public Arguments[] getFunctionArguments() {
+	@Override
+        public final Arguments[] getFunctionArguments() {
 
                 return new Arguments[]{new Arguments(Argument.GEOMETRY,
                                 Argument.NUMERIC, Argument.NUMERIC)};
         }
 
-        public String getName() {
+	@Override
+        public final String getName() {
                 return "ST_SetZToExtremities";
         }
 
-        public String getSqlOrder() {
+	@Override
+        public final String getSqlOrder() {
                 return "select ST_SetZToExtremities(the_geom, startz, endz) from lines;";
         }
 
-        public Type getType(Type[] argsTypes) throws InvalidTypeException {
+	@Override
+        public final Type getType(Type[] argsTypes) throws InvalidTypeException {
 
                 Type type = argsTypes[0];
                 Constraint[] constrs = type.getConstraints(Constraint.ALL
@@ -74,11 +80,13 @@ public class ST_SetZToExtremities implements Function {
 
         }
 
-        public boolean isAggregate() {
+	@Override
+        public final boolean isAggregate() {
                 return false;
         }
 
-        public Value getAggregateResult() {
+	@Override
+        public final Value getAggregateResult() {
                 return null;
         }
 }

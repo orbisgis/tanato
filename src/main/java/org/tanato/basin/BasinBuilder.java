@@ -12,7 +12,6 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiLineString;
-import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.operation.union.UnaryUnionOp;
 import java.util.ArrayList;
@@ -176,8 +175,7 @@ public class BasinBuilder {
 	}
 
 	public Geometry getBasin(){
-		GeometryCollection gc = gf.createGeometryCollection(new Geometry[] {basin, lines});
-		return gc;
+		return gf.createGeometryCollection(new Geometry[] {basin, lines});
 	}
 
 	/**

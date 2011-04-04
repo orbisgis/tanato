@@ -251,15 +251,15 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, double height, int gid_source) {
+        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, double height, int gidSource) {
                 if (geom instanceof Point) {
-                        addPoint(pointsToAdd, (Point) geom, propertyValue, height, gid_source);
+                        addPoint(pointsToAdd, (Point) geom, propertyValue, height, gidSource);
 
                 } else if (geom instanceof LineString) {
-                        addGeometry(edges, geom, propertyValue, height, gid_source);
+                        addGeometry(edges, geom, propertyValue, height, gidSource);
 
                 } else if (geom instanceof Polygon) {
-                        addGeometry(edges, geom, propertyValue, height, gid_source);
+                        addGeometry(edges, geom, propertyValue, height, gidSource);
 
 
                 }
@@ -270,11 +270,11 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height, int gid_source) {
+        private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height, int gidSource) {
                 try {
                         DPoint dPoint = TINFeatureFactory.createDPoint(geom.getCoordinate());
                         dPoint.setProperty(propertyValue);
-                        dPoint.setExternalGID(gid_source);
+                        dPoint.setExternalGID(gidSource);
                         dPoint.setHeight(height);
                         points.add(dPoint);
 
@@ -287,7 +287,7 @@ public class ST_HydroTIN implements CustomQuery {
 
         }
 
-        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, double height, int gid_source) {
+        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, double height, int gidSource) {
 
                 Coordinate c1 = geometry.getCoordinates()[0];
                 Coordinate c2;
@@ -301,7 +301,7 @@ public class ST_HydroTIN implements CustomQuery {
                         try {
                                 DEdge edge = new DEdge(new DPoint(c1), new DPoint(c2));
                                 edge.setProperty(propertyValue);
-                                edge.setExternalGID(gid_source);
+                                edge.setExternalGID(gidSource);
                                 edge.setHeight(height);
                                 edges.add(edge);
                         } catch (DelaunayError d) {

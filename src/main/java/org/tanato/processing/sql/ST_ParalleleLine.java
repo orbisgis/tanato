@@ -27,7 +27,7 @@ public class ST_ParalleleLine implements Function {
         GeometryFactory gf = new GeometryFactory();
 
         @Override
-        public Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
+        public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
 
                 LineString geom = (LineString) values[0].getAsGeometry();
 
@@ -36,42 +36,42 @@ public class ST_ParalleleLine implements Function {
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_ParalleleLine";
         }
 
         @Override
-        public boolean isAggregate() {
+        public final boolean isAggregate() {
                 return false;
         }
 
         @Override
-        public Value getAggregateResult() {
+        public final Value getAggregateResult() {
                 return null;
         }
 
         @Override
-        public Type getType(Type[] types) throws InvalidTypeException {
+        public final Type getType(Type[] types) throws InvalidTypeException {
                 return TypeFactory.createType(Type.GEOMETRY);
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "Create a parallele line.";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_ParalleleLine(the_geom, 2) FROM table";
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.GEOMETRY, Argument.NUMERIC)};
 
         }
 
-        public LineString getParallel(LineString line, double d) {
+        public final LineString getParallel(LineString line, double d) {
                 Coordinate[] coords = line.getCoordinates();
                 if (coords.length != 2) {
                         throw new IllegalArgumentException("You must have only two coordinates");

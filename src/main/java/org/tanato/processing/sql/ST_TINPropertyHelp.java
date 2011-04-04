@@ -20,11 +20,11 @@ import org.orbisgis.progress.IProgressMonitor;
 
 public class ST_TINPropertyHelp implements CustomQuery {
 
-        String TOPOGRAPHIC = "topographic";
-        String MORPHOLOGIC = "morphologic";
-        String TOPOLOGIC = "topologic";
-        String NONE = "none";
-        String ANY = "any";
+        final String TOPOGRAPHIC = "topographic";
+        final String MORPHOLOGIC = "morphologic";
+        final String TOPOLOGIC = "topologic";
+        final String NONE = "none";
+	final String ANY = "any";
 
         @Override
         public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
