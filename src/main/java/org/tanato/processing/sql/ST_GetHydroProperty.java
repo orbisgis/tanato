@@ -4,9 +4,7 @@
  */
 package org.tanato.processing.sql;
 
-import com.vividsolutions.jts.geom.GeometryFactory;
 import org.gdms.data.DataSourceFactory;
-import org.gdms.data.types.InvalidTypeException;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;

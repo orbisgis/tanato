@@ -31,4 +31,10 @@ public class TINSchema {
         static final String TIN_FEATURE = "tin_feature";
         static final String TIN_GID = "tin_gid";
         static final String PROPORTION = "proportion";
+
+	/**
+	 * We don't want anyone to instanciate a TINSchema.
+	 */
+	private TINSchema(){
+	}
 }

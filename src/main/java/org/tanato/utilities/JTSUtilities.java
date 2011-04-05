@@ -6,6 +6,11 @@ import com.vividsolutions.jts.geom.Triangle;
 
 public class JTSUtilities {
 
+	/**
+	 * We don't want anyone to instanciate a JTSUtilities.
+	 */
+	private JTSUtilities(){
+	}
 	
 	/**
 	 * Create a new Triangle with the coordinates in a clockwise direction.

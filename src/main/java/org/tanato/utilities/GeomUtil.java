@@ -4,6 +4,11 @@ import com.vividsolutions.jts.geom.LineString;
 
 public class GeomUtil {
 
+	/**
+	 * We don't want to encounter any GeomUtil instance.
+	 */
+	private GeomUtil(){
+	}
 
 	/**
 	 * Reverse a linestring according to z value.
@@ -16,8 +21,7 @@ public class GeomUtil {
 		double startZ = lineString.getStartPoint().getCoordinate().z;
 		double endZ = lineString.getEndPoint().getCoordinate().z;
 		if ((!Double.isNaN(startZ) && !Double.isNaN(endZ)) && startZ < endZ){
-				LineString lineStringBis = (LineString) lineString.reverse();
-				return lineStringBis;
+				return (LineString) lineString.reverse();
 		}
 
 		return lineString;

@@ -3,7 +3,6 @@ package org.tanato.processing.sql;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Coordinate;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.logging.Level;
@@ -218,8 +217,8 @@ public abstract class DropletFollower implements CustomQuery {
          * @throws DriverException
          */
         private long getElementIndex(SpatialDataSourceDecorator sds, int theGID) throws DriverException {
-                DefaultAlphaQuery DefaultAlphaQuery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(theGID));
-                Iterator<Integer> queryResult = sds.queryIndex(DefaultAlphaQuery);
+                DefaultAlphaQuery defaultAlphaQuery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(theGID));
+                Iterator<Integer> queryResult = sds.queryIndex(defaultAlphaQuery);
                 if (queryResult == null) {
                         return -1;
                 } else if (queryResult.hasNext()) {
@@ -268,138 +267,138 @@ public abstract class DropletFollower implements CustomQuery {
                 long tIndex = getTriangleIndex(theGID);
 
                 // Create edges
-                DEdge Edge0 = new DEdge();
+                DEdge edge0 = new DEdge();
                 int eGID0 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_0_GID_FIELD);
                 long e0Index = getEdgeIndex(eGID0);
-                Edge0.setGID(eGID0);
+                edge0.setGID(eGID0);
 
-                DEdge Edge1 = new DEdge();
+                DEdge edge1 = new DEdge();
                 int eGID1 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_1_GID_FIELD);
                 long e1Index = getEdgeIndex(eGID1);
-                Edge1.setGID(eGID1);
+                edge1.setGID(eGID1);
 
-                DEdge Edge2 = new DEdge();
+                DEdge edge2 = new DEdge();
                 int eGID2 = sdsTriangles.getInt(tIndex, TINSchema.EDGE_2_GID_FIELD);
                 long e2Index = getEdgeIndex(eGID2);
-                Edge2.setGID(eGID2);
+                edge2.setGID(eGID2);
 
                 // Create Points
-                DPoint Point0 = new DPoint();
-                Edge0.setStartPoint(Point0);
+                DPoint point0 = new DPoint();
+                edge0.setStartPoint(point0);
                 int pGID0 = sdsEdges.getInt(e0Index, TINSchema.STARTPOINT_NODE_FIELD);
                 long p0Index = getPointIndex(pGID0);
-                Point0.setGID(pGID0);
+                point0.setGID(pGID0);
 
-                DPoint Point1 = new DPoint();
-                Edge0.setEndPoint(Point1);
+                DPoint point1 = new DPoint();
+                edge0.setEndPoint(point1);
                 int pGID1 = sdsEdges.getInt(e0Index, TINSchema.ENDPOINT_NODE_FIELD);
                 long p1Index = getPointIndex(pGID1);
-                Point1.setGID(pGID1);
+                point1.setGID(pGID1);
 
                 int pGID2;
-                DPoint Point2 = new DPoint();
+                DPoint point2 = new DPoint();
                 if (sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID0) {
                         // Edge1 is 0-2
-                        Edge1.setStartPoint(Point0);
-                        Edge1.setEndPoint(Point2);
+                        edge1.setStartPoint(point0);
+                        edge1.setEndPoint(point2);
                         // Edge2 cannot contain 0
                         if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID1) {
                                 // Edge2 is 1-2
-                                Edge2.setStartPoint(Point1);
-                                Edge2.setEndPoint(Point2);
+                                edge2.setStartPoint(point1);
+                                edge2.setEndPoint(point2);
                         } else {
                                 // Edge2 is 2-1
-                                Edge2.setStartPoint(Point2);
-                                Edge2.setEndPoint(Point1);
+                                edge2.setStartPoint(point2);
+                                edge2.setEndPoint(point1);
                         }
                         pGID2 = sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD);
 
                 } else if (sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID1) {
                         // Edge1 is 1-2
-                        Edge1.setStartPoint(Point1);
-                        Edge1.setEndPoint(Point2);
+                        edge1.setStartPoint(point1);
+                        edge1.setEndPoint(point2);
                         // Edge2 cannot contain 1
                         if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID0) {
                                 // Edge2 is 0-2
-                                Edge2.setStartPoint(Point0);
-                                Edge2.setEndPoint(Point2);
+                                edge2.setStartPoint(point0);
+                                edge2.setEndPoint(point2);
                         } else {
                                 // Edge2 is 2-0
-                                Edge2.setStartPoint(Point2);
-                                Edge2.setEndPoint(Point0);
+                                edge2.setStartPoint(point2);
+                                edge2.setEndPoint(point0);
                         }
                         pGID2 = sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD);
 
                 } else if (sdsEdges.getInt(e1Index, TINSchema.ENDPOINT_NODE_FIELD) == pGID0) {
                         // Edge1 is 2-0
-                        Edge1.setStartPoint(Point2);
-                        Edge1.setEndPoint(Point0);
+                        edge1.setStartPoint(point2);
+                        edge1.setEndPoint(point0);
                         // Edge2 cannot contain 0
                         if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID1) {
                                 // Edge2 is 1-2
-                                Edge2.setStartPoint(Point1);
-                                Edge2.setEndPoint(Point2);
+                                edge2.setStartPoint(point1);
+                                edge2.setEndPoint(point2);
                         } else {
                                 // Edge2 is 2-1
-                                Edge2.setStartPoint(Point2);
-                                Edge2.setEndPoint(Point1);
+                                edge2.setStartPoint(point2);
+                                edge2.setEndPoint(point1);
                         }
                         pGID2 = sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
 
                 } else {
                         // Edge1 is 2-1
-                        Edge1.setStartPoint(Point2);
-                        Edge1.setEndPoint(Point1);
+                        edge1.setStartPoint(point2);
+                        edge1.setEndPoint(point1);
                         // Edge2 cannot contain 1
                         if (sdsEdges.getInt(e2Index, TINSchema.STARTPOINT_NODE_FIELD) == pGID0) {
                                 // Edge2 is 0-2
-                                Edge2.setStartPoint(Point0);
-                                Edge2.setEndPoint(Point2);
+                                edge2.setStartPoint(point0);
+                                edge2.setEndPoint(point2);
                         } else {
                                 // Edge2 is 2-0
-                                Edge2.setStartPoint(Point2);
-                                Edge2.setEndPoint(Point0);
+                                edge2.setStartPoint(point2);
+                                edge2.setEndPoint(point0);
                         }
                         pGID2 = sdsEdges.getInt(e1Index, TINSchema.STARTPOINT_NODE_FIELD);
                 }
                 long p2Index = getPointIndex(pGID2);
-                Point2.setGID(pGID2);
+                point2.setGID(pGID2);
 
                 // Set points location
                 Coordinate coord;
                 coord = sdsPoints.getGeometry(p0Index).getCoordinate();
-                Point0.setX(coord.x);
-                Point0.setY(coord.y);
-                Point0.setZ(coord.z);
+                point0.setX(coord.x);
+                point0.setY(coord.y);
+                point0.setZ(coord.z);
 
                 coord = sdsPoints.getGeometry(p1Index).getCoordinate();
-                Point1.setX(coord.x);
-                Point1.setY(coord.y);
-                Point1.setZ(coord.z);
+                point1.setX(coord.x);
+                point1.setY(coord.y);
+                point1.setZ(coord.z);
 
                 coord = sdsPoints.getGeometry(p2Index).getCoordinate();
-                Point2.setX(coord.x);
-                Point2.setY(coord.y);
-                Point2.setZ(coord.z);
+                point2.setX(coord.x);
+                point2.setY(coord.y);
+                point2.setZ(coord.z);
 
                 // Create triangle
-                aTriangle = new DTriangle(Edge0, Edge1, Edge2);
+                aTriangle = new DTriangle(edge0, edge1, edge2);
 
                 // Set edges triangles connection
                 if (sdsEdges.getInt(e0Index, TINSchema.LEFT_TRIANGLE_FIELD) == theGID) {
-                        Edge0.setLeft(aTriangle);
+                        edge0.setLeft(aTriangle);
                 } else {
-                        Edge0.setRight(aTriangle);
+                        edge0.setRight(aTriangle);
                 }
                 if (sdsEdges.getInt(e1Index, TINSchema.LEFT_TRIANGLE_FIELD) == theGID) {
-                        Edge1.setLeft(aTriangle);
+                        edge1.setLeft(aTriangle);
                 } else {
-                        Edge1.setRight(aTriangle);
+                        edge1.setRight(aTriangle);
                 }
                 if (sdsEdges.getInt(e2Index, TINSchema.LEFT_TRIANGLE_FIELD) == theGID) {
-                        Edge2.setLeft(aTriangle);
+                        edge2.setLeft(aTriangle);
                 } else {
-                        Edge2.setRight(aTriangle);
+                        edge2.setRight(aTriangle);
                 }
 
                 // Set informations
@@ -526,16 +525,16 @@ public abstract class DropletFollower implements CustomQuery {
          * @return theTriangleGID : the triangle the point projects in. null if there is none.
          */
         private DTriangle getSpottedTriangle(Geometry aPoint, DPoint initialPoint) {
-                long count_triangles = 0;
+                long countTriangles = 0;
                 DTriangle found = null;
                 try {
-                        count_triangles = sdsTriangles.getRowCount();
+                        countTriangles = sdsTriangles.getRowCount();
                         DTriangle possibleTriangle = null;
 
                         // Process triangles until we find it
                         Geometry geom = null;
                         long i = 0;
-                        while ((i < count_triangles) && (found == null)) {
+                        while ((i < countTriangles) && (found == null)) {
                                 // get geometry
                                 geom = sdsTriangles.getGeometry(i);
                                 if (geom instanceof MultiPolygon) {
@@ -603,8 +602,7 @@ public abstract class DropletFollower implements CustomQuery {
         private static double getSlope(DTriangle aTriangle, DPoint Reference) throws DelaunayError {
                 double slope = 0.0;
 
-                // Check if ther is an intersection with one edhe
-                DPoint intersection = null;
+                // Check if there is an intersection with one edhe
                 DPoint theSlope = aTriangle.getSteepestVector();
                 DEdge intersectedEdge = null;
                 for (int i = 0; i < 3; i++) {
@@ -612,12 +610,11 @@ public abstract class DropletFollower implements CustomQuery {
                         if (!possibleEdge.isOnEdge(Reference)) {
                                 // Process only if point is not on that edge
                                 DPoint intersectedPoint = getIntersection(Reference, theSlope, possibleEdge);
-                                if (intersectedPoint != null) {
-                                        if ((!intersectedPoint.contains(possibleEdge.getStartPoint()))
-                                                && (!intersectedPoint.contains(possibleEdge.getEndPoint()))
-                                                && (!intersectedPoint.contains(Reference))) {
-                                                intersectedEdge = possibleEdge;
-                                        }
+                                if (intersectedPoint != null 
+						&& !intersectedPoint.contains(possibleEdge.getStartPoint())
+                                                && !intersectedPoint.contains(possibleEdge.getEndPoint())
+                                                && !intersectedPoint.contains(Reference)) {
+					intersectedEdge = possibleEdge;
                                 }
                         }
                 }
@@ -642,14 +639,14 @@ public abstract class DropletFollower implements CustomQuery {
 
                 // look at all elements in the array
                 while ((i < size) && (!found)) {
-                        Element Current = ElementToProcess.get(i);
-                        if (Current.getGID() == anElement.getGID()) {
+                        Element current = ElementToProcess.get(i);
+                        if (current.getGID() == anElement.getGID()) {
                                 // the 2 elements have the save GID
-                                if ((Current instanceof DTriangle)
+                                if ((current instanceof DTriangle)
                                         && (anElement instanceof DTriangle)) {
                                         // both are triangles => they are the same
                                         found = true;
-                                } else if ((Current instanceof DEdge)
+                                } else if ((current instanceof DEdge)
                                         && (anElement instanceof DEdge)) {
                                         // both are edges => they are the same
                                         found = true;
@@ -674,16 +671,16 @@ public abstract class DropletFollower implements CustomQuery {
          * @throws DelaunayError
          */
         private ArrayList<Element> getElementsToProcess(DPoint aPoint, Element anElement, boolean withWallConstraint) throws DelaunayError, DriverException {
-                ArrayList<Element> ElementToProcess = new ArrayList<Element>();
-                ElementToProcess.add(anElement);
+                ArrayList<Element> elementToProcess = new ArrayList<Element>();
+                elementToProcess.add(anElement);
                 int currentElement = 0;
-                while (currentElement < ElementToProcess.size()) {
-                        Element ElementToTest = ElementToProcess.get(currentElement);
+                while (currentElement < elementToProcess.size()) {
+                        Element elementToTest = elementToProcess.get(currentElement);
                         currentElement++;
 
-                        if (ElementToTest instanceof DTriangle) {
+                        if (elementToTest instanceof DTriangle) {
                                 // current element is a triangle
-                                DTriangle aTriangle = (DTriangle) ElementToTest;
+                                DTriangle aTriangle = (DTriangle) elementToTest;
 
                                 // Check all edges : add edges that contains the point
                                 for (int i = 0; i < 3; i++) {
@@ -692,34 +689,34 @@ public abstract class DropletFollower implements CustomQuery {
                                                 || (possibleEdge.getEndPoint().getGID() == aPoint.getGID())) {
                                                 // The edge contains aPoint => it is the one we look for.
                                                 // generate full element
-                                                if (!isElementInArray(ElementToProcess, possibleEdge)) {
+                                                if (!isElementInArray(elementToProcess, possibleEdge)) {
                                                         DEdge theEdge = populateEdgeWithGDMS(possibleEdge.getGID());
-                                                        ElementToProcess.add(theEdge);
+                                                        elementToProcess.add(theEdge);
                                                 }
                                         }
                                 }
                         } else {
                                 // current element is an edge
-                                DEdge anEdge = (DEdge) ElementToTest;
+                                DEdge anEdge = (DEdge) elementToTest;
                                 if ((!anEdge.hasProperty(HydroProperties.WALL)) || (!withWallConstraint)) {
                                         // We stop on walls
                                         // Add left element
-                                        DTriangle Left = anEdge.getLeft();
-                                        if (!isElementInArray(ElementToProcess, Left)) {
-                                                DTriangle newElement = populateTriangleWithGDMS(Left.getGID());
-                                                ElementToProcess.add(newElement);
+                                        DTriangle left = anEdge.getLeft();
+                                        if (!isElementInArray(elementToProcess, left)) {
+                                                DTriangle newElement = populateTriangleWithGDMS(left.getGID());
+                                                elementToProcess.add(newElement);
                                         }
 
                                         // Add right element
-                                        DTriangle Right = anEdge.getRight();
-                                        if (!isElementInArray(ElementToProcess, Right)) {
-                                                DTriangle newElement = populateTriangleWithGDMS(Right.getGID());
-                                                ElementToProcess.add(newElement);
+                                        DTriangle right = anEdge.getRight();
+                                        if (!isElementInArray(elementToProcess, right)) {
+                                                DTriangle newElement = populateTriangleWithGDMS(right.getGID());
+                                                elementToProcess.add(newElement);
                                         }
                                 }
                         }
                 }
-                return ElementToProcess;
+                return elementToProcess;
         }
 
         /**
@@ -734,32 +731,32 @@ public abstract class DropletFollower implements CustomQuery {
                 // First get all elements around the point
                 // anElement is an element we can start with
                 Element selectedElement = null;         // the result
-                ArrayList<Element> ElementToProcess;
+                ArrayList<Element> elementToProcess;
                 Element startElement = anElement;
                 boolean withWallConstraint = false;
                 double maxSlope = 0;                    // Current value of geatest slope
                 if (anElement.hasProperty(HydroProperties.RIVER)) {
                         // We are in a river
                         // We stay in the river
-                        ElementToProcess = getElementsToProcess(aPoint, anElement, false);
-                        for (Element ElementToTest : ElementToProcess) {
-                                if (ElementToTest.hasProperty(HydroProperties.RIVER)) {
-                                        if (ElementToTest instanceof DTriangle) {
+                        elementToProcess = getElementsToProcess(aPoint, anElement, false);
+                        for (Element elementToTest : elementToProcess) {
+                                if (elementToTest.hasProperty(HydroProperties.RIVER)) {
+                                        if (elementToTest instanceof DTriangle) {
                                                 // River goes to river, not in triangke
-                                                DTriangle aTriangle = (DTriangle) ElementToTest;
+                                                DTriangle aTriangle = (DTriangle) elementToTest;
                                                 double theSlope = getSlope(aTriangle, aPoint);
                                                 if (theSlope > maxSlope) {
                                                         maxSlope = theSlope;
-                                                        selectedElement = ElementToTest;
+                                                        selectedElement = elementToTest;
                                                 }
-                                        } else if (anElement.getGID() != ElementToTest.getGID()) {
+                                        } else if (anElement.getGID() != elementToTest.getGID()) {
                                                 // Do not go back on the same element
-                                                DEdge anEdge = (DEdge) ElementToTest;
+                                                DEdge anEdge = (DEdge) elementToTest;
                                                 double theSlope = getSlope(anEdge, aPoint);
                                                 if (theSlope >= maxSlope) {
                                                         // We prefer edges to triangles when it is possible
                                                         maxSlope = theSlope;
-                                                        selectedElement = ElementToTest;
+                                                        selectedElement = elementToTest;
                                                 }
                                         }
                                 }
@@ -767,25 +764,25 @@ public abstract class DropletFollower implements CustomQuery {
                 } else if (anElement.hasProperty(HydroProperties.DITCH)) {
                         // We are in a ditch
                         // We may go in a river or in a ditch
-                        ElementToProcess = getElementsToProcess(aPoint, anElement, false);
-                        for (Element ElementToTest : ElementToProcess) {
-                                if ((ElementToTest.hasProperty(HydroProperties.RIVER))
-                                        || (ElementToTest.hasProperty(HydroProperties.DITCH))) {
-                                        if (ElementToTest instanceof DTriangle) {
+                        elementToProcess = getElementsToProcess(aPoint, anElement, false);
+                        for (Element elementToTest : elementToProcess) {
+                                if ((elementToTest.hasProperty(HydroProperties.RIVER))
+                                        || (elementToTest.hasProperty(HydroProperties.DITCH))) {
+                                        if (elementToTest instanceof DTriangle) {
                                                 // River goes to river, not in triangke
-                                                DTriangle aTriangle = (DTriangle) ElementToTest;
+                                                DTriangle aTriangle = (DTriangle) elementToTest;
                                                 double theSlope = getSlope(aTriangle, aPoint);
                                                 if (theSlope > maxSlope) {
                                                         maxSlope = theSlope;
-                                                        selectedElement = ElementToTest;
+                                                        selectedElement = elementToTest;
                                                 }
-                                        } else if (anElement.getGID() != ElementToTest.getGID()) {
-                                                DEdge anEdge = (DEdge) ElementToTest;
+                                        } else if (anElement.getGID() != elementToTest.getGID()) {
+                                                DEdge anEdge = (DEdge) elementToTest;
                                                 double theSlope = getSlope(anEdge, aPoint);
                                                 if ((theSlope >= maxSlope) && (theSlope > 0)) {
                                                         // We prefer edges to triangles when it is possible
                                                         maxSlope = theSlope;
-                                                        selectedElement = ElementToTest;
+                                                        selectedElement = elementToTest;
                                                 }
                                         }
                                 }
@@ -802,43 +799,43 @@ public abstract class DropletFollower implements CustomQuery {
 
                 if (selectedElement == null) {
                         // No exit found => get the one we can with the greatest slope
-                        ElementToProcess = getElementsToProcess(aPoint, startElement, withWallConstraint);
+                        elementToProcess = getElementsToProcess(aPoint, startElement, withWallConstraint);
                         int levelChange = 0;
                         maxSlope = 0;
 
                         // Now we process all elements in the array and we keep the one with th greastest slope
                         // Except that rivers goes to rivers and ditches goes to ditches or rivers
                         // Also, if there is a ditch or a river we prior go to then
-                        for (Element ElementToTest : ElementToProcess) {
-                                if (ElementToTest instanceof DTriangle) {
-                                        DTriangle aTriangle = (DTriangle) ElementToTest;
+                        for (Element elementToTest : elementToProcess) {
+                                if (elementToTest instanceof DTriangle) {
+                                        DTriangle aTriangle = (DTriangle) elementToTest;
                                         double theSlope = getSlope(aTriangle, aPoint);
                                         if ((theSlope > maxSlope) && (levelChange == 0)) {
                                                 maxSlope = theSlope;
-                                                selectedElement = ElementToTest;
+                                                selectedElement = elementToTest;
                                         }
-                                } else if (anElement.getGID() != ElementToTest.getGID()) {
-                                        DEdge anEdge = (DEdge) ElementToTest;
+                                } else if (anElement.getGID() != elementToTest.getGID()) {
+                                        DEdge anEdge = (DEdge) elementToTest;
                                         double theSlope = getSlope(anEdge, aPoint);
                                         if (theSlope > 0) {
                                                 if (anEdge.hasProperty(HydroProperties.RIVER)) {
                                                         // Go to river when it exists
                                                         if ((levelChange < 2) || (theSlope >= maxSlope)) {
                                                                 maxSlope = theSlope;
-                                                                selectedElement = ElementToTest;
+                                                                selectedElement = elementToTest;
                                                                 levelChange = 2;
                                                         }
                                                 } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
                                                         // Go to ditch when we are not in a river
                                                         if ((levelChange < 1) || ((levelChange == 1) && (theSlope >= maxSlope))) {
                                                                 maxSlope = theSlope;
-                                                                selectedElement = ElementToTest;
+                                                                selectedElement = elementToTest;
                                                                 levelChange = 1;
                                                         }
                                                 } else if ((theSlope >= maxSlope) && (levelChange == 0)) {
                                                         // We prefer edges to triangles when it is possible
                                                         maxSlope = theSlope;
-                                                        selectedElement = ElementToTest;
+                                                        selectedElement = elementToTest;
                                                 }
                                         }
                                 }
@@ -971,8 +968,8 @@ public abstract class DropletFollower implements CustomQuery {
                         DPoint lastPoint = null;        // last memorized point
 
                         // Project the point on the surface
-                        double z_value = aTriangle.interpolateZ(initialPoint);
-                        aPoint = new DPoint(initialPoint.getX(), initialPoint.getY(), z_value);
+                        double zValue = aTriangle.interpolateZ(initialPoint);
+                        aPoint = new DPoint(initialPoint.getX(), initialPoint.getY(), zValue);
                         aPoint.setGID(-1);
 
                         // memorise it
@@ -1068,8 +1065,8 @@ public abstract class DropletFollower implements CustomQuery {
 
                                         // First, get edge slope this value is positive or equal to zero
                                         double maxSlope = getSlope(anEdge, aPoint);
-                                        DTriangle Left = anEdge.getLeft();
-                                        DTriangle Right = anEdge.getRight();
+                                        DTriangle left = anEdge.getLeft();
+                                        DTriangle right = anEdge.getRight();
 
                                         if (anEdge.hasProperty(HydroProperties.RIVER)) {
                                                 // do not have a look on triangles
@@ -1083,13 +1080,13 @@ public abstract class DropletFollower implements CustomQuery {
                                                 // following the wall
                                                 if (previousTriangle != null) {
                                                         // We arrived on the edge with a triangle
-                                                        if (Right == null) {
+                                                        if (right == null) {
                                                                 // Come from left
                                                                 wallSide = 1;
-                                                        } else if (Left == null) {
+                                                        } else if (left == null) {
                                                                 // Come from right
                                                                 wallSide = 2;
-                                                        } else if (previousTriangle.getGID() == Left.getGID()) {
+                                                        } else if (previousTriangle.getGID() == left.getGID()) {
                                                                 // Come from left
                                                                 wallSide = 1;
                                                         } else {
@@ -1102,39 +1099,39 @@ public abstract class DropletFollower implements CustomQuery {
                                                         if (wallSide == 1) {
                                                                 // Stay left
                                                                 if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
-                                                                        previousTriangle = Left;
+                                                                        previousTriangle = left;
                                                                 } else {
-                                                                        previousTriangle = Right;
+                                                                        previousTriangle = right;
                                                                 }
                                                         } else {
                                                                 // Stay right
                                                                 if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
-                                                                        previousTriangle = Right;
+                                                                        previousTriangle = right;
                                                                 } else {
-                                                                        previousTriangle = Left;
+                                                                        previousTriangle = left;
                                                                 }
                                                         }
                                                 }
                                                 // previousTriangle Always have a value => we can go to the point
                                         } else {
                                                 // Check the 2 triangle around the edge
-                                                if (Left != null) {
+                                                if (left != null) {
                                                         // get slope
                                                         // slope is positive only if droplet can go doan the triangle
-                                                        double slope = getSlope(Left, aPoint);
+                                                        double slope = getSlope(left, aPoint);
                                                         if (slope > maxSlope) {
                                                                 maxSlope = slope;
-                                                                nextElement = Left;
+                                                                nextElement = left;
                                                         }
                                                 }
 
-                                                if (Right != null) {
+                                                if (right != null) {
                                                         // get slope
                                                         // slope is positive only if droplet can go doan the triangle
-                                                        double slope = getSlope(Right, aPoint);
+                                                        double slope = getSlope(right, aPoint);
                                                         if (slope > maxSlope) {
                                                                 maxSlope = slope;
-                                                                nextElement = Right;
+                                                                nextElement = right;
                                                         }
                                                 }
                                                 previousTriangle = null;

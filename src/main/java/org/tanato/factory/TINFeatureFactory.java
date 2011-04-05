@@ -17,6 +17,12 @@ import org.jdelaunay.delaunay.DelaunayError;
  */
 public class TINFeatureFactory {
 
+	/**
+	 * We don't want to instanciate any TINFeatureFactory.
+	 */
+	private TINFeatureFactory(){
+	}
+
         /**
          * A factory to create a DTriangle from a Geometry
          * @param geom
