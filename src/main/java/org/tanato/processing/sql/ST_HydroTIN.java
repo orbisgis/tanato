@@ -209,7 +209,7 @@ public class ST_HydroTIN implements CustomQuery {
         }
 
         @Override
-        public Metadata getMetadata(Metadata[] tables) throws DriverException {
+        public final Metadata getMetadata(Metadata[] tables) throws DriverException {
                 return null;
 
 

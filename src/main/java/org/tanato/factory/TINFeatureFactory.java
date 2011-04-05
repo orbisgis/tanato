@@ -15,7 +15,7 @@ import org.jdelaunay.delaunay.DelaunayError;
  * A small factory used to create jDelaunay objects from JTS geometries.
  * @author ebocher
  */
-public class TINFeatureFactory {
+public final class TINFeatureFactory {
 
 	/**
 	 * We don't want to instanciate any TINFeatureFactory.

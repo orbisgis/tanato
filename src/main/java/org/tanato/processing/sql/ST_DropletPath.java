@@ -5,7 +5,6 @@ import com.vividsolutions.jts.geom.CoordinateSequence;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
-import java.io.IOException;
 import java.util.ArrayList;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.values.Value;
@@ -24,22 +23,22 @@ import org.jdelaunay.delaunay.DPoint;
 public class ST_DropletPath extends DropletFollower {
 
         @Override
-        public String getName() {
+        public final String getName() {
                 return "ST_DropletPath";
         }
 
         @Override
-        public String getDescription() {
+        public final String getDescription() {
                 return "get the path a droplet will follow on the TIN.";
         }
 
         @Override
-        public String getSqlOrder() {
+        public final String getSqlOrder() {
                 return "SELECT ST_DropletPath(pointGeom) FROM out_point, out_edges, out_triangles";
         }
 
         @Override
-        protected DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException {
+        protected final DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException {
 
                 DiskBufferDriver writer = new DiskBufferDriver(dsf, getMetadata(null));
                 GeometryFactory gf = new GeometryFactory();

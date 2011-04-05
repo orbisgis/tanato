@@ -55,7 +55,7 @@ public abstract class DropletFollower implements CustomQuery {
         private static final int maxStagnation = 10;       // to stop iterations on the same point
 
         @Override
-        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
                 if (tables.length < 3) {
                         // There MUST be at least 3 tables
                         throw new ExecutionException("needs points, edges and triangles.");
@@ -92,7 +92,7 @@ public abstract class DropletFollower implements CustomQuery {
         }
 
         @Override
-        public Metadata getMetadata(Metadata[] tables) throws DriverException {
+        public final Metadata getMetadata(Metadata[] tables) throws DriverException {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY)},
                         new String[]{TINSchema.GEOM_FIELD});
@@ -100,17 +100,17 @@ public abstract class DropletFollower implements CustomQuery {
         }
 
         @Override
-        public TableDefinition[] getTablesDefinitions() {
+        public final TableDefinition[] getTablesDefinitions() {
                 return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
+        public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.GEOMETRY)};
         }
 
         /**
-         * save Results in a file
+         * save Results in a file. This method is the one that will be overriden by the children.
          *
          * @param pathName
          * @param result
@@ -419,11 +419,11 @@ public abstract class DropletFollower implements CustomQuery {
          * @throws DriverException
          * @throws DelaunayError
          */
-        private DEdge populateEdgeWithGDMS(int GID) throws DriverException, DelaunayError {
+        private DEdge populateEdgeWithGDMS(int gid) throws DriverException, DelaunayError {
                 DEdge theEdge = null;
 
                 // Get GIDs
-                long eIndex = getEdgeIndex(GID);
+                long eIndex = getEdgeIndex(gid);
                 int leftGID = sdsEdges.getInt(eIndex, TINSchema.LEFT_TRIANGLE_FIELD);
                 int rightGID = sdsEdges.getInt(eIndex, TINSchema.RIGHT_TRIANGLE_FIELD);
 
@@ -434,9 +434,9 @@ public abstract class DropletFollower implements CustomQuery {
                         triangleLeft = populateTriangleWithGDMS(leftGID);
 
                         // Get which edge has the edge GID
-                        if (triangleLeft.getEdge(0).getGID() == GID) {
+                        if (triangleLeft.getEdge(0).getGID() == gid) {
                                 theEdge = triangleLeft.getEdge(0);
-                        } else if (triangleLeft.getEdge(1).getGID() == GID) {
+                        } else if (triangleLeft.getEdge(1).getGID() == gid) {
                                 theEdge = triangleLeft.getEdge(1);
                         } else {
                                 theEdge = triangleLeft.getEdge(2);
@@ -454,18 +454,18 @@ public abstract class DropletFollower implements CustomQuery {
                                 // Edge does not exist (edge on boundary
 
                                 // Get which edge has the edge GID
-                                if (triangleRight.getEdge(0).getGID() == GID) {
+                                if (triangleRight.getEdge(0).getGID() == gid) {
                                         theEdge = triangleRight.getEdge(0);
-                                } else if (triangleRight.getEdge(1).getGID() == GID) {
+                                } else if (triangleRight.getEdge(1).getGID() == gid) {
                                         theEdge = triangleRight.getEdge(1);
                                 } else {
                                         theEdge = triangleRight.getEdge(2);
                                 }
                         } else {
                                 // fing which has has the edge GID and change it
-                                if (triangleRight.getEdge(0).getGID() == GID) {
+                                if (triangleRight.getEdge(0).getGID() == gid) {
                                         triangleRight.setEdge(0, theEdge);
-                                } else if (triangleRight.getEdge(1).getGID() == GID) {
+                                } else if (triangleRight.getEdge(1).getGID() == gid) {
                                         triangleRight.setEdge(1, theEdge);
                                 } else {
                                         triangleRight.setEdge(2, theEdge);
@@ -542,8 +542,8 @@ public abstract class DropletFollower implements CustomQuery {
                                         MultiPolygon mp = (MultiPolygon) geom;
                                         if (mp.intersects(aPoint)) {
                                                 // Given point is in the triangle
-                                                int GID = sdsTriangles.getInt(i, TINSchema.GID);
-                                                found = populateTriangleWithGDMS(GID);
+                                                int gid = sdsTriangles.getInt(i, TINSchema.GID);
+                                                found = populateTriangleWithGDMS(gid);
                                                 double theSlope = getSlope(found, initialPoint);
                                                 if (theSlope <= 0) {
                                                         possibleTriangle = found;
@@ -573,10 +573,10 @@ public abstract class DropletFollower implements CustomQuery {
         /**
          * get edge slope from the point
          * @param anEdge
-         * @param Reference
+         * @param reference
          * @return
          */
-        private static double getSlope(DEdge anEdge, DPoint Reference) throws DelaunayError {
+        private static double getSlope(DEdge anEdge, DPoint reference) throws DelaunayError {
                 double slope = 0.0;
 
                 // Slope is the edge one
@@ -587,7 +587,7 @@ public abstract class DropletFollower implements CustomQuery {
                 if (minZ > anEdge.getEndPoint().getZ()) {
                         minZ = anEdge.getEndPoint().getZ();
                 }
-                if (Math.abs(minZ - Reference.getZ()) < Tools.EPSILON) {
+                if (Math.abs(minZ - reference.getZ()) < Tools.EPSILON) {
                         slope = -slope;
                 }
                 return slope;
@@ -596,10 +596,10 @@ public abstract class DropletFollower implements CustomQuery {
         /**
          * get triangle slope from the point
          * @param aTriangle
-         * @param Reference
+         * @param reference
          * @return
          */
-        private static double getSlope(DTriangle aTriangle, DPoint Reference) throws DelaunayError {
+        private static double getSlope(DTriangle aTriangle, DPoint reference) throws DelaunayError {
                 double slope = 0.0;
 
                 // Check if there is an intersection with one edhe
@@ -607,13 +607,13 @@ public abstract class DropletFollower implements CustomQuery {
                 DEdge intersectedEdge = null;
                 for (int i = 0; i < 3; i++) {
                         DEdge possibleEdge = aTriangle.getEdge(i);
-                        if (!possibleEdge.isOnEdge(Reference)) {
+                        if (!possibleEdge.isOnEdge(reference)) {
                                 // Process only if point is not on that edge
-                                DPoint intersectedPoint = getIntersection(Reference, theSlope, possibleEdge);
+                                DPoint intersectedPoint = getIntersection(reference, theSlope, possibleEdge);
                                 if (intersectedPoint != null 
 						&& !intersectedPoint.contains(possibleEdge.getStartPoint())
                                                 && !intersectedPoint.contains(possibleEdge.getEndPoint())
-                                                && !intersectedPoint.contains(Reference)) {
+                                                && !intersectedPoint.contains(reference)) {
 					intersectedEdge = possibleEdge;
                                 }
                         }
@@ -629,17 +629,17 @@ public abstract class DropletFollower implements CustomQuery {
 
         /**
          * Add an element in the list if it is not in
-         * @param ElementToProcess
+         * @param elementToProcess
          * @param anElement
          */
-        private static boolean isElementInArray(ArrayList<Element> ElementToProcess, Element anElement) {
-                int size = ElementToProcess.size();
+        private static boolean isElementInArray(ArrayList<Element> elementToProcess, Element anElement) {
+                int size = elementToProcess.size();
                 int i = 0;
                 boolean found = false;
 
                 // look at all elements in the array
                 while ((i < size) && (!found)) {
-                        Element current = ElementToProcess.get(i);
+                        Element current = elementToProcess.get(i);
                         if (current.getGID() == anElement.getGID()) {
                                 // the 2 elements have the save GID
                                 if ((current instanceof DTriangle)

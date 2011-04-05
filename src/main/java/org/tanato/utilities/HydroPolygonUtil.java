@@ -260,21 +260,19 @@ public class HydroPolygonUtil {
 				}
 
 			}
-		} else if (pVersBC) {
-			if (pVersAC) {
-				// ligne de separation porte par AB
-				Coordinate iAB = getPenteEdgeIntersect(edgeAB, coordC);
+		} else if (pVersBC && pVersAC) {
+			// ligne de separation porte par AB
+			Coordinate iAB = getPenteEdgeIntersect(edgeAB, coordC);
 
-				if (coordC.z > iAB.z) {
-					line.add(coordC);
-					line.add(iAB);
-				} else if (coordC.z < iAB.z) {
-					line.add(iAB);
-					line.add(coordC);
-				} else {
-					line.add(coordC);
-					line.add(iAB);
-				}
+			if (coordC.z > iAB.z) {
+				line.add(coordC);
+				line.add(iAB);
+			} else if (coordC.z < iAB.z) {
+				line.add(iAB);
+				line.add(coordC);
+			} else {
+				line.add(coordC);
+				line.add(iAB);
 			}
 		}
 
@@ -308,11 +306,8 @@ public class HydroPolygonUtil {
                                 sharedPOint = coordB;
 
                         }
-                } else if (pVersBC) {
-                        if (pVersAC) {
-                                sharedPOint = coordC;
-
-                        }
+                } else if (pVersBC && pVersAC) {
+			sharedPOint = coordC;
                 }
 
                 return sharedPOint;

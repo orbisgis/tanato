@@ -2,7 +2,7 @@ package org.tanato.utilities;
 
 import com.vividsolutions.jts.geom.LineString;
 
-public class GeomUtil {
+public final class GeomUtil {
 
 	/**
 	 * We don't want to encounter any GeomUtil instance.

@@ -10,7 +10,7 @@ package org.tanato.model;
  * custom queries.
  * @author ebocher
  */
-public class TINSchema {
+public final class TINSchema {
 
         /**
          * Field names used by TIN datasources

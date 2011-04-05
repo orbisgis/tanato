@@ -25,27 +25,27 @@ import org.jdelaunay.delaunay.DPoint;
 public class ST_DropletLine extends DropletFollower {
 
     @Override
-    public String getName() {
+    public final String getName() {
         return "ST_DropletLine";
     }
 
     @Override
-    public String getDescription() {
+    public final String getDescription() {
         return "get the line a droplet will follow on the TIN.";
     }
 
     @Override
-    public String getSqlOrder() {
+    public final String getSqlOrder() {
         return "SELECT ST_DropletLine(pointGeom) FROM out_point, out_edges, out_triangles";
     }
 
     @Override
-    protected DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException {
+    protected final DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException {
 
         DiskBufferDriver writer = new DiskBufferDriver(dsf, getMetadata(null));
-        int ResultSize = result.size();
+        int resultSize = result.size();
         GeometryFactory gf = new GeometryFactory();
-        Coordinate[] coords = new Coordinate[ResultSize];
+        Coordinate[] coords = new Coordinate[resultSize];
         int i = 0;
         for (DPoint aPoint : result) {
             coords[i] = aPoint.getCoordinate();
@@ -53,7 +53,7 @@ public class ST_DropletLine extends DropletFollower {
         }
         CoordinateSequence cs = new CoordinateArraySequence(coords);
 
-        if (ResultSize == 1) {
+        if (resultSize == 1) {
             Point thePoint = new Point(cs, gf);
             writer.addValues(new Value[]{ValueFactory.createValue(thePoint)});
         }
