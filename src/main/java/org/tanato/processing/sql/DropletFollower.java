@@ -513,7 +513,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param aPoint2
          * @return distance
          */
-        private static final double distanceBetween(DPoint aPoint1, DPoint aPoint2) {
+        private static double distanceBetween(DPoint aPoint1, DPoint aPoint2) {
                 return (aPoint1.getX() - aPoint2.getX()) * (aPoint1.getX() - aPoint2.getX())
                         + (aPoint1.getY() - aPoint2.getY()) * (aPoint1.getY() - aPoint2.getY())
                         + (aPoint1.getZ() - aPoint2.getZ()) * (aPoint1.getZ() - aPoint2.getZ());
@@ -577,7 +577,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param Reference
          * @return
          */
-        private static final double getSlope(DEdge anEdge, DPoint Reference) throws DelaunayError {
+        private static double getSlope(DEdge anEdge, DPoint Reference) throws DelaunayError {
                 double slope = 0.0;
 
                 // Slope is the edge one
@@ -600,7 +600,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param Reference
          * @return
          */
-        private static final double getSlope(DTriangle aTriangle, DPoint Reference) throws DelaunayError {
+        private static double getSlope(DTriangle aTriangle, DPoint Reference) throws DelaunayError {
                 double slope = 0.0;
 
                 // Check if ther is an intersection with one edhe
@@ -635,7 +635,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @param ElementToProcess
          * @param anElement
          */
-        private static final boolean isElementInArray(ArrayList<Element> ElementToProcess, Element anElement) {
+        private static boolean isElementInArray(ArrayList<Element> ElementToProcess, Element anElement) {
                 int size = ElementToProcess.size();
                 int i = 0;
                 boolean found = false;
@@ -862,7 +862,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @return intersection
          * @throws DelaunayError
          */
-        private static final DPoint getIntersection(DPoint point1, DPoint v1, DEdge anEdge) throws DelaunayError {
+        private static DPoint getIntersection(DPoint point1, DPoint v1, DEdge anEdge) throws DelaunayError {
                 DPoint intersection = null;
                 DPoint p3 = anEdge.getPointLeft();
                 DPoint p4 = anEdge.getPointRight();
