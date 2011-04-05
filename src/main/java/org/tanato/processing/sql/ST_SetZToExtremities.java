@@ -67,7 +67,7 @@ public class ST_SetZToExtremities implements Function {
         }
 
 	@Override
-        public final Type getType(Type[] argsTypes) throws InvalidTypeException {
+        public final Type getType(Type[] argsTypes) {
 
                 Type type = argsTypes[0];
                 Constraint[] constrs = type.getConstraints(Constraint.ALL

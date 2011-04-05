@@ -73,7 +73,7 @@ public class ST_LINEARINTERPOLATION implements Function {
         }
 
         @Override
-        public final Type getType(Type[] types) throws InvalidTypeException {
+        public final Type getType(Type[] types) {
                 return TypeFactory.createType(Type.GEOMETRY);
         }
 

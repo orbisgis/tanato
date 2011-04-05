@@ -51,7 +51,7 @@ public class ST_ParalleleLine implements Function {
         }
 
         @Override
-        public final Type getType(Type[] types) throws InvalidTypeException {
+        public final Type getType(Type[] types) {
                 return TypeFactory.createType(Type.GEOMETRY);
         }
 
