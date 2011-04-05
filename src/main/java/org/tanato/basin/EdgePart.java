@@ -6,7 +6,8 @@
 package org.tanato.basin;
 
 /**
- *
+ * EdgePart are used to process just the area that really interests us when computing
+ * a basin graph.
  * @author alexis
  */
 class EdgePart {
@@ -18,6 +19,23 @@ class EdgePart {
 	private int gidLeft;
 	private int gidRight;
 
+	/**
+	 * Instanciate a new EdgePart
+	 * @param gid
+	 *	The GID of the edge in the TIN
+	 * @param start
+	 *	The start of the EdgePart in the Edge. Parametric value between 0 and 1.
+	 * @param end
+	 *	The end of the EdgePart in the Edge. Parametric value between 0 and 1. Always greater than start.
+	 * @param gidStart
+	 *	The GID of the start point of the edge.
+	 * @param gidEnd
+	 *	The GID of the end point of the edge.
+	 * @param gidLeft
+	 *	The GID of the left triangle of the edge.
+	 * @param gidRight
+	 *	The GID of the right triangle of the edge.
+	 */
 	public EdgePart(int gid, double start, double end, int gidStart, int gidEnd, int gidLeft, int gidRight){
 		this.gid = gid;
 		this.start = start;

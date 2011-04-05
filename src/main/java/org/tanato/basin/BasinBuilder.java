@@ -37,7 +37,8 @@ import org.tanato.factory.TINFeatureFactory;
 import org.tanato.model.TINSchema;
 
 /**
- *
+ * This class is used to build basin graphs from a given TIN, and a given TIn feature
+ * used as a start for our processing.
  * @author alexis
  */
 public class BasinBuilder {
@@ -48,10 +49,10 @@ public class BasinBuilder {
         private SpatialDataSourceDecorator sdsTriangles;
         private SpatialDataSourceDecorator sdsPoints;
         private GeometryFactory gf = new GeometryFactory();
-        //Used to set the dimension of the TIN feature
-        private int TIN_POINT = 0;
-        private int TIN_EDGE = 1;
-        private int TIN_TRIANGLE = 2;
+        //Used to set the dimension of the TIN feature we use to start our processing.
+        public final int TIN_POINT = 0;
+        public final int TIN_EDGE = 1;
+        public final int TIN_TRIANGLE = 2;
         private final DataSourceFactory dsf;
 	private LinkedList<EdgePart> remainingElements;
 	private LinkedList<PointPart> remainingPoints;
@@ -116,6 +117,10 @@ public class BasinBuilder {
 
 	}
 
+	/**
+	 * This method actually computes the basin from the informations given to build the BasinBuilder.
+	 * @throws DriverException
+	 */
 	public final void computeBasin() throws DriverException {
 		try {
 			if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GEOM_FIELD)) {
@@ -139,9 +144,9 @@ public class BasinBuilder {
 			if(!dsf.getIndexManager().isIndexed(sdsPoints.getName(), TINSchema.GID)){
 				dsf.getIndexManager().buildIndex(sdsPoints.getName(), TINSchema.GID, new NullProgressMonitor());
 			}
-			if(startType==0){
+			if(startType==TIN_POINT){
 				processMeshPoint(firstGID);
-			} else if(startType == 1) {
+			} else if(startType == TIN_EDGE) {
 				Value[] edLine = retrieveLine(firstGID, sdsEdges);
 				DEdge ed = retrieveEdge(firstGID);
 				ed.forceTopographicOrientation();
@@ -151,7 +156,7 @@ public class BasinBuilder {
 						edLine[gidEdgeStart].getAsInt(),
 						edLine[gidEdgeEnd].getAsInt());
 				processEdgePart(ep);
-			} else if (startType ==3){
+			} else if (startType ==TIN_TRIANGLE){
 				throw new IllegalArgumentException("Triangles are not supported as an input currently");
 			}
 			while(!remainingElements.isEmpty()||!remainingPoints.isEmpty()){
@@ -173,7 +178,7 @@ public class BasinBuilder {
 		}
 	}
 
-	public Geometry getBasin(){
+	public final Geometry getBasin(){
 		return gf.createGeometryCollection(new Geometry[] {basin, lines});
 	}
 
@@ -182,42 +187,62 @@ public class BasinBuilder {
 	 * @param pp
 	 */
 	private void processPoint(PointPart pp){
+		//We determine if our point is a point of the mesh, ot if it is an intermediate
+		//point that lies on an edge of the mesh.
 		int type = pp.getOwnerType();
 		if(type == 0){
+			//We're on a point of the mesh.
 			processMeshPoint(pp.getOwnerGID());
 		} else if(type == 1){
+			//We're on an edge of the mesh.
+			//We retrieve the GID of the said edge.
 			int edgeGid = pp.getOwnerGID();
 			try{
+				//We retrieve the line of Values in the GDMS file.
 				Value[] edLine = retrieveLine(edgeGid, sdsEdges);
+				//We will analyse the property, to know what to do.
 				int edProp = edLine[edgeProperty].getAsInt();
-				if(HydroProperties.check(edProp,  HydroProperties.LEFTWELL) ||
-						HydroProperties.check(edProp, HydroProperties.RIGHTWELL) ||
-						HydroProperties.check(edProp, HydroProperties.RIVER) ||
-						HydroProperties.check(edProp, HydroProperties.DITCH) ||
-						HydroProperties.check(edProp, HydroProperties.LEFTCOLINEAR) ||
-						HydroProperties.check(edProp, HydroProperties.RIGHTCOLINEAR) ||
-						HydroProperties.check(edProp, HydroProperties.TALWEG)){
+				//In the following cases, we will analyze a part of an edge in the mesh.
+				//More precisely, we will study what area of the triangles that lies
+				//behind the edge directly comes in the part of the edge that is upper
+				//than pp.
+				//if we have a well, we must do this analysis
+				boolean isWell = HydroProperties.check(edProp,  HydroProperties.LEFTWELL) ||
+						HydroProperties.check(edProp, HydroProperties.RIGHTWELL);
+				//If we have a river or a ditch, we must do this analysis
+				boolean isRiverOrDitch =HydroProperties.check(edProp, HydroProperties.RIVER) ||
+						HydroProperties.check(edProp, HydroProperties.DITCH) ;
+				//if we have a talweg, we must do this analysis
+				boolean isTalweg = HydroProperties.check(edProp, HydroProperties.LEFTCOLINEAR) ||
+						HydroProperties.check(edProp, HydroProperties.RIGHTCOLINEAR)||
+						HydroProperties.check(edProp, HydroProperties.TALWEG);
+				if(isWell || isRiverOrDitch || isTalweg){
 					//We must create a new EdgePart that will be used later.
 					DEdge ed = retrieveEdge(edgeGid);
 					ed.forceTopographicOrientation();
+					//We build an EdgePart. its startPoint will be
+					// the startPoint of the DEdge, as we've ensured topographic orientation,
+					//its end will be pp.
 					EdgePart ep = buildEdgePart(ed,
 						ed.getStartPoint(), new DPoint(pp.getPt()),
-						edgeGid, edLine[gidEdgeLeft].getAsInt(),
+						edgeGid,
+						edLine[gidEdgeLeft].getAsInt(),
 						edLine[gidEdgeRight].getAsInt(),
 						edLine[gidEdgeStart].getAsInt(),
 						edLine[gidEdgeEnd].getAsInt());
-
+					//We've added an element that needs to be analyzed
 					remainingElements.add(ep);
 				} else if(HydroProperties.check(edProp, HydroProperties.RIGHTSLOPE)){
 					//We analyze the left triangle
+					//We can have only a line, here.
 					if(!basin.contains(gf.createPoint(pp.getPt()))){
 						analyzeTriangleLine(pp.getPt(),edLine[gidEdgeLeft].getAsInt() );
 					}
-				} else if(HydroProperties.check(edProp, HydroProperties.LEFTTSLOPE)){
+				} else if(HydroProperties.check(edProp, HydroProperties.LEFTTSLOPE)
+						&& !basin.contains(gf.createPoint(pp.getPt()))){
 					//We analyze the right triangle
-					if(!basin.contains(gf.createPoint(pp.getPt()))){
-						analyzeTriangleLine(pp.getPt(),edLine[gidEdgeRight].getAsInt() );
-					}
+					//We can have only a line, here.
+					analyzeTriangleLine(pp.getPt(),edLine[gidEdgeRight].getAsInt() );
 				}
 
 			} catch (DriverException ex) {
@@ -239,8 +264,6 @@ public class BasinBuilder {
 		try{
 			Iterator<Integer> it = sdsEdges.queryIndex(daq);
 			Iterator<Integer> ipt = sdsPoints.queryIndex(ptquery);
-			List<Integer> edgeGIDS = new LinkedList<Integer>();
-			List<Integer> further = new LinkedList<Integer>();
 			Value[] ptValue = sdsPoints.getRow(ipt.next());
 
 			while(it.hasNext()){
@@ -248,19 +271,25 @@ public class BasinBuilder {
 				//the water to the current node.
 				Integer cur = it.next();
 				int edProp = sdsEdges.getInt(cur, TINSchema.PROPERTY_FIELD);
-				if(HydroProperties.check(edProp,  HydroProperties.LEFTWELL) ||
-						HydroProperties.check(edProp, HydroProperties.RIGHTWELL) ||
-						HydroProperties.check(edProp, HydroProperties.RIVER) ||
-						HydroProperties.check(edProp, HydroProperties.DITCH) ||
-						HydroProperties.check(edProp, HydroProperties.LEFTCOLINEAR) ||
+				//Wells, rivers, ditches and talwegs must be processed as EdgeParts.
+				boolean isWell = HydroProperties.check(edProp,  HydroProperties.LEFTWELL) ||
+						HydroProperties.check(edProp, HydroProperties.RIGHTWELL);
+				boolean isRiverOrDitch = HydroProperties.check(edProp, HydroProperties.RIVER) ||
+						HydroProperties.check(edProp, HydroProperties.DITCH);
+				boolean isTalweg = HydroProperties.check(edProp, HydroProperties.LEFTCOLINEAR) ||
 						HydroProperties.check(edProp, HydroProperties.RIGHTCOLINEAR) ||
-						HydroProperties.check(edProp, HydroProperties.TALWEG)){
+						HydroProperties.check(edProp, HydroProperties.TALWEG);
+				if(isWell || isRiverOrDitch || isTalweg){
 					//These edges will have to be processed as EdgeParts later.
 					DEdge ed = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(cur));
 					ed.forceTopographicOrientation();
+					//We need a new EdgePart, that begins in the start of the DEdge
+					//and end in the end of the DEdge.
 					EdgePart ep = buildEdgePart(ed,
-						ed.getStartPoint(), ed.getEndPoint(),
-						sdsEdges.getInt(cur, TINSchema.GID), sdsEdges.getInt(cur, TINSchema.LEFT_TRIANGLE_FIELD),
+						ed.getStartPoint(),
+						ed.getEndPoint(),
+						sdsEdges.getInt(cur, TINSchema.GID),
+						sdsEdges.getInt(cur, TINSchema.LEFT_TRIANGLE_FIELD),
 						sdsEdges.getInt(cur, TINSchema.RIGHT_TRIANGLE_FIELD),
 						sdsEdges.getInt(cur, TINSchema.STARTPOINT_NODE_FIELD),
 						sdsEdges.getInt(cur, TINSchema.ENDPOINT_NODE_FIELD));
@@ -296,46 +325,68 @@ public class BasinBuilder {
 	}
 
 	/**
-	 * Try to get a line from a couple point-triangle.
+	 * Try to get a line from a couple point-triangle. we are in the case that some wate comes
+	 * from the triangle and end in the point. We must potentially add a line
+	 * to our basin graph.
 	 * @param cd
 	 * @param triangleGID
 	 */
 	private void analyzeTriangleLine(Coordinate cd, int triangleGID){
 		try{
+			//We must know the triangle we need to analyze. To do so, let's retrieve
+			//the good line in the table of triangles.
 			DefaultAlphaQuery triquery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(triangleGID));
 			Iterator<Integer> itri = sdsTriangles.queryIndex(triquery);
+			//We actually rtrieve the line that interests us.
 			Value[] triline = sdsTriangles.getRow(itri.next());
 			DTriangle dtr = TINFeatureFactory.createDTriangle(triline[geomTriIndex].getAsGeometry());
 			DPoint pt = TINFeatureFactory.createDPoint(cd);
+			//We retrieve the point that will be used to build the line we'll add to the basin graph.
 			DPoint si = dtr.getCounterSteepestIntersection(pt);
 			if(!pt.equals(si) && si!=null){
 				//We must add a line from cd to the found point
 				LineString ls = gf.createLineString(new Coordinate[] {cd, si.getCoordinate()});
+				//we process the union between the current line, and the LineString
+				//we've just created.
 				ArrayList<Geometry> un = new ArrayList<Geometry>();
 				un.add(ls);
 				un.add(lines);
 				UnaryUnionOp.union(un);
 				//We must add the new coordinate to the points that have to be treated.
+				//For that, we retrieve the three edges of the triangle, and search the
+				//one that contains the new PointPart.
 				List<Integer> edgeGids = new LinkedList<Integer>();
 				edgeGids.add(triline[gidTriE0Index].getAsInt());
 				edgeGids.add(triline[gidTriE1Index].getAsInt());
 				edgeGids.add(triline[gidTriE2Index].getAsInt());
 				for(Integer i : edgeGids){
-					DefaultAlphaQuery you = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(i));
-					Iterator<Integer> it = sdsEdges.queryIndex(you);
+					//We know the GID of the edge, we must retrieve its geometry as a DEdge.
+					DefaultAlphaQuery search = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(i));
+					Iterator<Integer> it = sdsEdges.queryIndex(search);
 					Value[] val = sdsEdges.getRow(it.next());
 					DEdge cur = TINFeatureFactory.createDEdge(val[geomEdgeIndex].getAsGeometry());
+					//We check that the current edge contains si.
 					if(cur.contains(si)){
 						cur.forceTopographicOrientation();
+						//It will be more efficient to test first if the point is
+						//an extremity of the edge, and if it is not, if it is inside.
 						if(cur.getStartPoint().equals(si)){
+							//the new PointPart contains a point of the mesh.
 							PointPart pp = new PointPart(si.getCoordinate(), val[gidEdgeStart].getAsInt(),0);
 							remainingPoints.add(pp);
+							break;
 						} else if (cur.getEndPoint().equals(si)){
+							//the new PointPart contains a point of the mesh.
 							PointPart pp = new PointPart(si.getCoordinate(), val[gidEdgeEnd].getAsInt(),0 );
 							remainingPoints.add(pp);
+							break;
 						} else {
+							//the new PointPart does not contain a point of the mesh. We
+							//instanciate it with the GID of the edge that contains it,
+							//and with the value 1 to says that it is on an edge.
 							PointPart pp = new PointPart(si.getCoordinate(), i, 1);
 							remainingPoints.add(pp);
+							break;
 						}
 					}
 				}
@@ -348,6 +399,11 @@ public class BasinBuilder {
 		
 	}
 
+	/**
+	 * This method determines which behaviour to have when processing an EdgePart,
+	 * ie which calls to analyzeTriangle we must make.
+	 * @param ep
+	 */
 	private void processEdgePart(EdgePart ep){
 		int epGID = ep.getGid();
 		DefaultAlphaQuery daq = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(epGID));
@@ -357,16 +413,20 @@ public class BasinBuilder {
 			int epProp = sdsEdges.getInt(edgeIndex, TINSchema.PROPERTY_FIELD);
 			//If the edge is a ridge, we just add it.
 			if(HydroProperties.check(epProp, HydroProperties.RIDGE)){
+				//We process the union.
 				ArrayList<Geometry> geom = new ArrayList<Geometry>();
 				geom.add(lines);
 				geom.add((LineString) sdsEdges.getGeometry(edgeIndex));
 				UnaryUnionOp.union(geom);
+			//When processing a talweg, we must analyze the two neigbour triangles.
 			} else if(HydroProperties.check(epProp, HydroProperties.TALWEG)) {
 				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.LEFT_TRIANGLE_FIELD));
 				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.RIGHT_TRIANGLE_FIELD));
+			//For rightslopes and rightwells, we just analyse the left triangle.
 			} else if(HydroProperties.check(epProp, HydroProperties.RIGHTSLOPE)||
 					HydroProperties.check(epProp, HydroProperties.RIGHTWELL)){
 				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.LEFT_TRIANGLE_FIELD));
+			//For leftslopes and leftwells, we just analyze the right triangle.
 			} else if (HydroProperties.check(epProp, HydroProperties.LEFTTSLOPE)||
 					HydroProperties.check(epProp, HydroProperties.LEFTWELL)) {
 				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.RIGHT_TRIANGLE_FIELD));
@@ -376,25 +436,39 @@ public class BasinBuilder {
 		}
 	}
 
+	/**
+	 * When processing an edge part, we must sometimes analyze the triangles
+	 * that are associated to it, to know which part of the triangle's area
+	 * pour into the EdgePart.
+	 * @param ep
+	 * @param edgeIndex
+	 * @param triangleGID
+	 */
 	private void analyzeTriangle(EdgePart ep, long edgeIndex, int triangleGID){
 		DefaultAlphaQuery daq = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(triangleGID));
 		try {
 			Iterator<Integer> it = sdsTriangles.queryIndex(daq);
 			if(it.hasNext()){
+				//We retrieve the line of values associated to the triangle.
 				Value [] triLine = sdsTriangles.getRow(it.next());
+				//We build the matching DTriangle.
 				DTriangle left =  TINFeatureFactory.createDTriangle(triLine[geomTriIndex].getAsGeometry());
+				//We build the DEdge.
 				DEdge current = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(edgeIndex));
 				current.forceTopographicOrientation();
+				//We build the exact DPoint that is the start of the EdgePart.
 				double s = ep.getStart();
 				double xstart = (1-s)*current.getStartPoint().getX()+s*current.getEndPoint().getX();
 				double ystart = (1-s)*current.getStartPoint().getY()+s*current.getEndPoint().getY();
 				double zstart = (1-s)*current.getStartPoint().getZ()+s*current.getEndPoint().getZ();
 				DPoint p1 = new DPoint(xstart, ystart, zstart);
+				//We build the exact DPoint that is the end of the EdgePart.
 				double e = ep.getEnd();
 				double xend = (1-e)*current.getStartPoint().getX()+e*current.getEndPoint().getX();
 				double yend = (1-e)*current.getStartPoint().getY()+e*current.getEndPoint().getY();
 				double zend = (1-e)*current.getStartPoint().getZ()+e*current.getEndPoint().getZ();
 				DPoint p2 = new DPoint(xend, yend, zend);
+				//We need the two other DEdge that form this DTriangle.
 				List<DEdge> others = retrieveOtherEdges(current, triLine);
 				DEdge e1 = others.get(0);
 				DEdge e2 = others.get(1);
@@ -405,6 +479,8 @@ public class BasinBuilder {
 				//lastPoint is the point of the triangle currently under analysis
 				//that is not on the DEdge current.
 				DPoint lastPoint = left.getOppositePoint(current);
+				//We retrieve the line associated to e1 in the table of edges, and use it to fill some
+				//useful values.
 				Value[] lineE1 = retrieveLine(e1.getGID(), sdsEdges);
 				int gidE1Left = lineE1[gidEdgeLeft].getAsInt();
 				int gidE1Right = lineE1[gidEdgeRight].getAsInt();
@@ -412,25 +488,40 @@ public class BasinBuilder {
 				int gidE1End = lineE1[gidEdgeEnd].getAsInt();
 				//We must set the gid of the last point of left.
 				lastPoint.setGID(gidE1End == ep.getGidStart() || gidE1End == ep.getGidEnd() ? gidE1Start : gidE1End);
+				//We retrieve the line associated to e2 in the table of edges, and use it to fill some
+				//useful values.
 				Value[] lineE2 = retrieveLine(e2.getGID(), sdsEdges);
 				int gidE2Left = lineE2[gidEdgeLeft].getAsInt();
 				int gidE2Right = lineE2[gidEdgeRight].getAsInt();
 				int gidE2Start = lineE2[gidEdgeStart].getAsInt();
 				int gidE2End = lineE2[gidEdgeEnd].getAsInt();
 				List<Geometry> union = new ArrayList<Geometry>();
-//				union.add(lines);
 				union.add(basin);
+				//We'll use buildEdgePart to build our EdgeParts,
+				//as it will use our points in the right order.
 				if(e1.contains(proj1)){
 					if(e1.contains(proj2)){
 						//We have just one edgepart to build
 						//It is based on e1
 						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									proj2.getCoordinate()});
+						//We check that we're not already in the basin.
 						if(!basin.contains(lsjts)){
-							remainingElements.add(buildEdgePart(e1, proj1, proj2, e1.getGID(), gidE1Left,
-								gidE1Right, gidE1Start, gidE1End));
-							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
-									proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
+							remainingElements.add(buildEdgePart(e1, 
+											proj1,
+											proj2,
+											e1.getGID(),
+											gidE1Left,
+											gidE1Right,
+											gidE1Start,
+											gidE1End));
+							//We create a new Polygon, and add it to the list we'll use for the union.
+							Coordinate[] cs = new Coordinate[] {
+										p1.getCoordinate(),
+										p2.getCoordinate(),
+										proj2.getCoordinate(),
+										proj1.getCoordinate(),
+										p1.getCoordinate()};
 							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 							if(!poly.isEmpty()){
 								union.add(poly.convexHull());
@@ -441,12 +532,23 @@ public class BasinBuilder {
 						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									lastPoint.getCoordinate()});
 						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
+						//We check that we're not already in the basin.
 						if(!basin.contains(lsjts1)){
-							remainingElements.add(buildEdgePart(e1, proj1, lastPoint, e1.getGID(), gidE1Left,
-								gidE1Right, gidE1Start, gidE1End));
-							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(), 
-								projCoord,
-								lastPoint.getCoordinate(), proj1.getCoordinate(),p1.getCoordinate()};
+							remainingElements.add(buildEdgePart(e1, 
+										proj1,
+										lastPoint,
+										e1.getGID(),
+										gidE1Left,
+										gidE1Right,
+										gidE1Start,
+										gidE1End));
+							//We create a new Polygon, and add it to the list we'll use for the union.
+							Coordinate[] cs = new Coordinate[] {
+										p1.getCoordinate(),
+										projCoord,
+										lastPoint.getCoordinate(),
+										proj1.getCoordinate(),
+										p1.getCoordinate()};
 							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 							if(!poly.isEmpty()){
 								union.add(poly.convexHull());
@@ -455,9 +557,17 @@ public class BasinBuilder {
 						}
 						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
 									lastPoint.getCoordinate()});
+						//We check that we're not already in the basin.
 						if(!basin.contains(lsjts2)){
-							remainingElements.add(buildEdgePart(e2, proj2, lastPoint, e2.getGID(), gidE2Left,
-								gidE2Right, gidE2Start, gidE2End));
+							remainingElements.add(buildEdgePart(e2, 
+											proj2,
+											lastPoint,
+											e2.getGID(),
+											gidE2Left,
+											gidE2Right,
+											gidE2Start,
+											gidE2End));
+							//We create a new Polygon, and add it to the list we'll use for the union.
 							Coordinate[] cs = new Coordinate[] { p2.getCoordinate(),proj2.getCoordinate(),
 									lastPoint.getCoordinate(),projCoord,p2.getCoordinate()};
 							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
@@ -470,9 +580,17 @@ public class BasinBuilder {
 					if(e2.contains(proj2)){
 						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									proj2.getCoordinate()});
+						//We check that we're not already in the basin.
 						if(!basin.contains(lsjts)){
-							remainingElements.add(buildEdgePart(e2, proj1, proj2, e2.getGID(), gidE2Left,
-								gidE2Right, gidE2Start, gidE2End));
+							remainingElements.add(buildEdgePart(e2, 
+											proj1,
+											proj2,
+											e2.getGID(),
+											gidE2Left,
+											gidE2Right,
+											gidE2Start,
+											gidE2End));
+							//We create a new Polygon, and add it to the list we'll use for the union.
 							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
 									proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
 							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
@@ -485,12 +603,23 @@ public class BasinBuilder {
 						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									lastPoint.getCoordinate()});
 						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
+						//We check that we're not already in the basin.
 						if(!basin.contains(lsjts1)){
-							remainingElements.add(buildEdgePart(e2, proj1, lastPoint, e2.getGID(), gidE2Left,
-								gidE2Right, gidE2Start, gidE2End));
-							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),
-								projCoord,
-								lastPoint.getCoordinate(), proj1.getCoordinate(),p1.getCoordinate()};
+							remainingElements.add(buildEdgePart(e2, 
+											proj1,
+											lastPoint,
+											e2.getGID(),
+											gidE2Left,
+											gidE2Right,
+											gidE2Start,
+											gidE2End));
+							//We create a new Polygon, and add it to the list we'll use for the union.
+							Coordinate[] cs = new Coordinate[] {
+										p1.getCoordinate(),
+										projCoord,
+										lastPoint.getCoordinate(),
+										proj1.getCoordinate(),
+										p1.getCoordinate()};
 							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 							if(!poly.isEmpty()){
 								union.add(poly.convexHull());
@@ -499,11 +628,23 @@ public class BasinBuilder {
 						}
 						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
 									lastPoint.getCoordinate()});
+						//We check that we're not already in the basin.
 						if(!basin.contains(lsjts2)){
-							remainingElements.add(buildEdgePart(e1, proj2, lastPoint, e1.getGID(), gidE1Left,
-								gidE1Right, gidE1Start, gidE1End));
-							Coordinate[] cs = new Coordinate[] { p2.getCoordinate(),proj2.getCoordinate(),
-									lastPoint.getCoordinate(),projCoord,p2.getCoordinate()};
+							remainingElements.add(buildEdgePart(e1, 
+											proj2,
+											lastPoint,
+											e1.getGID(),
+											gidE1Left,
+											gidE1Right,
+											gidE1Start,
+											gidE1End));
+							//We create a new Polygon, and add it to the list we'll use for the union.
+							Coordinate[] cs = new Coordinate[] { 
+										p2.getCoordinate(),
+										proj2.getCoordinate(),
+										lastPoint.getCoordinate(),
+										projCoord,
+										p2.getCoordinate()};
 							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 							if(!poly.isEmpty()){
 								union.add(poly.convexHull());
@@ -522,6 +663,14 @@ public class BasinBuilder {
 
 	}
 
+	/**
+	 * Knowing a DEdge and a a line in the table of triangles, we try to retrieve
+	 * the two other edges of the triangles as DEdge instances.
+	 * @param first
+	 * @param triLine
+	 * @return
+	 * @throws DriverException
+	 */
 	private List<DEdge> retrieveOtherEdges( DEdge first, Value[] triLine) throws DriverException{
 		List<DEdge> ret = new ArrayList<DEdge>();
 		int gid0 = triLine[gidTriE0Index].getAsInt();
