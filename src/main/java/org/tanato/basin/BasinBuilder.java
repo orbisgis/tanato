@@ -505,9 +505,8 @@ public class BasinBuilder {
 					if(e1.contains(proj2)){
 						//We have just one edgepart to build
 						//It is based on e1
-						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
-									proj2.getCoordinate()});
 						//We check that we're not already in the basin.
+						//We build the polygon we're about to add, to perform tests on it.
 						Coordinate[] cs = new Coordinate[] {
 									p1.getCoordinate(),
 									p2.getCoordinate(),
@@ -515,7 +514,7 @@ public class BasinBuilder {
 									proj1.getCoordinate(),
 									p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						if(!basin.covers(lsjts)&&!poly.isEmpty()){
+						if(!basin.covers(poly)&&!poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 											proj1,
 											proj2,
@@ -529,20 +528,19 @@ public class BasinBuilder {
 						}
 					} else {
 						//e2 contains proj2. We must add two edgeparts to the remaining elements.
-						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
-									lastPoint.getCoordinate()});
 						//projCoord is the coordinate of the intersection between the line supported
 						//by the steepest path vecto and that contains the last point, and the
 						//edge that contains the current EdgePart.
 						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
 						//We check that we're not already in the basin.
-							Coordinate[] cs = new Coordinate[] {
-										p1.getCoordinate(),
-										projCoord,
-										lastPoint.getCoordinate(),
-										proj1.getCoordinate(),
-										p1.getCoordinate()};
-							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+						//We build the polygon we're about to add, to perform tests on it.
+						Coordinate[] cs = new Coordinate[] {
+									p1.getCoordinate(),
+									projCoord,
+									lastPoint.getCoordinate(),
+									proj1.getCoordinate(),
+									p1.getCoordinate()};
+						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						if(!basin.covers(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 										proj1,
@@ -557,8 +555,7 @@ public class BasinBuilder {
 							
 
 						}
-						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
-									lastPoint.getCoordinate()});
+						//We build the polygon we're about to add, to perform tests on it.
 						cs = new Coordinate[] {
 									p2.getCoordinate(),
 									proj2.getCoordinate(),
@@ -584,9 +581,8 @@ public class BasinBuilder {
 				} else if (e2.contains(proj1)){
 					if(e2.contains(proj2)){
 						//e2 contains both proj1 and proj2
-						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
-									proj2.getCoordinate()});
 						//We check that we're not already in the basin.
+						//We build the polygon we're about to add, to perform tests on it.
 						Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
 								proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
@@ -605,8 +601,7 @@ public class BasinBuilder {
 					} else {
 						//e1 contains proj2, and e2 contains proj1.
 						//We must add two edgeparts to the remaining elements.
-						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
-									lastPoint.getCoordinate()});
+						//We build the polygon we're about to add, to perform tests on it.
 						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
 						Coordinate[] cs = new Coordinate[] {
 									p1.getCoordinate(),
@@ -631,8 +626,7 @@ public class BasinBuilder {
 							}
 
 						}
-						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
-									lastPoint.getCoordinate()});
+						//We build the polygon we're about to add, to perform tests on it.
 						cs = new Coordinate[] {
 									p2.getCoordinate(),
 									proj2.getCoordinate(),
