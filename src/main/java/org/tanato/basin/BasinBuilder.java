@@ -744,13 +744,17 @@ public class BasinBuilder {
 			if(ratiostart<ratioend){
 				if(Math.abs(ratiostart)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
-					remainingPoints.add(pp);
+					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+						remainingPoints.add(pp);
+					}
 				}
 				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
 			} else {
 				if(Math.abs(ratioend)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
-					remainingPoints.add(pp);
+					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+						remainingPoints.add(pp);
+					}
 				}
 				return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
 			}
@@ -760,13 +764,17 @@ public class BasinBuilder {
 			if(ratiostart<ratioend){
 				if(Math.abs(ratiostart)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
-					remainingPoints.add(pp);
+					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+						remainingPoints.add(pp);
+					}
 				}
 				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
 			} else {
 				if(Math.abs(ratioend)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
-					remainingPoints.add(pp);
+					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+						remainingPoints.add(pp);
+					}
 				}
 				return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
 			}
