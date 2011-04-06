@@ -31,6 +31,7 @@ import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DTriangle;
 import org.jdelaunay.delaunay.DelaunayError;
+import org.jdelaunay.delaunay.Tools;
 import org.jhydrocell.hydronetwork.HydroProperties;
 import org.orbisgis.progress.NullProgressMonitor;
 import org.tanato.factory.TINFeatureFactory;
@@ -235,11 +236,11 @@ public class BasinBuilder {
 				} else if(HydroProperties.check(edProp, HydroProperties.RIGHTSLOPE)){
 					//We analyze the left triangle
 					//We can have only a line, here.
-					if(!basin.contains(gf.createPoint(pp.getPt()))){
+					if(!basin.covers(gf.createPoint(pp.getPt()))){
 						analyzeTriangleLine(pp.getPt(),edLine[gidEdgeLeft].getAsInt() );
 					}
 				} else if(HydroProperties.check(edProp, HydroProperties.LEFTTSLOPE)
-						&& !basin.contains(gf.createPoint(pp.getPt()))){
+						&& !basin.covers(gf.createPoint(pp.getPt()))){
 					//We analyze the right triangle
 					//We can have only a line, here.
 					analyzeTriangleLine(pp.getPt(),edLine[gidEdgeRight].getAsInt() );
@@ -294,7 +295,8 @@ public class BasinBuilder {
 						sdsEdges.getInt(cur, TINSchema.STARTPOINT_NODE_FIELD),
 						sdsEdges.getInt(cur, TINSchema.ENDPOINT_NODE_FIELD));
 					Coordinate[] cs = new Coordinate[] {ed.getStartPoint().getCoordinate(),ed.getEndPoint().getCoordinate()};
-					if(!basin.contains(gf.createLineString(cs))){
+					LineString ls = gf.createLineString(cs);
+					if(!basin.covers(ls)&& !lines.covers(ls)){
 						remainingElements.add(ep);
 					}
 				}
@@ -304,14 +306,14 @@ public class BasinBuilder {
 					//We must analyze the left triangle.
 					int leftGID = sdsEdges.getInt(cur, TINSchema.LEFT_TRIANGLE_FIELD);
 					Coordinate coord = ptValue[geomPointIndex].getAsGeometry().getCoordinates()[0];
-					if(!basin.contains(gf.createPoint(coord))){
+					if(!basin.covers(gf.createPoint(coord))){
 						analyzeTriangleLine(coord, leftGID);
 					}
 				} else if(HydroProperties.check(edProp, HydroProperties.LEFTTSLOPE)){
 					//We must analyze the right triangle.
 					int rightGID = sdsEdges.getInt(cur, TINSchema.RIGHT_TRIANGLE_FIELD);
 					Coordinate coord = ptValue[geomPointIndex].getAsGeometry().getCoordinates()[0];
-					if(!basin.contains(gf.createPoint(coord))){
+					if(!basin.covers(gf.createPoint(coord))){
 						analyzeTriangleLine(coord, rightGID);
 					}
 				}
@@ -506,7 +508,14 @@ public class BasinBuilder {
 						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									proj2.getCoordinate()});
 						//We check that we're not already in the basin.
-						if(!basin.contains(lsjts)){
+						Coordinate[] cs = new Coordinate[] {
+									p1.getCoordinate(),
+									p2.getCoordinate(),
+									proj2.getCoordinate(),
+									proj1.getCoordinate(),
+									p1.getCoordinate()};
+						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+						if(!basin.covers(lsjts)&&!poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 											proj1,
 											proj2,
@@ -516,24 +525,25 @@ public class BasinBuilder {
 											gidE1Start,
 											gidE1End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							Coordinate[] cs = new Coordinate[] {
-										p1.getCoordinate(),
-										p2.getCoordinate(),
-										proj2.getCoordinate(),
-										proj1.getCoordinate(),
-										p1.getCoordinate()};
-							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-							if(!poly.isEmpty()){
-								union.add(poly.convexHull());
-							}
+							union.add(poly.convexHull());
 						}
 					} else {
 						//e2 contains proj2. We must add two edgeparts to the remaining elements.
 						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									lastPoint.getCoordinate()});
+						//projCoord is the coordinate of the intersection between the line supported
+						//by the steepest path vecto and that contains the last point, and the
+						//edge that contains the current EdgePart.
 						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
 						//We check that we're not already in the basin.
-						if(!basin.contains(lsjts1)){
+							Coordinate[] cs = new Coordinate[] {
+										p1.getCoordinate(),
+										projCoord,
+										lastPoint.getCoordinate(),
+										proj1.getCoordinate(),
+										p1.getCoordinate()};
+							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+						if(!basin.covers(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 										proj1,
 										lastPoint,
@@ -543,22 +553,21 @@ public class BasinBuilder {
 										gidE1Start,
 										gidE1End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							Coordinate[] cs = new Coordinate[] {
-										p1.getCoordinate(),
-										projCoord,
-										lastPoint.getCoordinate(),
-										proj1.getCoordinate(),
-										p1.getCoordinate()};
-							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-							if(!poly.isEmpty()){
 								union.add(poly.convexHull());
-							}
+							
 
 						}
 						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
 									lastPoint.getCoordinate()});
+						cs = new Coordinate[] {
+									p2.getCoordinate(),
+									proj2.getCoordinate(),
+									lastPoint.getCoordinate(),
+									projCoord,
+									p2.getCoordinate()};
+						poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
-						if(!basin.contains(lsjts2)){
+						if(!basin.covers(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e2, 
 											proj2,
 											lastPoint,
@@ -568,20 +577,20 @@ public class BasinBuilder {
 											gidE2Start,
 											gidE2End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							Coordinate[] cs = new Coordinate[] { p2.getCoordinate(),proj2.getCoordinate(),
-									lastPoint.getCoordinate(),projCoord,p2.getCoordinate()};
-							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-							if(!poly.isEmpty()){
-								union.add(poly.convexHull());
-							}
+							union.add(poly.convexHull());
+							
 						}
 					}
 				} else if (e2.contains(proj1)){
 					if(e2.contains(proj2)){
+						//e2 contains both proj1 and proj2
 						LineString lsjts = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									proj2.getCoordinate()});
 						//We check that we're not already in the basin.
-						if(!basin.contains(lsjts)){
+						Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
+								proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
+						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
+						if(!basin.covers(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e2, 
 											proj1,
 											proj2,
@@ -591,20 +600,23 @@ public class BasinBuilder {
 											gidE2Start,
 											gidE2End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
-									proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
-							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-							if(!poly.isEmpty()){
-								union.add(poly.convexHull());
-							}
+							union.add(poly.convexHull());
 						}
 					} else {
-						//e1 contains proj2. We must add two edgeparts to the remaining elements.
+						//e1 contains proj2, and e2 contains proj1.
+						//We must add two edgeparts to the remaining elements.
 						LineString lsjts1 = gf.createLineString(new Coordinate[] {proj1.getCoordinate(),
 									lastPoint.getCoordinate()});
 						Coordinate projCoord = left.getSteepestIntersectionPoint(lastPoint).getCoordinate();
+						Coordinate[] cs = new Coordinate[] {
+									p1.getCoordinate(),
+									projCoord,
+									lastPoint.getCoordinate(),
+									proj1.getCoordinate(),
+									p1.getCoordinate()};
+						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
-						if(!basin.contains(lsjts1)){
+						if(!basin.covers(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e2, 
 											proj1,
 											lastPoint,
@@ -614,13 +626,6 @@ public class BasinBuilder {
 											gidE2Start,
 											gidE2End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							Coordinate[] cs = new Coordinate[] {
-										p1.getCoordinate(),
-										projCoord,
-										lastPoint.getCoordinate(),
-										proj1.getCoordinate(),
-										p1.getCoordinate()};
-							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 							if(!poly.isEmpty()){
 								union.add(poly.convexHull());
 							}
@@ -628,8 +633,15 @@ public class BasinBuilder {
 						}
 						LineString lsjts2 = gf.createLineString(new Coordinate[] {proj2.getCoordinate(),
 									lastPoint.getCoordinate()});
+						cs = new Coordinate[] {
+									p2.getCoordinate(),
+									proj2.getCoordinate(),
+									lastPoint.getCoordinate(),
+									projCoord,
+									p2.getCoordinate()};
+						poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
-						if(!basin.contains(lsjts2)){
+						if(!basin.covers(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 											proj2,
 											lastPoint,
@@ -639,13 +651,6 @@ public class BasinBuilder {
 											gidE1Start,
 											gidE1End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							Coordinate[] cs = new Coordinate[] { 
-										p2.getCoordinate(),
-										proj2.getCoordinate(),
-										lastPoint.getCoordinate(),
-										projCoord,
-										p2.getCoordinate()};
-							Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 							if(!poly.isEmpty()){
 								union.add(poly.convexHull());
 							}
@@ -743,13 +748,13 @@ public class BasinBuilder {
 			double ratiostart = (ptStart.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
 			double ratioend = (ptEnd.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
 			if(ratiostart<ratioend){
-				if(ratiostart==0){
+				if(Math.abs(ratiostart)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
 					remainingPoints.add(pp);
 				}
 				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
 			} else {
-				if(ratioend==0){
+				if(Math.abs(ratioend)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
 					remainingPoints.add(pp);
 				}
@@ -759,13 +764,13 @@ public class BasinBuilder {
 			double ratiostart = (ptStart.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
 			double ratioend = (ptEnd.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
 			if(ratiostart<ratioend){
-				if(ratiostart==0){
+				if(Math.abs(ratiostart)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
 					remainingPoints.add(pp);
 				}
 				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
 			} else {
-				if(ratioend==0){
+				if(Math.abs(ratioend)<Tools.EPSILON){
 					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
 					remainingPoints.add(pp);
 				}

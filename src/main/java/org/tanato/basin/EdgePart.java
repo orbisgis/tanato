@@ -162,6 +162,10 @@ class EdgePart {
 		this.start = start;
 	}
 
+	@Override
+	public String toString(){
+		return "Defining edge GID : "+gid;
+	}
 
 
 }

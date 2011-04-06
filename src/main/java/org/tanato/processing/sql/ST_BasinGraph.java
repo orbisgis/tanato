@@ -6,7 +6,6 @@
 package org.tanato.processing.sql;
 
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -132,9 +131,7 @@ public class ST_BasinGraph implements CustomQuery  {
                         new String[]{TINSchema.GEOM_FIELD});
                 int triangleCount = 1;
                 writer.writeMetadata(triangleCount, md);
-                GeometryFactory gf = new GeometryFactory();
-                        writer.addValues(new Value[]{ValueFactory.createValue(geom),});
-
+		writer.addValues(new Value[]{ValueFactory.createValue(geom),});
                 // write the row indexes
                 writer.writeRowIndexes();
                 // write envelope
