@@ -60,7 +60,6 @@ public class BasinBuilder {
 	private Geometry basin;
 	private MultiLineString lines;
 	private int geomTriIndex;
-	private int gidTriIndex;
 	private int gidTriE0Index;
 	private int gidTriE1Index;
 	private int gidTriE2Index;
@@ -99,7 +98,6 @@ public class BasinBuilder {
 			if(!sdsTriangles.isOpen()){
 					sdsTriangles.open();
 			}
-			gidTriIndex = sdsTriangles.getFieldIndexByName(TINSchema.GID);
 			geomTriIndex = sdsTriangles.getFieldIndexByName(TINSchema.GEOM_FIELD);
 			gidTriE0Index = sdsTriangles.getFieldIndexByName(TINSchema.EDGE_0_GID_FIELD);
 			gidTriE1Index = sdsTriangles.getFieldIndexByName(TINSchema.EDGE_1_GID_FIELD);
@@ -514,7 +512,7 @@ public class BasinBuilder {
 									proj1.getCoordinate(),
 									p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						if(!basin.covers(poly)&&!poly.isEmpty()){
+						if(!isCoveredByBasin(poly)&&!poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 											proj1,
 											proj2,
@@ -541,7 +539,7 @@ public class BasinBuilder {
 									proj1.getCoordinate(),
 									p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						if(!basin.covers(poly) && !poly.isEmpty()){
+						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 										proj1,
 										lastPoint,
@@ -564,7 +562,7 @@ public class BasinBuilder {
 									p2.getCoordinate()};
 						poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
-						if(!basin.covers(poly) && !poly.isEmpty()){
+						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e2, 
 											proj2,
 											lastPoint,
@@ -586,7 +584,7 @@ public class BasinBuilder {
 						Coordinate[] cs = new Coordinate[] {p1.getCoordinate(),p2.getCoordinate(),
 								proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
-						if(!basin.covers(poly) && !poly.isEmpty()){
+						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e2, 
 											proj1,
 											proj2,
@@ -611,7 +609,7 @@ public class BasinBuilder {
 									p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
-						if(!basin.covers(poly) && !poly.isEmpty()){
+						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e2, 
 											proj1,
 											lastPoint,
@@ -635,7 +633,7 @@ public class BasinBuilder {
 									p2.getCoordinate()};
 						poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
-						if(!basin.covers(poly) && !poly.isEmpty()){
+						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
 							remainingElements.add(buildEdgePart(e1, 
 											proj2,
 											lastPoint,
@@ -779,5 +777,17 @@ public class BasinBuilder {
 				return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
 			}
 		}
+	}
+
+	private boolean isCoveredByBasin(Geometry geom){
+		int n = basin.getNumGeometries();
+		Geometry ng ;
+		for(int i=0; i<n; i++){
+			ng = basin.getGeometryN(i);
+			if(ng.covers(geom)){
+				return true;
+			}
+		}
+		return false;
 	}
 }
