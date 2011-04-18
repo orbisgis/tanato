@@ -34,13 +34,15 @@ public class ST_DropletPath extends DropletFollower {
 
         @Override
         public final String getSqlOrder() {
-                return "SELECT ST_DropletPath(pointGeom) FROM out_point, out_edges, out_triangles";
+                return "SELECT ST_DropletPath(pointGeom [, autorizedProperties [, endingproperties]]) FROM out_point, out_edges, out_triangles";
         }
 
         @Override
         protected final DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException {
-
+                // Create writer
                 DiskBufferDriver writer = new DiskBufferDriver(dsf, getMetadata(null));
+
+                // Process all coordinates and save each point
                 GeometryFactory gf = new GeometryFactory();
                 Coordinate[] coords = new Coordinate[1];
                 int i = 0;
@@ -52,6 +54,7 @@ public class ST_DropletPath extends DropletFollower {
                         writer.addValues(new Value[]{ValueFactory.createValue(thePoint),
                                         ValueFactory.createValue(i)});
                 }
+                // Close writer
                 writer.writingFinished();
 
                 return writer;

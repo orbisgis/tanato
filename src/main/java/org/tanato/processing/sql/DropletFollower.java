@@ -52,23 +52,54 @@ public abstract class DropletFollower implements CustomQuery {
         private SpatialDataSourceDecorator sdsPoints = null;
         private SpatialDataSourceDecorator sdsEdges = null;
         private SpatialDataSourceDecorator sdsTriangles = null;
-        private static final int maxStagnation = 10;       // to stop iterations on the same point
+         // List of reached points
+        private ArrayList<DPoint> theList = null;
+        // Count each times we stay on the same point and stop when max is reached
+        private int currentStagnation = 0;
+        private static final int maxStagnation = 10;
+        private DPoint lastPoint;
+        // to follow walls
+        private int wallSide = edgeNoWall;
+        private DTriangle previousTriangle = null;
+        private static final int edgeNoWall = 0;
+        private static final int edgeWallLeft = 1;
+        private static final int edgeWallRight = 2;
+        // to follow sewers
+        private boolean isInSewers;
+        // using properties
+        private int autorizedProperties;
+        private int endingProperties;
 
         @Override
         public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
                 if (tables.length < 3) {
                         // There MUST be at least 3 tables
                         throw new ExecutionException("needs points, edges and triangles.");
+                } else if (values.length < 1) {
+                        // There MUST be at least 1 value
+                        throw new ExecutionException("needs at least a start point.");
+                } else if (values.length > 3) {
+                        // There MUST be at least 1 value
+                        throw new ExecutionException("number of parameters exceeded.");
                 } else {
-                        ArrayList<DPoint> result = null;
+                        autorizedProperties = -1;
+                        endingProperties = 0;
+                        theList = null;
 
                         try {
                                 // Set informations from tables and Values
                                 populateData(dsf, pm, tables);
                                 Geometry testPoint = getInitiaPoint(values[0]);
 
+                                if (values.length >= 2) {
+                                        autorizedProperties = values[1].getAsInt();
+                                }
+                                if (values.length >= 3) {
+                                        endingProperties = values[1].getAsInt();
+                                }
+
                                 // process path
-                                result = dropletFollows(testPoint);
+                                dropletFollows(testPoint);
 
                         } catch (DriverException ex) {
                                 logger.log(Level.SEVERE, "There has been an error while opening a table, or counting its lines.\n", ex);
@@ -80,11 +111,11 @@ public abstract class DropletFollower implements CustomQuery {
                         closeData();
 
                         // create value
-                        if (result != null) {
+                        if (theList != null) {
                                 try {
-                                        return createDataSource(dsf, result);
+                                        return createDataSource(dsf, theList);
                                 } catch (DriverException ex) {
-                                        logger.log(Level.SEVERE, "There has been an error while opening a table, or counting its lines.\n", ex);
+                                        logger.log(Level.SEVERE, "There has been an error while saving a table.\n", ex);
                                 }
                         }
                 }
@@ -106,7 +137,10 @@ public abstract class DropletFollower implements CustomQuery {
 
         @Override
         public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.GEOMETRY)};
+                return new Arguments[]{new Arguments(Argument.GEOMETRY),
+                                        new Arguments(Argument.GEOMETRY, Argument.INT),
+                                        new Arguments(Argument.GEOMETRY, Argument.INT, Argument.INT)
+                };
         }
 
         /**
@@ -140,9 +174,9 @@ public abstract class DropletFollower implements CustomQuery {
                                 dsf.getIndexManager().buildIndex(aTable.getName(), TINSchema.GID, pm);
                         }
                 } catch (IndexException ex) {
-                        throw new ExecutionException("Unable to create index.",ex);
+                        throw new ExecutionException("Unable to create index.", ex);
                 } catch (NoSuchTableException ex) {
-                        throw new ExecutionException("Unable to create index.",ex);
+                        throw new ExecutionException("Unable to create index.", ex);
                 }
                 return aSourceGenerator;
         }
@@ -217,14 +251,19 @@ public abstract class DropletFollower implements CustomQuery {
          * @throws DriverException
          */
         private long getElementIndex(SpatialDataSourceDecorator sds, int theGID) throws DriverException {
-                DefaultAlphaQuery defaultAlphaQuery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(theGID));
-                Iterator<Integer> queryResult = sds.queryIndex(defaultAlphaQuery);
-                if (queryResult == null) {
+                if (sds == null) {
+                        // sds not set
                         return -1;
-                } else if (queryResult.hasNext()) {
-                        return queryResult.next();
                 } else {
-                        return -1;
+                        DefaultAlphaQuery defaultAlphaQuery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(theGID));
+                        Iterator<Integer> queryResult = sds.queryIndex(defaultAlphaQuery);
+                        if (queryResult == null) {
+                                return -1;
+                        } else if (queryResult.hasNext()) {
+                                return queryResult.next();
+                        } else {
+                                return -1;
+                        }
                 }
         }
 
@@ -610,15 +649,15 @@ public abstract class DropletFollower implements CustomQuery {
                         if (!possibleEdge.isOnEdge(reference)) {
                                 // Process only if point is not on that edge
                                 DPoint intersectedPoint = getIntersection(reference, theSlope, possibleEdge);
-                                if (intersectedPoint != null 
-						&& !intersectedPoint.contains(possibleEdge.getStartPoint())
-                                                && !intersectedPoint.contains(possibleEdge.getEndPoint())
-                                                && !intersectedPoint.contains(reference)) {
-					intersectedEdge = possibleEdge;
+                                if (intersectedPoint != null
+                                        && !intersectedPoint.contains(possibleEdge.getStartPoint())
+                                        && !intersectedPoint.contains(possibleEdge.getEndPoint())
+                                        && !intersectedPoint.contains(reference)) {
+                                        intersectedEdge = possibleEdge;
                                 }
                         }
                 }
-
+                // If there is an intersection, the droplet can follow the triangle and slope is > 0
                 if (intersectedEdge != null) {
                         slope = Math.abs(aTriangle.getSlope());
                 } else {
@@ -628,7 +667,8 @@ public abstract class DropletFollower implements CustomQuery {
         }
 
         /**
-         * Add an element in the list if it is not in
+         * Add an element in the list if it is not already present
+         * 
          * @param elementToProcess
          * @param anElement
          */
@@ -927,17 +967,331 @@ public abstract class DropletFollower implements CustomQuery {
                 return intersection;
         }
 
+        /**
+         * Check if we can use a property
+         * @param property
+         * @return autorization
+         */
+        private boolean canUseProperty(int property) {
+                return ((autorizedProperties & property) != 0);
+        }
+
         // ----------------------------------------------------------------
         // MAIN METHOD
         // ----------------------------------------------------------------
         /**
+         * add a point to the droplet path
+         * Point is memorised only once. currentStagnation is incremented each time we have the same point
+         * 
+         * @param aPoint
+         */
+        private void addPointToDropletPath(DPoint aPoint) {
+                aPoint.setGID(-1);
+                if (lastPoint == null) {
+                        // No previous point
+                        theList.add(aPoint);
+                        lastPoint = aPoint;
+                        currentStagnation = 1;
+                } else if (!lastPoint.contains(aPoint)) {
+                        // The next point is not the previous one
+                        theList.add(aPoint);
+                        lastPoint = aPoint;
+                        currentStagnation = 1;
+                } else {
+                        currentStagnation++;
+                }
+        }
+
+        /**
+         * Select next edge in the sewers
+         * If lastEdge is null, it means we start with a sewer. Otherwise, we are following sewers
+         * NB : we do not take into account the slope.
+         * 
+         * @param aPoint
+         * @param lastEdge
+         * @return
+         */
+        private Element selectNextSewer(DPoint aPoint, DEdge lastEdge) {
+                Element theElement = null;
+
+                if (lastEdge == null) {
+                        
+                } else {
+
+                }
+                return theElement;
+        }
+
+        /**
+         * Select next point in the sewers.
+         * None of the two elements can be null
+         *
+         * @param anEdge
+         * @param lastPoint
+         * @return
+         */
+        private Element selectNextSewer(DEdge anEdge, DPoint lastPoint) {
+                Element theElement = null;
+
+                if (anEdge.getStartPoint().getGID() == lastPoint.getGID()) {
+                        theElement = anEdge.getEndPoint();
+                }
+                else {
+                        theElement = anEdge.getStartPoint();
+                }
+                // Take care we do not exit from sewers
+                if ((! theElement.hasProperty(HydroProperties.SEWER_INPUT)) && (theElement.hasProperty(HydroProperties.SEWER_OUTPUT))) {
+                        // The point exists from sewers
+                        isInSewers = false;
+                }
+                return theElement;
+        }
+
+       /**
+         * process a droplet on a Truangle.
+         *
+         * Current element is a triangle. We can be inside, or on an edge.
+         * we go down the slope to find a point on an edge (even if start/end point)
+         * next element is an edge
+         *
+         * @param aPoint
+         * @param aTriangle
+         * @return
+         * @throws DelaunayError
+         * @throws DriverException
+         */
+        private Element processDropletOnTriangle(DPoint aPoint, DTriangle aTriangle) throws DelaunayError, DriverException {
+                Element theElement = null;
+
+                // We take triangle's slope
+                // We find the edge that intersects, and the intersection point
+                DPoint intersection = null;
+                DPoint theSlope = aTriangle.getSteepestVector();
+                DEdge intersectedEdge = null;
+                for (int i = 0; i < 3; i++) {
+                        DEdge possibleEdge = aTriangle.getEdge(i);
+                        if (possibleEdge.isOnEdge(aPoint)) {
+                                // aPoint is on the edge
+                                // We keep the edge only if there is no other one
+                                if (intersectedEdge == null) {
+                                        // maybe we follow the edge
+                                        intersectedEdge = possibleEdge;
+                                        intersection = aPoint;
+                                }
+                        } else {
+                                // Point is not on the edge
+                                DPoint intersectedPoint = getIntersection(aPoint, theSlope, possibleEdge);
+                                if (intersectedPoint != null) {
+                                        // we've got an intersection
+                                        if (intersectedEdge == null) {
+                                                // none found yet
+                                                intersectedEdge = possibleEdge;
+                                                intersection = intersectedPoint;
+                                        } else {
+                                                // we take the one with the greater distance
+                                                // in case we would have miss the isOnEdge function
+                                                if (distanceBetween(intersectedPoint, aPoint) > distanceBetween(intersection, aPoint)) {
+                                                        // this point is better
+                                                        intersectedEdge = possibleEdge;
+                                                        intersection = intersectedPoint;
+                                                }
+                                        }
+                                }
+                        }
+                }
+
+                if (intersection != null) {
+                        // We memorise the point
+                        aPoint = intersection;
+                        addPointToDropletPath(aPoint);
+
+                        // set next element data
+                        theElement = populateEdgeWithGDMS(intersectedEdge.getGID());
+                } else {
+                        // there is a problem
+                        // there is no intersection with the triangle
+                        // The triangle might be flat
+                        theElement = null;
+                }
+                wallSide = edgeNoWall;
+                return theElement;
+        }
+
+        /**
+         * process a droplet on an edge.
+         *
+         * Current element is an Edge.
+         * If we reach a river or a ditch, we follow it.
+         * If we find a wall and we must follow it, we do it, depending on previous position of the droplet
+         * At least, we can travel the edge to go to a triangle or follow the edge to go to lowest point.
+         *
+         * @param aPoint
+         * @param anEdge
+         * @param useHydroProperties
+         * @return the element we go into
+         * @throws DelaunayError
+         */
+        private Element processDropletOnAnEdge(DPoint aPoint, DEdge anEdge) throws DelaunayError {
+                Element theElement = null;
+
+                // current element is an edge
+                // the next element follows the greatest slope
+                Element nextElement = null;
+
+                // First, get edge slope this value is positive or equal to zero
+                double maxSlope = getSlope(anEdge, aPoint);
+                DTriangle left = anEdge.getLeft();
+                DTriangle right = anEdge.getRight();
+
+                if (isInSewers) {
+                        // We are in sewers - next element is a point
+                        previousTriangle = null;
+                        wallSide = edgeNoWall;
+                        maxSlope = 1.0;
+                        nextElement = selectNextSewer(anEdge, aPoint);
+                } else if ((anEdge.hasProperty(HydroProperties.RIVER)) && (canUseProperty(HydroProperties.RIVER))) {
+                        // do not have a look on triangles
+                        previousTriangle = null;
+                        wallSide = edgeNoWall;
+                } else if ((anEdge.hasProperty(HydroProperties.DITCH)) && (canUseProperty(HydroProperties.DITCH))) {
+                        // do not have a look on triangles
+                        previousTriangle = null;
+                        wallSide = edgeNoWall;
+                } else if ((anEdge.hasProperty(HydroProperties.WALL)) && (canUseProperty(HydroProperties.WALL))) {
+                        // following the wall
+                        if (previousTriangle != null) {
+                                // We arrived on the edge with a triangle
+                                if (right == null) {
+                                        // Come from left
+                                        wallSide = edgeWallLeft;
+                                } else if (left == null) {
+                                        // Come from right
+                                        wallSide = edgeWallRight;
+                                } else if (previousTriangle.getGID() == left.getGID()) {
+                                        // Come from left
+                                        wallSide = edgeWallLeft;
+                                } else {
+                                        // Come from right
+                                        wallSide = edgeWallRight;
+                                }
+                        } else {
+                                // We come from another edge (last one was a point)
+                                // Define the new value for previousTriangle
+                                if (wallSide == edgeWallLeft) {
+                                        // Stay left
+                                        if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
+                                                previousTriangle = left;
+                                        } else {
+                                                previousTriangle = right;
+                                        }
+                                } else {
+                                        // Stay right
+                                        if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
+                                                previousTriangle = right;
+                                        } else {
+                                                previousTriangle = left;
+                                        }
+                                }
+                        }
+                        // previousTriangle Always have a value => we can go to the point
+                } else {
+                        // Check the 2 triangle around the edge
+                        if (left != null) {
+                                // get slope
+                                // slope is positive only if droplet can go doan the triangle
+                                double slope = getSlope(left, aPoint);
+                                if (slope > maxSlope) {
+                                        maxSlope = slope;
+                                        nextElement = left;
+                                }
+                        }
+
+                        if (right != null) {
+                                // get slope
+                                // slope is positive only if droplet can go doan the triangle
+                                double slope = getSlope(right, aPoint);
+                                if (slope > maxSlope) {
+                                        maxSlope = slope;
+                                        nextElement = right;
+                                }
+                        }
+                        previousTriangle = null;
+                        wallSide = edgeNoWall;
+                }
+
+                if (maxSlope > 0) {
+                        if (nextElement == null) {
+                                // next step is on the edge
+                                // => follow the edge
+                                if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
+                                        aPoint = anEdge.getEndPoint();
+                                } else {
+                                        aPoint = anEdge.getStartPoint();
+                                }
+
+                                // We memorise the lowest point
+                                addPointToDropletPath(aPoint);
+                                theElement = aPoint;
+                        } else {
+                                // Next element is a triangle
+                                theElement = nextElement;
+                                // We stay on the same point => aPoint does not change
+                        }
+                } else {
+                        // Slope is flat => stop process
+                        theElement = null;
+                }
+
+                return theElement;
+        }
+
+        /**
+         * process a droplet on a Point.
+         *
+         * Current element is a point.
+         * If there is a sewer entry at this point, we stop.
+         * Otherwise, we turn around the point, starting at previous element.
+         * We go to the greatests slope (triangle / edge)
+         *
+         * @param aPoint
+         * @param lastEdge
+         * @return the element we go into.
+         * @throws DelaunayError
+         * @throws DriverException
+         */
+        private Element processDropletOnPoint(DPoint aPoint, DEdge lastEdge) throws DelaunayError, DriverException {
+                Element theElement = null;
+                if (((aPoint.hasProperty(HydroProperties.SEWER_INPUT)) || (isInSewers))
+                        && (canUseProperty(HydroProperties.SEWER_INPUT))) {
+                        // go into sewers
+                        isInSewers = true;
+                        wallSide = edgeNoWall;
+
+                        // try to find the point connected that is in sewers
+                        theElement = selectNextSewer(aPoint, lastEdge);
+                } else {
+                        // First, we get the element we come from. It might be an edge.
+                        Element selectedElement;
+                        selectedElement = turnAroundthePoint(aPoint, lastEdge, previousTriangle);
+                        if (selectedElement != null) {
+                                // We go to a next edge
+                                theElement = selectedElement;
+                        } else {
+                                // End of process: no successor
+                                theElement = null;
+                        }
+                }
+                return theElement;
+        }
+
+        /**
          * Droplet follower
          *
          * @param initialPoint
-         * @return thePath : list of DEdge that defines the path the droplet follows
+         * @param useHydroProperties
          * @throws DelaunayError
          */
-        private ArrayList<DPoint> dropletFollows(Geometry initialGeometry) throws DriverException, DelaunayError {
+        private void dropletFollows(Geometry initialGeometry) throws DriverException, DelaunayError {
                 // First we have to find the triangle that contains the point
                 // Then
                 // - if we have a triangle, we foloow the slope to the next edge
@@ -956,254 +1310,62 @@ public abstract class DropletFollower implements CustomQuery {
                 // It may happen that we stay on the same same point. That means we are in a hole => we stop iterations
                 // if we find such a point
 
-                ArrayList<DPoint> theList = new ArrayList<DPoint>();
+                theList = new ArrayList<DPoint>();
+                lastPoint = null;
 
                 // Find the point on the surface
                 DPoint initialPoint = TINFeatureFactory.createDPoint(initialGeometry);
-                DTriangle aTriangle = this.getSpottedTriangle(initialGeometry, initialPoint);
-                if (aTriangle != null) {
+                DTriangle aTriangle = getSpottedTriangle(initialGeometry, initialPoint);
+                if (aTriangle == null) {
+                        // Droplet stays on initial point : it is outside mesh
+                        addPointToDropletPath(initialPoint);
+                } else {
                         // point is on the mesh, in a triangle
                         DEdge anEdge = null;            // doplet on an edge
-                        DPoint aPoint = null;           // doplet on a point
-                        DPoint lastPoint = null;        // last memorized point
 
-                        // Project the point on the surface
-                        double zValue = aTriangle.interpolateZ(initialPoint);
-                        aPoint = new DPoint(initialPoint.getX(), initialPoint.getY(), zValue);
-                        aPoint.setGID(-1);
-
-                        // memorise it
-                        theList.add(aPoint);
-                        lastPoint = aPoint;
-                        int stagnation = 1;     // we count how many times we are on the same point
+                        // Project the point on the surface and memorise it
+                        DPoint aPoint = new DPoint(initialPoint.getX(), initialPoint.getY(), aTriangle.interpolateZ(initialPoint));
+                        addPointToDropletPath(aPoint);
 
                         // The current element we are in
-                        Element theElement = aTriangle;     // current processed element
-                        Element lastElement = null;         // last Element we were in
-                        DTriangle previousTriangle = null;  // to manawe walls we we are folowwing it
-                        int wallSide = 0;
+                        Element theElement = aTriangle;         // current processed element
+                        Element lastElement = null;             // last Element we were in
+                        previousTriangle = null;                // to manage walls we are following
+                        wallSide = edgeNoWall;                  // To know on which side of the wall we are
+                        isInSewers = false;
 
-                        boolean ended = false;
-                        while (!ended) {
+                        while ((theElement != null) && (currentStagnation < maxStagnation)) {
                                 // we've got a Point (aPoint)
                                 // and the element we are in (theElement)
                                 // theElement can be a triangle, an edge or a point
 
-                                if (theElement instanceof DTriangle) {
+                                if (theElement.hasProperty(endingProperties)) {
+                                        // If we reach an ending property, we stop
+                                        theElement = null;
+                                } else if(theElement instanceof DTriangle) {
                                         // current element is a triangle
-                                        // We can be inside, or on an edge
-                                        // we go down the slope to find a point on an edge (even if start/end point)
-                                        // next element is an edge
                                         aTriangle = (DTriangle) theElement;
-
-                                        // We take triangle's slope
-                                        // We find the edge that intersects, and the intersection point
-                                        DPoint intersection = null;
-                                        DPoint theSlope = aTriangle.getSteepestVector();
-                                        DEdge intersectedEdge = null;
-                                        for (int i = 0; i < 3; i++) {
-                                                DEdge possibleEdge = aTriangle.getEdge(i);
-                                                if (possibleEdge.isOnEdge(aPoint)) {
-                                                        // aPoint is on the edge
-                                                        if (intersectedEdge == null) {
-                                                                // maybe we follow the edge
-                                                                intersectedEdge = possibleEdge;
-                                                                intersection = aPoint;
-                                                        } else {
-                                                                // There is another intersection. Keep it
-                                                        }
-                                                } else {
-                                                        // Point is not on the edge
-                                                        DPoint intersectedPoint = getIntersection(aPoint, theSlope, possibleEdge);
-                                                        if (intersectedPoint != null) {
-                                                                // we've got an intersection
-                                                                if (intersectedEdge == null) {
-                                                                        // none found yet
-                                                                        intersectedEdge = possibleEdge;
-                                                                        intersection = intersectedPoint;
-                                                                } else {
-                                                                        // we take the one with the greater distance
-                                                                        // in case we would have miss the isOnEdge function
-                                                                        if (distanceBetween(intersectedPoint, aPoint) > distanceBetween(intersection, aPoint)) {
-                                                                                // this point is better
-                                                                                intersectedEdge = possibleEdge;
-                                                                                intersection = intersectedPoint;
-                                                                        }
-                                                                }
-                                                        }
-                                                }
-                                        }
-
                                         lastElement = theElement;
-                                        if (intersection != null) {
-                                                // We memorise the point
-                                                aPoint = intersection;
-                                                if (!lastPoint.contains(aPoint)) {
-                                                        // The next point is not the previous one
-                                                        theList.add(aPoint);
-                                                        lastPoint = aPoint;
-                                                        stagnation = 1;
-                                                } else {
-                                                        stagnation++;
-                                                }
-                                                // set next element data
-                                                theElement = populateEdgeWithGDMS(intersectedEdge.getGID());
-                                                previousTriangle = aTriangle;
-                                                wallSide = 0;
-                                        } else {
-                                                // there is a problem
-                                                // there is no intersection with the triangle
-                                                // The triangle might be flat
-                                                theElement = null;
-                                                ended = true;
-                                        }
-                                } else if (theElement instanceof DEdge) {
+                                        theElement = processDropletOnTriangle(aPoint, aTriangle);
+                                        aPoint = theList.get(theList.size() - 1);
+                                        previousTriangle = aTriangle;
+                                 } else if (theElement instanceof DEdge) {
                                         // current element is an edge
                                         // the next element follows the greatest slope
                                         anEdge = (DEdge) theElement;
-                                        Element nextElement = null;
-
-                                        // First, get edge slope this value is positive or equal to zero
-                                        double maxSlope = getSlope(anEdge, aPoint);
-                                        DTriangle left = anEdge.getLeft();
-                                        DTriangle right = anEdge.getRight();
-
-                                        if (anEdge.hasProperty(HydroProperties.RIVER)) {
-                                                // do not have a look on triangles
-                                                previousTriangle = null;
-                                                wallSide = 0;
-                                        } else if (anEdge.hasProperty(HydroProperties.DITCH)) {
-                                                // do not have a look on triangles
-                                                previousTriangle = null;
-                                                wallSide = 0;
-                                        } else if (anEdge.hasProperty(HydroProperties.WALL)) {
-                                                // following the wall
-                                                if (previousTriangle != null) {
-                                                        // We arrived on the edge with a triangle
-                                                        if (right == null) {
-                                                                // Come from left
-                                                                wallSide = 1;
-                                                        } else if (left == null) {
-                                                                // Come from right
-                                                                wallSide = 2;
-                                                        } else if (previousTriangle.getGID() == left.getGID()) {
-                                                                // Come from left
-                                                                wallSide = 1;
-                                                        } else {
-                                                                // Come from right
-                                                                wallSide = 2;
-                                                        }
-                                                } else {
-                                                        // We come from another edge (last one was a point)
-                                                        // Define the new value for previousTriangle
-                                                        if (wallSide == 1) {
-                                                                // Stay left
-                                                                if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
-                                                                        previousTriangle = left;
-                                                                } else {
-                                                                        previousTriangle = right;
-                                                                }
-                                                        } else {
-                                                                // Stay right
-                                                                if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
-                                                                        previousTriangle = right;
-                                                                } else {
-                                                                        previousTriangle = left;
-                                                                }
-                                                        }
-                                                }
-                                                // previousTriangle Always have a value => we can go to the point
-                                        } else {
-                                                // Check the 2 triangle around the edge
-                                                if (left != null) {
-                                                        // get slope
-                                                        // slope is positive only if droplet can go doan the triangle
-                                                        double slope = getSlope(left, aPoint);
-                                                        if (slope > maxSlope) {
-                                                                maxSlope = slope;
-                                                                nextElement = left;
-                                                        }
-                                                }
-
-                                                if (right != null) {
-                                                        // get slope
-                                                        // slope is positive only if droplet can go doan the triangle
-                                                        double slope = getSlope(right, aPoint);
-                                                        if (slope > maxSlope) {
-                                                                maxSlope = slope;
-                                                                nextElement = right;
-                                                        }
-                                                }
-                                                previousTriangle = null;
-                                                wallSide = 0;
-                                        }
-
                                         lastElement = theElement;
-                                        if (maxSlope > 0) {
-                                                if (nextElement == null) {
-                                                        // next step is on the edge
-                                                        // => follow the edge
-                                                        if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
-                                                                aPoint = anEdge.getEndPoint();
-                                                        } else {
-                                                                aPoint = anEdge.getStartPoint();
-                                                        }
-
-                                                        // We memorise the lowest point
-                                                        if (!lastPoint.contains(aPoint)) {
-                                                                // The next point is not the previous one
-                                                                theList.add(aPoint);
-                                                                lastPoint = aPoint;
-                                                                stagnation = 1;
-                                                        } else {
-                                                                stagnation++;
-                                                        }
-                                                        theElement = aPoint;
-                                                } else {
-                                                        // Next element is a triangle
-                                                        theElement = nextElement;
-                                                        // We stay on the same point => aPoint does not change
-                                                }
-                                        } else {
-                                                // Slope is flat => stop process
-                                                theElement = null;
-                                                ended = true;
-                                        }
-
+                                        theElement = processDropletOnAnEdge(aPoint, anEdge);
+                                        aPoint = theList.get(theList.size() - 1);
                                 } else {
                                         // Current element is a point
                                         // the point comes from an edge. It CANNOT come from a triangle
                                         // We turn around aPoint to select the edge that leads to greatest slope
                                         aPoint = (DPoint) theElement;
-
-                                        if (aPoint.hasProperty(HydroProperties.SEWER_INPUT)) {
-                                                // go in a hole
-                                                theElement = null;
-                                                ended = true;
-                                        } else {
-                                                // First, we get the element we come from. It might be an edge.
-                                                Element selectedElement;
-                                                selectedElement = turnAroundthePoint(aPoint, (DEdge) lastElement, previousTriangle);
-                                                lastElement = theElement;
-                                                if (selectedElement != null) {
-                                                        // We go to a next edge
-                                                        theElement = selectedElement;
-                                                        previousTriangle = null;
-                                                } else {
-                                                        // End of process: no successor
-                                                        theElement = null;
-                                                        ended = true;
-                                                }
-                                        }
-                                }
-                                if (stagnation > maxStagnation) {
-                                        // We are on the same point since maxStagnation iterations
-                                        // => we are in a hole -> STOP
-                                        ended = true;
+                                        theElement = processDropletOnPoint(aPoint, (DEdge) lastElement);
+                                        lastElement = aPoint;
+                                        previousTriangle = null;
                                 }
                         }
                 }
-
-                return theList;
         }
 }
