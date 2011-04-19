@@ -34,7 +34,7 @@ public class ST_CreateHydroProperties implements Function {
 
         @Override
         public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
-                int ReturnedValue = 0;
+                int returnedValue = 0;
                 if (values.length < 1) {
                         // There MUST be at least 1 value
                         throw new FunctionException("need string to process.");
@@ -55,16 +55,16 @@ public class ST_CreateHydroProperties implements Function {
                                 int value = convertToInt(keyWord);
                                 if (operator.equals("+")) {
                                         // add property
-                                        ReturnedValue = ReturnedValue | value;
+                                        returnedValue = returnedValue | value;
                                 } else if (operator.equals("-")) {
                                         // remove property (add it then remove value)
-                                        ReturnedValue = (ReturnedValue | value) - value;
+                                        returnedValue = (returnedValue | value) - value;
                                 }
                                 operator = getNextOperator();
                                 keyWord = getNextKeyword();
                         }
                 }
-                return ValueFactory.createValue(ReturnedValue);
+                return ValueFactory.createValue(returnedValue);
         }
 
         @Override
@@ -109,10 +109,9 @@ public class ST_CreateHydroProperties implements Function {
          * @return next keyword
          */
         private String getNextKeyword() {
-                String theKeyWord = new String();
-
                 // Skip unsignifiant characters
                 boolean found = false;
+		StringBuilder sb = new StringBuilder();
                 while ((position < length) && (!found) && (error == 0)) {
                         char theChar = theString.charAt(position);
                         if (Character.isLetterOrDigit(theChar)) {
@@ -132,16 +131,16 @@ public class ST_CreateHydroProperties implements Function {
                         char theChar = theString.charAt(position);
                         if (Character.isLetterOrDigit(theChar)) {
                                 // Uppercase character when saving it
-                                theKeyWord += Character.toUpperCase(theChar);
+                                sb.append(Character.toUpperCase(theChar));
                                 position++;
                         } else if (theChar == '_') {
-                                theKeyWord += '_';
+                                sb.append('_');
                                 position++;
                         } else {
                                 found = true;
                         }
                 }
-                return theKeyWord;
+                return sb.toString();
         }
 
         /**
@@ -149,7 +148,7 @@ public class ST_CreateHydroProperties implements Function {
          * @return the operator
          */
         private String getNextOperator() {
-                String theOperator = new String();
+                String theOperator = "";
 
                 // Skip unsignifiant characters, keep + or - operator
                 boolean found = false;
