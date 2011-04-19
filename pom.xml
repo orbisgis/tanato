@@ -94,12 +94,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<includes>
-						<include>
-							org/gdms/sql/LibGDMSTests</include>
-					</includes>
-				</configuration>
 			</plugin>		
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
