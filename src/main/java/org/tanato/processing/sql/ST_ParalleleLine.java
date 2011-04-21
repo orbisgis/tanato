@@ -18,7 +18,11 @@ import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
 
 /**
+ * This function creates an edge parallel to the one given in its first argument,
+ * at a distance equal to the value given in the second argument.
  *
+ * The resulting edge is the same as the input one. It has been orthogonally transfered,
+ * and lies at the specified distance from the original edge.
  * @author ebocher
  */
 public class ST_ParalleleLine implements Function {
@@ -70,6 +74,12 @@ public class ST_ParalleleLine implements Function {
 
         }
 
+	/**
+	 * Actually compute the segement parallel to line, at distance d from line.
+	 * @param line
+	 * @param d
+	 * @return
+	 */
         public final LineString getParallel(LineString line, double d) {
                 Coordinate[] coords = line.getCoordinates();
                 if (coords.length != 2) {
