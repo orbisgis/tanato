@@ -23,6 +23,7 @@ public class HydroLineUtil {
 
         /**
 	 * Check if the linestring is flat or not
+	 * note that we currently just test the beginning and the end of the linestring.
 	 *
 	 * @return isFlat
 	 */
@@ -32,7 +33,7 @@ public class HydroLineUtil {
 
 	/**
 	 *
-	 * @return pente de l'edge (dz/distance horizontale)
+	 * @return slope of the edge (dz/horizontal length)
 	 */
 	public final double getSlope() {
 		if (Math.abs(valeurPente+1.0)<MathUtil.EPSILON) {
