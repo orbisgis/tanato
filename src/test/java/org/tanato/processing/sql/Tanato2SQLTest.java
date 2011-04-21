@@ -8,8 +8,10 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.io.WKTReader;
 import junit.framework.TestCase;
+import org.gdms.data.DataSourceFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.sql.function.spatial.geometry.edit.ST_AddZToGeometry;
@@ -88,4 +90,18 @@ public class Tanato2SQLTest extends TestCase {
                 coords = geom.getCoordinates();
                 assertTrue(coords[1].z == 6);
         }
+
+	public void testST_ParallelLine() throws Exception{
+		ST_ParalleleLine fun = new ST_ParalleleLine();
+		LineString edge = gf.createLineString(new Coordinate[]{
+				new Coordinate(1,1,0),
+				new Coordinate(5,1,0)});
+		Value first = ValueFactory.createValue(edge);
+		Value second = ValueFactory.createValue(1.0d);
+		Value res = fun.evaluate(new DataSourceFactory(), new Value[] {first, second});
+		Geometry geom = res.getAsGeometry();
+		assertTrue(geom.equals(gf.createLineString(new Coordinate[]{
+				new Coordinate(1,0,0),
+				new Coordinate(5,0,0)})));
+	}
 }
