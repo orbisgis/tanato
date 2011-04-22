@@ -58,7 +58,7 @@ public class ST_GetHydroProperty implements Function {
 
         @Override
         public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.INT)};
+                return new Arguments[]{new Arguments(Argument.INT), new Arguments(Argument.LONG)};
 
         }
 }
