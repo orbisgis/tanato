@@ -31,6 +31,7 @@ import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DTriangle;
 import org.jdelaunay.delaunay.DelaunayError;
+import org.jhydrocell.hydronetwork.HydroProperties;
 import org.jhydrocell.hydronetwork.HydroTINBuilder;
 import org.tanato.model.TINSchema;
 
@@ -69,7 +70,7 @@ public class TINBuilder {
                                                 for (int k = 1; k < subGeom.getCoordinates().length; k++) {
                                                         c2 = subGeom.getCoordinates()[k];
                                                         DEdge edge = new DEdge(new DPoint(c1), new DPoint(c2));
-                                                        edge.setProperty(1);
+                                                        edge.setProperty(HydroProperties.WALL);
                                                         toBeAdded.add(edge);
                                                         c1 = c2;
                                                 }
@@ -85,6 +86,16 @@ public class TINBuilder {
                 System.out.println("Number of edges before intersection processing " + hydroNetwork.getConstraintEdges().size());
                 //We force the integrity of the constraints given as an input.
                 hydroNetwork.forceConstraintIntegrity();
+		for(DEdge ed : hydroNetwork.getConstraintEdges()){
+			if(!ed.hasProperty(HydroProperties.WALL)){
+				throw new RuntimeException();
+			}
+		}
+		for(DEdge ed : hydroNetwork.getEdges()){
+			if(Collections.binarySearch(hydroNetwork.getConstraintEdges(), ed)>=0 && ! ed.hasProperty(HydroProperties.WALL)){
+				throw new RuntimeException();
+			}
+		}
 
                 System.out.println("Number of edges after intersection processing " + hydroNetwork.getConstraintEdges().size());
                 //We perform the triangulation
@@ -99,6 +110,16 @@ public class TINBuilder {
 
 
                 hydroNetwork.morphologicalQualification();
+		for(DEdge ed : hydroNetwork.getConstraintEdges()){
+			if(!ed.hasProperty(HydroProperties.WALL)){
+				throw new RuntimeException();
+			}
+		}
+		for(DEdge ed : hydroNetwork.getEdges()){
+			if(Collections.binarySearch(hydroNetwork.getConstraintEdges(), ed)>=0 && ! ed.hasProperty(HydroProperties.WALL)){
+				throw new RuntimeException();
+			}
+		}
 
                 long qualificationTime = System.currentTimeMillis() - start;
                 System.out.println("Temps de qualification " + qualificationTime);
@@ -237,7 +258,7 @@ public class TINBuilder {
         }
 
         public static void main(String[] args) throws Exception {
-                createTIN("/home/ebocher/Documents/projets/ANR/anr_avupur/modelisation_finale/chezine/data/courbesniveau.shp");
+                createTIN("/home/alexis/branches/benchmark/src/main/resources/chezinecourbe3D.shp");
                 //  createTIN("/home/ebocher/Bureau/demo_tanato/small_courbes.shp");
 
 

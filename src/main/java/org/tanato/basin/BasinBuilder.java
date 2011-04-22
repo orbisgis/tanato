@@ -7,12 +7,16 @@ package org.tanato.basin;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiLineString;
+import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.Polygonal;
 import com.vividsolutions.jts.operation.union.UnaryUnionOp;
+import com.vividsolutions.jts.precision.EnhancedPrecisionOp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -148,7 +152,9 @@ public class BasinBuilder {
 			} else if(startType == TIN_EDGE) {
 				Value[] edLine = retrieveLine(firstGID, sdsEdges);
 				DEdge ed = retrieveEdge(firstGID);
-				ed.forceTopographicOrientation();
+				if(ed.getGradient() != DEdge.FLATSLOPE){
+					ed.forceTopographicOrientation();
+				}
 				EdgePart ep = buildEdgePart(ed, ed.getStartPoint(), ed.getEndPoint(),
 					firstGID, edLine[gidEdgeLeft].getAsInt(),
 						edLine[gidEdgeRight].getAsInt(),
@@ -177,6 +183,11 @@ public class BasinBuilder {
 		}
 	}
 
+	/**
+	 * Return the basin graph computed previously. The resulting geometry will be a collection
+	 * containing a MultiPolygon and a MultiLineString.
+	 * @return
+	 */
 	public final Geometry getBasin(){
 		return gf.createGeometryCollection(new Geometry[] {basin, lines});
 	}
@@ -218,7 +229,9 @@ public class BasinBuilder {
 				if(isWell || isRiverOrDitch || isTalweg){
 					//We must create a new EdgePart that will be used later.
 					DEdge ed = retrieveEdge(edgeGid);
-					ed.forceTopographicOrientation();
+					if(ed.getGradient() != DEdge.FLATSLOPE){
+						ed.forceTopographicOrientation();
+					}
 					//We build an EdgePart. its startPoint will be
 					// the startPoint of the DEdge, as we've ensured topographic orientation,
 					//its end will be pp.
@@ -281,7 +294,9 @@ public class BasinBuilder {
 				if(isWell || isRiverOrDitch || isTalweg){
 					//These edges will have to be processed as EdgeParts later.
 					DEdge ed = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(cur));
-					ed.forceTopographicOrientation();
+					if(ed.getGradient() != DEdge.FLATSLOPE){
+						ed.forceTopographicOrientation();
+					}
 					//We need a new EdgePart, that begins in the start of the DEdge
 					//and end in the end of the DEdge.
 					EdgePart ep = buildEdgePart(ed,
@@ -348,10 +363,8 @@ public class BasinBuilder {
 				LineString ls = gf.createLineString(new Coordinate[] {cd, si.getCoordinate()});
 				//we process the union between the current line, and the LineString
 				//we've just created.
-				ArrayList<Geometry> un = new ArrayList<Geometry>();
-				un.add(ls);
-				un.add(lines);
-				UnaryUnionOp.union(un);
+				addLineString(ls);
+
 				//We must add the new coordinate to the points that have to be treated.
 				//For that, we retrieve the three edges of the triangle, and search the
 				//one that contains the new PointPart.
@@ -367,7 +380,9 @@ public class BasinBuilder {
 					DEdge cur = TINFeatureFactory.createDEdge(val[geomEdgeIndex].getAsGeometry());
 					//We check that the current edge contains si.
 					if(cur.contains(si)){
-						cur.forceTopographicOrientation();
+						if(cur.getGradient()!=DEdge.FLATSLOPE){
+							cur.forceTopographicOrientation();
+						}
 						//It will be more efficient to test first if the point is
 						//an extremity of the edge, and if it is not, if it is inside.
 						if(cur.getStartPoint().equals(si)){
@@ -399,6 +414,19 @@ public class BasinBuilder {
 		
 	}
 
+	private void addLineString(LineString ls){
+		ArrayList<Geometry> un = new ArrayList<Geometry>();
+		un.add(ls);
+		un.add(lines);
+		Geometry res = UnaryUnionOp.union(un);
+		if(res instanceof MultiLineString){
+			lines =  (MultiLineString) res;
+		}else if (res instanceof LineString) {
+			lines = gf.createMultiLineString(new LineString[] {(LineString) res});
+
+		}
+	}
+
 	/**
 	 * This method determines which behaviour to have when processing an EdgePart,
 	 * ie which calls to analyzeTriangle we must make.
@@ -417,7 +445,13 @@ public class BasinBuilder {
 				ArrayList<Geometry> geom = new ArrayList<Geometry>();
 				geom.add(lines);
 				geom.add((LineString) sdsEdges.getGeometry(edgeIndex));
-				UnaryUnionOp.union(geom);
+				Geometry res = UnaryUnionOp.union(geom);
+				if(res instanceof MultiLineString){
+					lines =  (MultiLineString) res;
+				}else if (res instanceof LineString) {
+					lines = gf.createMultiLineString(new LineString[] {(LineString) res});
+
+				}
 			//When processing a talweg, we must analyze the two neigbour triangles.
 			} else if(HydroProperties.check(epProp, HydroProperties.TALWEG)) {
 				analyzeTriangle(ep, edgeIndex, sdsEdges.getInt(edgeIndex, TINSchema.LEFT_TRIANGLE_FIELD));
@@ -455,7 +489,9 @@ public class BasinBuilder {
 				DTriangle left =  TINFeatureFactory.createDTriangle(triLine[geomTriIndex].getAsGeometry());
 				//We build the DEdge.
 				DEdge current = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(edgeIndex));
-				current.forceTopographicOrientation();
+				if(current.getGradient() != DEdge.FLATSLOPE){
+					current.forceTopographicOrientation();
+				}
 				//We build the exact DPoint that is the start of the EdgePart.
 				double s = ep.getStart();
 				double xstart = (1-s)*current.getStartPoint().getX()+s*current.getEndPoint().getX();
@@ -495,8 +531,8 @@ public class BasinBuilder {
 				int gidE2Right = lineE2[gidEdgeRight].getAsInt();
 				int gidE2Start = lineE2[gidEdgeStart].getAsInt();
 				int gidE2End = lineE2[gidEdgeEnd].getAsInt();
-				List<Geometry> union = new ArrayList<Geometry>();
-				union.add(basin);
+//				List<Geometry> union = new ArrayList<Geometry>();
+//				union.add(basin);
 				//We'll use buildEdgePart to build our EdgeParts,
 				//as it will use our points in the right order.
 				if(e1.contains(proj1)){
@@ -522,7 +558,7 @@ public class BasinBuilder {
 											gidE1Start,
 											gidE1End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							union.add(poly.convexHull());
+							addPolygonToBasin( poly);
 						}
 					} else {
 						//e2 contains proj2. We must add two edgeparts to the remaining elements.
@@ -549,8 +585,7 @@ public class BasinBuilder {
 										gidE1Start,
 										gidE1End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-								union.add(poly.convexHull());
-							
+							addPolygonToBasin( poly);
 
 						}
 						//We build the polygon we're about to add, to perform tests on it.
@@ -572,8 +607,7 @@ public class BasinBuilder {
 											gidE2Start,
 											gidE2End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							union.add(poly.convexHull());
-							
+							addPolygonToBasin( poly);
 						}
 					}
 				} else if (e2.contains(proj1)){
@@ -594,8 +628,7 @@ public class BasinBuilder {
 											gidE2Start,
 											gidE2End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							union.add(poly.convexHull());
-						}
+							addPolygonToBasin( poly);			}
 					} else {
 						//e1 contains proj2, and e2 contains proj1.
 						//We must add two edgeparts to the remaining elements.
@@ -619,9 +652,7 @@ public class BasinBuilder {
 											gidE2Start,
 											gidE2End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							if(!poly.isEmpty()){
-								union.add(poly.convexHull());
-							}
+							addPolygonToBasin( poly);
 
 						}
 						//We build the polygon we're about to add, to perform tests on it.
@@ -643,14 +674,12 @@ public class BasinBuilder {
 											gidE1Start,
 											gidE1End));
 							//We create a new Polygon, and add it to the list we'll use for the union.
-							if(!poly.isEmpty()){
-								union.add(poly.convexHull());
-							}
+							addPolygonToBasin( poly);
 						}
 					}
 					
 				}
-				basin = UnaryUnionOp.union(union);
+//				basin = UnaryUnionOp.union(union);
 			}
 		} catch (DriverException ex) {
 			Logger.getLogger(BasinBuilder.class.getName()).log(Level.SEVERE, null, ex);
@@ -658,6 +687,25 @@ public class BasinBuilder {
 			Logger.getLogger(BasinBuilder.class.getName()).log(Level.SEVERE, null, d);
 		}
 
+	}
+
+	private void addPolygonToBasin(Polygon poly){
+		if(!poly.isEmpty()){
+			basin = EnhancedPrecisionOp.union(basin, poly.convexHull());
+			if(basin instanceof GeometryCollection && !(basin instanceof MultiPolygon)){
+				Geometry gn ;
+				Geometry out = gf.createMultiPolygon(new Polygon[]{});
+				for(int i=0; i<basin.getNumGeometries(); i++){
+					gn = basin.getGeometryN(i);
+					if(gn instanceof Polygonal){
+						out = EnhancedPrecisionOp.union(out, gn);
+					} else if(gn instanceof LineString){
+						addLineString((LineString) gn);
+					}
+				}
+				basin = out;
+			}
+		}
 	}
 
 	/**
@@ -716,7 +764,9 @@ public class BasinBuilder {
 			long edgeIndex = it.next();
 			int epProp = sdsEdges.getInt(edgeIndex, TINSchema.PROPERTY_FIELD);
 			DEdge ret = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(edgeIndex));
-			ret.forceTopographicOrientation();
+			if(ret.getGradient() != DEdge.FLATSLOPE){
+				ret.forceTopographicOrientation();
+			}
 			ret.setGID(gid);
 			ret.setProperty(epProp);
 			return ret;
@@ -736,46 +786,44 @@ public class BasinBuilder {
 	 * @return
 	 */
 	private EdgePart buildEdgePart(DEdge ed, DPoint ptStart, DPoint ptEnd, int gid, int gidLeft, int gidRight, int gidStart, int gidEnd){
+		double ratiostart = Double.NaN;
+		double ratioend = Double.NaN;
 		if(!ed.isVertical()){
-			double ratiostart = (ptStart.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
-			double ratioend = (ptEnd.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
-			if(ratiostart<ratioend){
-				if(Math.abs(ratiostart)<Tools.EPSILON){
-					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
-					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
-						remainingPoints.add(pp);
-					}
-				}
-				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
-			} else {
-				if(Math.abs(ratioend)<Tools.EPSILON){
-					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
-					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
-						remainingPoints.add(pp);
-					}
-				}
-				return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
-			}
+			ratiostart = (ptStart.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
+			ratioend = (ptEnd.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
 		} else {
-			double ratiostart = (ptStart.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
-			double ratioend = (ptEnd.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
-			if(ratiostart<ratioend){
-				if(Math.abs(ratiostart)<Tools.EPSILON){
-					PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
-					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
-						remainingPoints.add(pp);
-					}
+			ratiostart = (ptStart.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
+			ratioend = (ptEnd.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
+		}
+		if(ratiostart<ratioend){
+			if(Math.abs(ratiostart)<Tools.EPSILON){
+				PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
+				if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+					remainingPoints.add(pp);
 				}
-				return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
-			} else {
-				if(Math.abs(ratioend)<Tools.EPSILON){
-					PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
-					if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
-						remainingPoints.add(pp);
-					}
-				}
-				return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
 			}
+			if(Math.abs(1-ratioend)<Tools.EPSILON){
+				PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
+				if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+					remainingPoints.add(pp);
+				}
+
+			}
+			return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
+		} else {
+			if(Math.abs(ratioend)<Tools.EPSILON){
+				PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
+				if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+					remainingPoints.add(pp);
+				}
+			}
+			if(Math.abs(1-ratiostart)<Tools.EPSILON){
+				PointPart pp = new PointPart(ptEnd.getCoordinate(), gidEnd, 0);
+				if(!basin.covers(gf.createPoint(pp.getPt())) && !lines.covers(gf.createPoint(pp.getPt()))){
+					remainingPoints.add(pp);
+				}
+			}
+			return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
 		}
 	}
 

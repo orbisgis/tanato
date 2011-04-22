@@ -17,6 +17,14 @@ class PointPart {
 	private int ownerGID;
 	private int ownerType;
 
+	/**
+	 *
+	 * @param orig
+	 * @param oGID
+	 * @param oType
+	 *	* 1 : The owner is an edge
+	 *	* 0 : the owner is a point.
+	 */
 	public PointPart(Coordinate orig, int oGID, int oType){
 		pt = orig;
 		ownerGID = oGID;
