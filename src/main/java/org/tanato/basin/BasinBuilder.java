@@ -818,8 +818,8 @@ public class BasinBuilder {
 	 * @return
 	 */
 	private EdgePart buildEdgePart(DEdge ed, DPoint ptStart, DPoint ptEnd, int gid, int gidLeft, int gidRight, int gidStart, int gidEnd){
-		double ratiostart = Double.NaN;
-		double ratioend = Double.NaN;
+		double ratiostart;
+		double ratioend;
 		if(!ed.isVertical()){
 			ratiostart = (ptStart.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
 			ratioend = (ptEnd.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());

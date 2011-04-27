@@ -37,6 +37,8 @@
  */
 package org.tanato.basin;
 
+import org.jdelaunay.delaunay.Tools;
+
 /**
  * EdgePart are used to process just the area that really interests us when computing
  * a basin graph.
@@ -83,7 +85,7 @@ class EdgePart {
 	 * we are about to analyze in our study. Should always be inferior to 1.
 	 * @return
 	 */
-	public double getEnd() {
+	public final double getEnd() {
 		return end;
 	}
 
@@ -92,7 +94,7 @@ class EdgePart {
 	 * of the edge.
 	 * @param end
 	 */
-	public void setEnd(double end) {
+	public final void setEnd(double end) {
 		this.end = end;
 	}
 
@@ -100,7 +102,7 @@ class EdgePart {
 	 * get the GID of the DEdge associated to this edge part in the mesh.
 	 * @return
 	 */
-	public int getGid() {
+	public final int getGid() {
 		return gid;
 	}
 
@@ -108,7 +110,7 @@ class EdgePart {
 	 * Set the GID of the DEdge associated to this in the mesh.
 	 * @param gid
 	 */
-	public void setGid(int gid) {
+	public final void setGid(int gid) {
 		this.gid = gid;
 	}
 
@@ -116,7 +118,7 @@ class EdgePart {
 	 * Get the GID of the endPoint of the underlying edge.
 	 * @return
 	 */
-	public int getGidEnd() {
+	public final int getGidEnd() {
 		return gidEnd;
 	}
 
@@ -124,7 +126,7 @@ class EdgePart {
 	 * Set the GID of the end point of the underlying edge.
 	 * @param gidEnd
 	 */
-	public void setGidEnd(int gidEnd) {
+	public final void setGidEnd(int gidEnd) {
 		this.gidEnd = gidEnd;
 	}
 
@@ -132,7 +134,7 @@ class EdgePart {
 	 * Get the GID of the left triangle of this edge.
 	 * @return
 	 */
-	public int getGidLeft() {
+	public final int getGidLeft() {
 		return gidLeft;
 	}
 
@@ -140,7 +142,7 @@ class EdgePart {
 	 * Set the GID of the left triangle of this edge.
 	 * @param gidLeft
 	 */
-	public void setGidLeft(int gidLeft) {
+	public final void setGidLeft(int gidLeft) {
 		this.gidLeft = gidLeft;
 	}
 
@@ -148,7 +150,7 @@ class EdgePart {
 	 * Get the GID of the right triangle of this Edge
 	 * @return
 	 */
-	public int getGidRight() {
+	public final int getGidRight() {
 		return gidRight;
 	}
 
@@ -156,7 +158,7 @@ class EdgePart {
 	 * Set the GID of the right triangle of this edge.
 	 * @param gidRight
 	 */
-	public void setGidRight(int gidRight) {
+	public final void setGidRight(int gidRight) {
 		this.gidRight = gidRight;
 	}
 
@@ -164,7 +166,7 @@ class EdgePart {
 	 * Get the GID of the start point of this edge
 	 * @return
 	 */
-	public int getGidStart() {
+	public final int getGidStart() {
 		return gidStart;
 	}
 
@@ -172,7 +174,7 @@ class EdgePart {
 	 * Set the GID of the start point of the underlying edge in the mesh.
 	 * @param gidStart
 	 */
-	public void setGidStart(int gidStart) {
+	public final void setGidStart(int gidStart) {
 		this.gidStart = gidStart;
 	}
 
@@ -181,7 +183,7 @@ class EdgePart {
 	 * in.
 	 * @return
 	 */
-	public double getStart() {
+	public final double getStart() {
 		return start;
 	}
 
@@ -190,14 +192,52 @@ class EdgePart {
 	 * in.
 	 * @param start
 	 */
-	public void setStart(double start) {
+	public final void setStart(double start) {
 		this.start = start;
 	}
 
 	@Override
-	public String toString(){
+	public final String toString(){
 		return "Defining edge GID : "+gid;
 	}
 
+        /**
+         * Check if this EdgePart contains other. The two EdgeParts must share the 
+         * same parent gid, ie they must lie on the same edge of the mesh,
+         * and we must have :<br/>
+         *  * this.start &lt;= other.start <br/>
+         *  * this.end &gt;= other.end
+         * @param other
+         * @return 
+         */
+        public final boolean contains(EdgePart other){
+                if(this.gid == other.gid){
+                        boolean oStart = other.start - this.start > -Tools.EPSILON;
+                        boolean oEnd = this.end - other.end > -Tools.EPSILON;
+                        if(oStart && oEnd){
+                                return true;
+                        }
+                }
+                return false;
+        }
 
+        /**
+         * Try to merge this EdgePart with other. The two <code>EdgePart</code>s can
+         * be merged if they lie on the same edge of the mesh, and if they share
+         * a part of this edge, ie if :<br/>
+         *  this.start &lt;= other.end &amp;&amp; this.end &gt; other.start<br/><br/>
+         * 
+         * The resulting <code>EdgePart</code> is stored in this EdgePart. other is not modified.
+         * To know if the two <code>EdgePart</code>s have been merged, you can call 
+         * contains after the call to merge.
+         * @param other 
+         */
+        public final void expandToInclude(EdgePart other){
+                boolean s = other.start <= end+Tools.EPSILON;
+                boolean e = other.end >= start -Tools.EPSILON;
+                if(s && e){
+                        start = start < other.start ? start : other.start;
+                        end = end < other.end ? other.end : end;
+                }
+        }
 }

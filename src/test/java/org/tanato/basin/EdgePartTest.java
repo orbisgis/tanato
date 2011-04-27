@@ -39,6 +39,7 @@
 package org.tanato.basin;
 
 import junit.framework.TestCase;
+import org.jdelaunay.delaunay.Tools;
 
 /**
  *
@@ -56,5 +57,74 @@ public class EdgePartTest extends TestCase{
 		assertEquals(ep.getGidLeft(), 40);
 		assertEquals(ep.getGidRight(), 41);
 	}
+        
+        /**
+         * Test the merge operations between two EdgeParts
+         */
+        public void testMerging() {
+            EdgePart ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            EdgePart other = new EdgePart(0, 0.55,0.65,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.5);
+            assertTrue(ep.getEnd() == 0.65);
+            assertTrue(ep.contains(other));
+            ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            other = new EdgePart(0, 0.45,0.65,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.45);
+            assertTrue(ep.getEnd() == 0.65);
+            assertTrue(ep.contains(other));
+            ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            other = new EdgePart(0, 0.55,0.56,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.5);
+            assertTrue(ep.getEnd() == 0.6);
+            assertTrue(ep.contains(other));
+            ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            other = new EdgePart(0, 0.25,0.26,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.5);
+            assertTrue(ep.getEnd() == 0.6);
+            assertFalse(ep.contains(other));
+            ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            other = new EdgePart(0, 0.65,0.66,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.5);
+            assertTrue(ep.getEnd() == 0.6);
+            assertFalse(ep.contains(other));
+            ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            other = new EdgePart(0, 0.45,0.55,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.45);
+            assertTrue(ep.getEnd() == 0.6);
+            assertTrue(ep.contains(other));
+            ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            other = new EdgePart(0, 0.45,0.50-Tools.EPSILON2,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.45);
+            assertTrue(ep.getEnd() == 0.6);
+            assertTrue(ep.contains(other));
+            ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            other = new EdgePart(0, 0.60+Tools.EPSILON2,0.65,8,9,40,41);
+            ep.expandToInclude(other);
+            assertTrue(ep.getStart()==0.5);
+            assertTrue(ep.getEnd() == 0.65);
+            assertTrue(ep.contains(other));
+        }
+        
+        /**
+         * Test the EdgePart.contains method.
+         */
+        public void testContains() {
+            EdgePart ep = new EdgePart(0,0.5,0.6, 8,9,40,41);
+            EdgePart other = new EdgePart(0, 0.55,0.56,8,9,40,41);
+            assertTrue(ep.contains(other));
+            other = new EdgePart(0, 0.25,0.56,8,9,40,41);
+            assertFalse(ep.contains(other));
+            other = new EdgePart(0, 0.25,0.3,8,9,40,41);
+            assertFalse(ep.contains(other));
+            other = new EdgePart(1, 0.55,0.56,8,9,40,41);
+            assertFalse(ep.contains(other));
+        }
 
 }
