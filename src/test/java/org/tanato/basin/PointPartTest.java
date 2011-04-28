@@ -38,7 +38,6 @@
 package org.tanato.basin;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import java.security.InvalidParameterException;
 import junit.framework.TestCase;
 
 /**
@@ -62,21 +61,21 @@ public class PointPartTest extends TestCase{
                 try{
                         PointPart pp = new PointPart(new Coordinate(0,0,4),8,5);
                         assertTrue(false);
-                } catch (InvalidParameterException ipe){
+                } catch (IllegalArgumentException ipe){
                         assertTrue(true);
                 }
                 PointPart pp = new PointPart(new Coordinate(0,0,4),8,1);
                 try {
                         pp.setOwnerType(8);
                         assertTrue(false);
-                } catch (InvalidParameterException e) {
+                } catch (IllegalArgumentException e) {
                         assertTrue(true);
                 }
                 PointPart pp2 = new PointPart(new Coordinate(0,0,4),8,1);
                 try {
                         pp2.setOwnerType(0);
                         assertTrue(true);
-                } catch (InvalidParameterException e) {
+                } catch (IllegalArgumentException e) {
                         assertTrue(false);
                 }
         }
