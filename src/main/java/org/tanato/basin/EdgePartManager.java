@@ -38,6 +38,7 @@
 package org.tanato.basin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -82,6 +83,12 @@ final class EdgePartManager {
                         list.add(ep);
                         epQueue.addLast(gid);
                         mergingStructure.put(gid, list);
+                } else {
+                        //We must insert the EdgePart ep in the existing list.
+                        //For that, we may need to merge it with other ones.
+                        //We absolutely must take care of the consistence of the list !
+                        //We mustn't have EdgeParts that overlap in it after the insertion!
+                        mergeInList(ep, list);
                 }
         }
         
@@ -117,11 +124,57 @@ final class EdgePartManager {
                 return epQueue.size();
         }
         
+        /**
+         * Try to include an <code>EdgePart</code> in a sorted list of <code>EdgePart</code>s
+         * This inclusion will be a merge of edgeparts if it is possible, as it is the 
+         * main goal of this class.
+         * Note that this method is private, as it's not supposed to be used otherwise. Particularly,
+         * we must be sure that all the edges behind the EdgePart of the list 
+         * share the same GID (ie it's always the same edge, in fact), and that ep
+         * is backed by the same edge too.
+         * @param ep
+         * @param list 
+         */
         private void mergeInList(EdgePart ep, List<EdgePart> list){
                 if(list.isEmpty()){
+                        //Here the task is easy.
                         list.add(ep);
                 } else {
-                        
+                        //We must proceed the insertion
+                        int index = Collections.binarySearch(list, ep);
+                        if(index<0){
+                                //ep does not overlap any other EdgePart in the list,
+                                //we can insert it directly.
+                                list.add(-index-1, ep);
+                        } else {
+                                //There is at least one overlapping. We must treat it.
+                                mergingOperation(ep, list, index);
+                        }
                 }
         }
+        
+        /**
+         * Merge ep with the elements of list, starting at startIndex.
+         * @param ep
+         * @param list
+         * @param startIndex 
+         */
+        private void mergingOperation(EdgePart ep, List<EdgePart> list, int startIndex){
+                int min = startIndex;
+                int max = startIndex+1;
+                //We expand to the left
+                while(min>=0 && ep.compareTo(list.get(min))==0){
+                        ep.expandToInclude(list.get(min));
+                        min--;
+                }
+                //We expand to the right
+                while(max < list.size() && ep.compareTo(list.get(max))==0){
+                        ep.expandToInclude(list.get(max));
+                        max++;
+                }
+                list.add(max, ep); 
+                //We clear the unecessary elements.
+                list.subList(min+1, max).clear();
+        }
+        
 }

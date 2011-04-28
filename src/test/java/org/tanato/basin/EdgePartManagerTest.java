@@ -60,5 +60,39 @@ public class EdgePartManagerTest extends TestCase {
                 assertTrue(out.get(0)==ep);
                 assertTrue(epm.getQueueSize()==0);
         }
+        
+        public void testTwoBehindEdges() {
+                EdgePartManager epm = new EdgePartManager();
+                assertTrue(epm.getQueueSize()==0);
+                EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
+                EdgePart e2 = new EdgePart(9, 0.38, 0.40, 5, 9, 64, 52);
+                epm.addEdgePart(ep);
+                epm.addEdgePart(e2);
+                assertTrue(epm.getQueueSize()==2);
+                List<EdgePart> out = epm.getEdgeParts();
+                assertTrue(out.size()==1);
+                assertTrue(out.get(0)==ep);
+                assertTrue(epm.getQueueSize()==1);
+                
+        }
+        
+        /**
+         * A simple merging test.
+         */
+        public void testAddAndMerge(){
+                EdgePartManager epm = new EdgePartManager();
+                EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
+                EdgePart e2 = new EdgePart(8, 0.39, 0.41, 5, 9, 64, 52);
+                epm.addEdgePart(ep);
+                epm.addEdgePart(e2);
+                assertTrue(epm.getQueueSize()==1);
+                List<EdgePart> out = epm.getEdgeParts();
+                assertTrue(out.size()==1);
+                EdgePart merge = out.get(0);
+                assertTrue(merge.getStart() == 0.38);
+                assertTrue(merge.getEnd()==0.41);
+                
+                
+        }
     
 }
