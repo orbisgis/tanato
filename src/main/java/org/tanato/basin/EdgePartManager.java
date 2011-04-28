@@ -75,7 +75,7 @@ final class EdgePartManager {
          * queue of EdgeParts.
          * @param ep 
          */
-        public final void addEdgePart(EdgePart ep){
+        public void addEdgePart(EdgePart ep){
                 int gid = ep.getGid();
                 List<EdgePart> list = mergingStructure.get(gid);
                 if(list==null){
@@ -99,7 +99,7 @@ final class EdgePartManager {
          * @param gid
          * @return 
          */
-        public final List<EdgePart> getEdgeParts(int gid){
+        public List<EdgePart> getEdgeParts(int gid){
                 return mergingStructure.get(gid);
         }
         
@@ -109,7 +109,7 @@ final class EdgePartManager {
          * the map.
          * @return 
          */
-        public final List<EdgePart> getEdgeParts(){
+        public List<EdgePart> getEdgeParts(){
                 int key = epQueue.getFirst();
                 epQueue.removeFirst();
                 return mergingStructure.remove(key);
@@ -120,7 +120,7 @@ final class EdgePartManager {
          * associated to them, and are currently waiting to be processed.
          * @return 
          */
-        public final int getQueueSize(){
+        public int getQueueSize(){
                 return epQueue.size();
         }
         

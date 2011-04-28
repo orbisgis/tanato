@@ -296,10 +296,13 @@ class EdgePart implements Comparable<EdgePart>{
 
         @Override
         public int hashCode() {
-                int hash = 3;
-                hash = 67 * hash + this.gid;
-                hash = 67 * hash + (int) (Double.doubleToLongBits(this.start) ^ (Double.doubleToLongBits(this.start) >>> 32));
-                hash = 67 * hash + (int) (Double.doubleToLongBits(this.end) ^ (Double.doubleToLongBits(this.end) >>> 32));
+                final int base = 3;
+                final int coef = 67;
+                final int bitDec = 32;
+                int hash = base;
+                hash = coef * hash + this.gid;
+                hash = coef * hash + (int) (Double.doubleToLongBits(this.start) ^ (Double.doubleToLongBits(this.start) >>> bitDec));
+                hash = coef * hash + (int) (Double.doubleToLongBits(this.end) ^ (Double.doubleToLongBits(this.end) >>> bitDec));
                 return hash;
         }
 }
