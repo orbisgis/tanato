@@ -61,6 +61,9 @@ public final class TINFeatureFactory {
          * @param geom
          * @return
          * @throws DelaunayError
+         *              If the triangle can't be generated
+         * @throws IllegalArgumentException
+         *              If there are not exactly 3 coordinates in geom.
          */
         public static DTriangle createDTriangle(Geometry geom) throws DelaunayError {
 
@@ -78,6 +81,10 @@ public final class TINFeatureFactory {
          * @param geom
          * @return
          * @throws DelaunayError
+         *              If the DPoint can't be generated. In most cases, it means that
+         *              the input point has a Double.NaN coordinate.
+         * @throws IllegalArgumentException
+         *              If there are not exactly 1 coordinates in geom.
          */
         public static DPoint createDPoint(Geometry geom) throws DelaunayError{
                 Coordinate[] coords = geom.getCoordinates();
@@ -93,6 +100,8 @@ public final class TINFeatureFactory {
 	 * @param geom
 	 * @return
 	 * @throws DelaunayError
+         * @throws IllegalArgumentException
+         *              If there are not exactly 2 coordinates in geom.
 	 */
 	public static DEdge createDEdge(Geometry geom) throws DelaunayError {
 		Coordinate[] coords = geom.getCoordinates();

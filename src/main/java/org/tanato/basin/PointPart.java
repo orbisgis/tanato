@@ -58,14 +58,14 @@ class PointPart {
 	 * @param oType
 	 *	* 1 : The owner is an edge
 	 *	* 0 : the owner is a point.
-         * @throws InvalidParameterException
+         * @throws IllegalArgumentException
          *      when the type of the owner is neither 0 nor 1.
 	 */
 	public PointPart(Coordinate orig, int oGID, int oType){
 		pt = orig;
 		ownerGID = oGID;
                 if(oType != POINT_TYPE && oType != EDGE_TYPE){
-                        throw new InvalidParameterException("The type of the owner should be 0 or 1 !");
+                        throw new IllegalArgumentException("The type of the owner should be 0 or 1 !");
                 }
 		ownerType = oType;
 	}
@@ -100,12 +100,12 @@ class PointPart {
 	/**
 	 * Set the type of the owner.
 	 * @param ownerType
-         * @throws InvalidParameterException
+         * @throws IllegalArgumentException
          *      if ownerType is neither 0 nor 1.
 	 */
 	public final void setOwnerType(int ownerType) {
                 if(ownerType != POINT_TYPE && ownerType != EDGE_TYPE){
-                        throw new InvalidParameterException("The type of the owner should be 0 or 1 !");
+                        throw new IllegalArgumentException("The type of the owner should be 0 or 1 !");
                 }
 		this.ownerType = ownerType;
 	}
