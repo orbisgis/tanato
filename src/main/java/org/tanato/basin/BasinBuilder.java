@@ -87,9 +87,9 @@ public class BasinBuilder {
         private SpatialDataSourceDecorator sdsPoints;
         private GeometryFactory gf = new GeometryFactory();
         //Used to set the dimension of the TIN feature we use to start our processing.
-        public final static int TIN_POINT = 0;
-        public final static int TIN_EDGE = 1;
-        public final static int TIN_TRIANGLE = 2;
+        public static final int TIN_POINT = 0;
+        public static final int TIN_EDGE = 1;
+        public static final int TIN_TRIANGLE = 2;
         private final DataSourceFactory dsf;
 	private LinkedList<EdgePart> remainingElements;
 	private LinkedList<PointPart> remainingPoints;
