@@ -1,4 +1,4 @@
-/* 
+/*
  * TANATO  is a library dedicated to the modelling of water pathways based on 
  * triangulate irregular network. TANATO takes into account anthropogenic and 
  * natural artifacts to evaluate their impacts on the watershed response. 
@@ -39,96 +39,46 @@ package org.tanato.basin;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import java.security.InvalidParameterException;
+import junit.framework.TestCase;
 
 /**
- *
+ * Tests on the PointPart class.
  * @author alexis
  */
-class PointPart {
-
-	private Coordinate pt;
-	private int ownerGID;
-	private int ownerType;
-        public final static int POINT_TYPE = 0;
-        public final static int EDGE_TYPE = 1;
-	/**
-	 *
-	 * @param orig
-	 * @param oGID
-	 * @param oType
-	 *	* 1 : The owner is an edge
-	 *	* 0 : the owner is a point.
-         * @throws InvalidParameterException
-         *      when the type of the owner is neither 0 nor 1.
-	 */
-	public PointPart(Coordinate orig, int oGID, int oType){
-		pt = orig;
-		ownerGID = oGID;
-                if(oType != POINT_TYPE && oType != EDGE_TYPE){
-                        throw new InvalidParameterException("The type of the owner should be 0 or 1 !");
+public class PointPartTest extends TestCase{
+        
+        public void testPointPart() {
+                PointPart pp = new PointPart(new Coordinate(5,5,0), 8,1);
+                assertTrue(pp.getPt().equals(new Coordinate(5,5,0)));
+                assertTrue(pp.getOwnerGID()==8);
+                assertTrue(pp.getOwnerType()==1);
+                pp.setPt(new Coordinate(25, 25, 1));
+                assertTrue(pp.getPt().equals(new Coordinate(25,25,1)));
+                pp.setOwnerGID(7);
+                assertTrue(pp.getOwnerGID()==7);
+        }
+        
+        public void testInvalidParameterException() {
+                try{
+                        PointPart pp = new PointPart(new Coordinate(0,0,4),8,5);
+                        assertTrue(false);
+                } catch (InvalidParameterException ipe){
+                        assertTrue(true);
                 }
-		ownerType = oType;
-	}
-
-	/**
-	 * Get the GId of the element that owns this point in the mesh. It can be a point
-	 * or an edge, respectively if it is a point of the mesh or not.
-	 * @return
-	 */
-	public final int getOwnerGID() {
-		return ownerGID;
-	}
-
-	/**
-	 * Set the GID of the element that owns this point
-	 * @param ownerGID
-	 */
-	public final void setOwnerGID(int ownerGID) {
-		this.ownerGID = ownerGID;
-	}
-
-	/**
-	 * Get the type of the owner
-	 * @return
-	 *	* 1 : The owner is an edge
-	 *	* 0 : the owner is a point.
-	 */
-	public final int getOwnerType() {
-		return ownerType;
-	}
-
-	/**
-	 * Set the type of the owner.
-	 * @param ownerType
-         * @throws InvalidParameterException
-         *      if ownerType is neither 0 nor 1.
-	 */
-	public final void setOwnerType(int ownerType) {
-                if(ownerType != POINT_TYPE && ownerType != EDGE_TYPE){
-                        throw new InvalidParameterException("The type of the owner should be 0 or 1 !");
+                PointPart pp = new PointPart(new Coordinate(0,0,4),8,1);
+                try {
+                        pp.setOwnerType(8);
+                        assertTrue(false);
+                } catch (InvalidParameterException e) {
+                        assertTrue(true);
                 }
-		this.ownerType = ownerType;
-	}
-
-	/**
-	 * get the coordinate of the point.
-	 * @return
-	 */
-	public final Coordinate getPt() {
-		return pt;
-	}
-
-	/**
-	 * Set the coordinate of the point.
-	 * @param pt
-	 */
-	public final void setPt(Coordinate pt) {
-		this.pt = pt;
-	}
-
-	@Override
-	public String toString(){
-		return "GID : "+ownerGID+" - Type : "+(ownerType==0?"Point":"Edge");
-	}
-	
+                PointPart pp2 = new PointPart(new Coordinate(0,0,4),8,1);
+                try {
+                        pp2.setOwnerType(0);
+                        assertTrue(true);
+                } catch (InvalidParameterException e) {
+                        assertTrue(false);
+                }
+        }
+        
 }
