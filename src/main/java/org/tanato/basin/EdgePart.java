@@ -253,7 +253,10 @@ class EdgePart implements Comparable<EdgePart>{
          * (this.gid == other.gid AND this.end &lt; other.start)<br/>
          *  * this.compareTo(other) == 1 if and only if this.gid&gt;other.gid OR
          * (this.gid == other.gid AND this.start &gt; other.end)<br/>
-         *  * this.compareTo(other) == 0 otherwise.
+         *  * this.compareTo(other) == 0 otherwise.<br/>
+         * <b>Important note : </b> this method is not consistent with equality! Note 
+         * that this method is intended to be used in well-formed sorted lists. Use with care.
+         * 
          * @param other
          * @return 
          */
@@ -270,5 +273,33 @@ class EdgePart implements Comparable<EdgePart>{
                 } else {
                         return 0;
                 }
+        }
+        
+        /**
+         * Overrides the default equals method. Two EdgeParts are equals if and only if 
+         * they share the same GID, start and end. As we work on a unique mesh, the 
+         * other properties will be the same.
+         * Not consistent with compareTo.
+         * @param other
+         * @return 
+         */
+        @Override
+        public final boolean equals(Object other){
+                if(other instanceof EdgePart){
+                        EdgePart ep = (EdgePart) other;
+                        return ep.gid==gid && Math.abs(end-ep.end)<Tools.EPSILON && 
+                                Math.abs(start-ep.start)<Tools.EPSILON;
+                } else {
+                        return false;
+                }
+        }
+
+        @Override
+        public int hashCode() {
+                int hash = 3;
+                hash = 67 * hash + this.gid;
+                hash = 67 * hash + (int) (Double.doubleToLongBits(this.start) ^ (Double.doubleToLongBits(this.start) >>> 32));
+                hash = 67 * hash + (int) (Double.doubleToLongBits(this.end) ^ (Double.doubleToLongBits(this.end) >>> 32));
+                return hash;
         }
 }

@@ -38,6 +38,8 @@
 
 package org.tanato.basin;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import junit.framework.TestCase;
 import org.jdelaunay.delaunay.Tools;
 
@@ -141,6 +143,38 @@ public class EdgePartTest extends TestCase{
                 other = new EdgePart(8, 0.64, 0.7, 6, 4, 8, 2);
                 assertTrue(ep.compareTo(other)==-1);
                 assertTrue(other.compareTo(ep)==1);
+        }
+        
+        public void testSort() {
+                EdgePart e1 = new EdgePart(8, 0.75, 0.76, 6, 4, 8, 2);
+                EdgePart e2 = new EdgePart(8, 0.35, 0.36, 6, 4, 8, 2);
+                EdgePart e3 = new EdgePart(8, 0.55, 0.56, 6, 4, 8, 2);
+                EdgePart e4 = new EdgePart(8, 0.15, 0.16, 6, 4, 8, 2);
+                EdgePart e5 = new EdgePart(8, 0.95, 0.96, 6, 4, 8, 2);
+                EdgePart e6 = new EdgePart(8, 0.85, 0.86, 6, 4, 8, 2);
+                ArrayList<EdgePart> set = new ArrayList<EdgePart>();
+                set.add(e1);
+                set.add(e2);
+                set.add(e3);
+                set.add(e4);
+                set.add(e5);
+                set.add(e6);
+                Collections.sort(set);
+                for (int i = 0; i < 5; i++) {
+                        assertTrue(set.get(i).getEnd() < set.get(i+1).getStart());
+                }
+        }
+        
+        public void testEquality() {
+                EdgePart e1 = new EdgePart(8, 0.75, 0.76, 6, 4, 8, 2);
+                EdgePart e2 = new EdgePart(8, 0.35, 0.36, 6, 4, 8, 2);
+                assertFalse(e1.equals(e2));
+                e2 = new EdgePart(9, 0.75, 0.76, 6, 4, 8, 2);
+                assertFalse(e1.equals(e2));
+                e2 = new EdgePart(8, 0.75, 0.76, 6, 4, 8, 2);
+                assertTrue(e1.equals(e2));
+                int hash = e2.hashCode();
+                assertTrue(hash == 1958558354);
         }
         
 }
