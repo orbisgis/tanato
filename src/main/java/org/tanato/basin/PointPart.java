@@ -38,7 +38,6 @@
 package org.tanato.basin;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import java.security.InvalidParameterException;
 
 /**
  *
