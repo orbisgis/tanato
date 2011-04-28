@@ -43,18 +43,32 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.io.WKTReader;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import junit.framework.TestCase;
+import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.indexes.DefaultAlphaQuery;
+import org.gdms.data.metadata.Metadata;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.sql.customQuery.GeometryTableDefinition;
+import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.spatial.geometry.edit.ST_AddZToGeometry;
+import org.orbisgis.progress.NullProgressMonitor;
 
 /**
  *
  * @author ebocher
  */
 public class Tanato2SQLTest extends TestCase {
+        
+        public static final List<Point> SMALL_CHEZINE_POINTS;
 
         protected Geometry jTSMultiPolygon2D;
         protected Geometry jTSMultiLineString2D;
@@ -66,8 +80,21 @@ public class Tanato2SQLTest extends TestCase {
         protected Geometry jTSPoint2D;
         protected Geometry jTSLineString3D;
         protected GeometryCollection jTS3DCollection;
-	private static GeometryFactory gf = new GeometryFactory();
+	private static final GeometryFactory gf = new GeometryFactory();
 
+        static{
+                SMALL_CHEZINE_POINTS = new ArrayList<Point>();
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(108, 222, 20)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(136, 262, 20)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(140, 125, 20)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(175, 163, 10)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(209, 95, 10)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(213, 273, 20)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(217, 284, 20)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(310, 100, 10)));
+                SMALL_CHEZINE_POINTS.add(gf.createPoint(new Coordinate(331, 142, 20)));
+        }
+        
         @Override
         protected void setUp() throws Exception {
                 WKTReader wktr = new WKTReader();
@@ -138,4 +165,46 @@ public class Tanato2SQLTest extends TestCase {
 				new Coordinate(1,0,0),
 				new Coordinate(5,0,0)})));
 	}
+        
+        public void testST_TIN() throws Exception{
+                deleteFileIfExists(new File("out_points"));
+                deleteFileIfExists(new File("out_edges"));
+                deleteFileIfExists(new File("out_triangles"));
+                DataSourceFactory dsf = new DataSourceFactory("target","target");
+                ST_TIN query = new ST_TIN();
+                assertNull(query.getMetadata(new Metadata[]{}));
+                assertTrue(query.getTablesDefinitions()[0] instanceof GeometryTableDefinition);
+                assertTrue(query.getFunctionArguments().length == 1);
+                assertTrue(query.getFunctionArguments()[0].getArgumentCount() == 3);
+                assertTrue(query.getFunctionArguments()[0].getArgument(0) == Argument.BOOLEAN);
+                assertTrue(query.getFunctionArguments()[0].getArgument(1) == Argument.BOOLEAN);
+                assertTrue(query.getFunctionArguments()[0].getArgument(2) == Argument.STRING);
+                //The original input contains exactly 9 points and 7 constrained edges.
+                DataSource in = dsf.getDataSource(new File("src/test/resources/data/source/small_data/small_courbes_chezine.shp"));
+                //Output tables will be stored in out_points, out_edges and out_triangles
+                Value[] vals = new Value[]{
+                        ValueFactory.createValue(true),
+                        ValueFactory.createValue(true),
+                        ValueFactory.createValue("out")
+                };
+                query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
+                DataSource ds = dsf.getDataSource("out_points");
+                assertNotNull(ds);
+                ds.open();
+                //There have been two insertions, because two triangles were flat.
+                assertTrue(ds.getRowCount()==11);
+                SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
+                for(Point pt : SMALL_CHEZINE_POINTS){
+                        DefaultAlphaQuery daq = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt));
+                        Iterator<Integer> it = sds.queryIndex(daq);
+                        assertTrue(it.hasNext());
+                }
+                
+        }
+        
+        private void deleteFileIfExists(File file){
+                if(file.exists()){
+                        file.delete();
+                }
+        }
 }
