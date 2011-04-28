@@ -91,8 +91,58 @@ public class EdgePartManagerTest extends TestCase {
                 EdgePart merge = out.get(0);
                 assertTrue(merge.getStart() == 0.38);
                 assertTrue(merge.getEnd()==0.41);
-                
-                
         }
     
+        /**
+         * A more complicated merging test.
+         */
+        public void testAddAndMergeManyElements(){
+                EdgePartManager epm = new EdgePartManager();
+                EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
+                EdgePart e2 = new EdgePart(8, 0.45, 0.50, 5, 9, 64, 52);
+                EdgePart e3 = new EdgePart(8, 0.55, 0.60, 5, 9, 64, 52);
+                EdgePart e4 = new EdgePart(8, 0.95, 0.97, 5, 9, 64, 52);
+                EdgePart e5 = new EdgePart(8, 0.15, 0.17, 5, 9, 64, 52);
+                //There will be a merging here.
+                EdgePart e6 = new EdgePart(8, 0.12, 0.16, 5, 9, 64, 52);
+                EdgePart e7 = new EdgePart(8, 0.25, 0.30, 5, 9, 64, 52);
+                EdgePart e8 = new EdgePart(8, 0.32, 0.33, 5, 9, 64, 52);
+                epm.addEdgePart(ep);
+                epm.addEdgePart(e2);
+                epm.addEdgePart(e3);
+                epm.addEdgePart(e4);
+                epm.addEdgePart(e5);
+                epm.addEdgePart(e6);
+                epm.addEdgePart(e7);
+                epm.addEdgePart(e8);
+                EdgePart e9 = new EdgePart(8, 0.31, 0.85, 5, 9, 64, 52);
+                epm.addEdgePart(e9);
+                List<EdgePart> out = epm.getEdgeParts();
+                assertTrue(out.size()==4);
+                assertTrue(out.get(0).equals(new EdgePart(8,0.12,0.17,5,9,64,62)));
+                assertTrue(out.get(1).equals(new EdgePart(8,0.25,0.30,5,9,64,62)));
+                assertTrue(out.get(2).equals(new EdgePart(8,0.31,0.85,5,9,64,62)));
+                assertTrue(out.get(3).equals(new EdgePart(8,0.95,0.97,5,9,64,62)));
+                
+        }
+        
+        /**
+         * A merge operation is performed while there are two keys in the map.
+         */
+        public void testTwoKeysInMap()  {
+                EdgePartManager epm = new EdgePartManager();
+                EdgePart ep = new EdgePart(9, 0.38, 0.40, 5, 9, 64, 52);
+                EdgePart e2 = new EdgePart(8, 0.45, 0.50, 5, 9, 64, 52);
+                EdgePart e3 = new EdgePart(8, 0.35, 0.47, 5, 9, 64, 52);
+                epm.addEdgePart(ep);
+                epm.addEdgePart(e2);
+                epm.addEdgePart(e3);
+                assertTrue(epm.getQueueSize()==2);
+                List<EdgePart> out = epm.getEdgeParts();
+                assertTrue(out.size()==1);
+                assertTrue(out.get(0).equals(new EdgePart(9, 0.38, 0.40, 5, 9, 64, 52)));
+                out = epm.getEdgeParts();
+                assertTrue(out.size()==1);
+                assertTrue(out.get(0).equals(new EdgePart(8, 0.35, 0.50, 5, 9, 64, 52)));
+        }
 }
