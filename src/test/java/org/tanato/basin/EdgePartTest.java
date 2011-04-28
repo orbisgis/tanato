@@ -126,5 +126,21 @@ public class EdgePartTest extends TestCase{
             other = new EdgePart(1, 0.55,0.56,8,9,40,41);
             assertFalse(ep.contains(other));
         }
-
+        
+        public void testComparison(){
+                EdgePart ep = new EdgePart(8, 0.5, 0.6, 6, 4, 8, 2);
+                EdgePart other = new EdgePart(7,0.4,0.7,7,9,5,2);
+                assertTrue(ep.compareTo(other)==1);
+                assertTrue(other.compareTo(ep)==-1);
+                other = new EdgePart(8, 0.4, 0.7, 6, 4, 8, 2);
+                assertTrue(ep.compareTo(other)==0);
+                assertTrue(other.compareTo(ep)==0);
+                other = new EdgePart(8, 0.4, 0.45, 6, 4, 8, 2);
+                assertTrue(ep.compareTo(other)==1);
+                assertTrue(other.compareTo(ep)==-1);
+                other = new EdgePart(8, 0.64, 0.7, 6, 4, 8, 2);
+                assertTrue(ep.compareTo(other)==-1);
+                assertTrue(other.compareTo(ep)==1);
+        }
+        
 }

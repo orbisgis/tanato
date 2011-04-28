@@ -44,7 +44,7 @@ import org.jdelaunay.delaunay.Tools;
  * a basin graph.
  * @author alexis
  */
-class EdgePart {
+class EdgePart implements Comparable<EdgePart>{
 	private int gid;
 	private double start;
 	private double end;
@@ -238,6 +238,37 @@ class EdgePart {
                 if(s && e){
                         start = start < other.start ? start : other.start;
                         end = end < other.end ? other.end : end;
+                }
+        }
+        
+        /**
+         * Perform the comparison between this and another EdgePart.
+         * We implement Comparable&lt;EdgePart&gt; for efficiency reasons, 
+         * for the EdgePartManager.<br/>
+         * To understand quickly the meaning of this realization, we can say that :<br/>
+         * this.compareTo(other) == 0 if and only if this and other can be merged using
+         * expandToInclude.<br/>
+         * More precisely : <br/>
+         *  * this.compareTo(other) == -1 if and only if this.gid&lt;other.gid OR 
+         * (this.gid == other.gid AND this.end &lt; other.start)<br/>
+         *  * this.compareTo(other) == 1 if and only if this.gid&gt;other.gid OR
+         * (this.gid == other.gid AND this.start &gt; other.end)<br/>
+         *  * this.compareTo(other) == 0 otherwise.
+         * @param other
+         * @return 
+         */
+        @Override
+        public final int compareTo(EdgePart other){
+                if(this.gid<other.gid){
+                        return -1;
+                } else if(this.gid>other.gid){
+                        return 1;
+                } else  if(this.end < other.start-Tools.EPSILON){
+                        return -1;
+                } else if(this.start > other.end+Tools.EPSILON){
+                        return 1;
+                } else {
+                        return 0;
                 }
         }
 }
