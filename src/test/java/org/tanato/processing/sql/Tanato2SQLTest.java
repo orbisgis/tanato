@@ -453,4 +453,13 @@ public class Tanato2SQLTest extends TestCase {
                 
                 
         }
+        
+        public void testST_GetHydroProperty() throws Exception{
+                ST_GetHydroProperty fun = new ST_GetHydroProperty();
+                assertFalse(fun.isAggregate());
+                assertNull(fun.getAggregateResult());
+                assertTrue(Type.STRING == fun.getType(new Type[]{}).getTypeCode());
+                Value out = fun.evaluate(null, new Value[]{ValueFactory.createValue(HydroProperties.BORDER)});
+                assertTrue(out.getAsString().contentEquals(HydroProperties.toString(HydroProperties.BORDER)));
+        }
 }
