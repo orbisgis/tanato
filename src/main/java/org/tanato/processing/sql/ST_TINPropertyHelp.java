@@ -57,6 +57,13 @@ import org.gdms.sql.function.Arguments;
 import org.jhydrocell.hydronetwork.HydroProperties;
 import org.orbisgis.progress.IProgressMonitor;
 
+/**
+ * This customQuery will create a GenericObjectDriver, that encapsulates a table explaining
+ * the link between the int values of the hydroproperties, and their meaning as 
+ * defined in jDelaunay, in HydroProperties.
+ * @see org.jhydrocell.hydronetwork.HydroProperties
+ * @author erwan, kwyhr, alexis
+ */
 public class ST_TINPropertyHelp implements CustomQuery {
 
         @Override
@@ -77,11 +84,17 @@ public class ST_TINPropertyHelp implements CustomQuery {
                         TreeMap<String, Integer> theFieldList = new TreeMap<String, Integer>();
                         Field[] theList = HydroProperties.class.getFields();
                         for (Field theField : theList) {
-                                try {
-                                        int intValue = theField.getInt(theField);
-                                        theFieldList.put(theField.getName(), intValue);
-                                } catch (IllegalArgumentException ex) {
-                                } catch (IllegalAccessException ex) {
+                                if(theField.getType().isAssignableFrom(Integer.TYPE) && theField.getType().isPrimitive()){
+                                        try {
+                                                int intValue = theField.getInt(theField);
+                                                theFieldList.put(theField.getName(), intValue);
+                                        } catch (IllegalArgumentException ex) {
+                                                throw new ExecutionException("We're dealing with an object that is"
+                                                        + "not an int. Surprising.",ex);
+                                        } catch (IllegalAccessException ex) {
+                                                throw new ExecutionException("We're supposed to work only on public fields.",ex);
+                                        }
+                                        
                                 }
                         }
 
@@ -100,7 +113,7 @@ public class ST_TINPropertyHelp implements CustomQuery {
 
                         return genericObjectDriver;
                 } catch (DriverException e) {
-                        throw new ExecutionException(e);
+                        throw new ExecutionException("there has been a problem while building the driver",e);
                 }
 
         }
@@ -122,7 +135,6 @@ public class ST_TINPropertyHelp implements CustomQuery {
 
         @Override
         public final Metadata getMetadata(Metadata[] tables) throws DriverException {
-
                 return null;
         }
 

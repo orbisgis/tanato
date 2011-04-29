@@ -185,7 +185,7 @@ public class Tanato2SQLTest extends TestCase {
                 } catch (FunctionException f){
                         assertTrue(true);
                 }
-                String talweg = HydroProperties.toString(HydroProperties.TALWEG);
+                String talweg = "TALWEG";
                 Value val = ValueFactory.createValue(talweg);
                 values = new Value[]{val};
                 Value out = fun.evaluate(dsf, values);
@@ -227,6 +227,11 @@ public class Tanato2SQLTest extends TestCase {
                 values = new Value[]{val};
                 out = fun.evaluate(dsf, values);
                 assertTrue(out.getAsInt()==HydroProperties.NONE);
+                talweg = "LEFTCOLINEAR";
+                val = ValueFactory.createValue(talweg);
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==HydroProperties.LEFTCOLINEAR);
                 
                 
         }
