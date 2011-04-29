@@ -37,6 +37,8 @@
  */
 package org.tanato.processing.sql;
 
+import java.lang.reflect.Field;
+import java.util.TreeMap;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.ExecutionException;
@@ -57,17 +59,12 @@ import org.orbisgis.progress.IProgressMonitor;
 
 public class ST_TINPropertyHelp implements CustomQuery {
 
-        static final String TOPOGRAPHIC = "topographic";
-        static final String MORPHOLOGIC = "morphologic";
-        static final String TOPOLOGIC = "topologic";
-        static final String NONE = "none";
-	static final String ANY = "any";
-
         @Override
         public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
                 Value[] values, IProgressMonitor pm) throws ExecutionException {
 
                 try {
+                        // Build header
                         DefaultMetadata defaultMetadata = new DefaultMetadata();
                         defaultMetadata.addField("property", TypeFactory.createType(Type.STRING));
                         defaultMetadata.addField("text", TypeFactory.createType(Type.STRING));
@@ -76,102 +73,30 @@ public class ST_TINPropertyHelp implements CustomQuery {
                         GenericObjectDriver genericObjectDriver = new GenericObjectDriver(
                                 defaultMetadata);
 
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.ANY),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.ANY)),
-                                ValueFactory.createValue(ANY));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.BORDER),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.BORDER)),
-                                ValueFactory.createValue(TOPOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.DITCH),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.DITCH)),
-                                ValueFactory.createValue(TOPOGRAPHIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.DOUBLECOLINEAR),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.DOUBLECOLINEAR)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.FLAT),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.FLAT)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.LEFTCOLINEAR),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.LEFTCOLINEAR)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.LEFTSIDE),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.LEFTSIDE)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.LEFTTSLOPE),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.LEFTTSLOPE)));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.LEFTWELL),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.LEFTWELL)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.LEVEL),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.LEVEL)),
-                                ValueFactory.createValue(TOPOGRAPHIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.NONE),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.NONE)),
-                                ValueFactory.createValue(NONE));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.RIDGE),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.RIDGE)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.RIGHTCOLINEAR),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.RIGHTCOLINEAR)));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.RIGHTSIDE),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.RIGHTSIDE)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.RIGHTSLOPE),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.RIGHTSLOPE)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.RIGHTWELL),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.RIGHTWELL)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.RIVER),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.RIVER)));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.ROAD),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.ROAD)),
-                                ValueFactory.createValue(TOPOGRAPHIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.RURAL_PARCEL),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.RURAL_PARCEL)));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.SEWER),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.SEWER)),
-                                ValueFactory.createValue(TOPOGRAPHIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.SEWER_INPUT),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.SEWER_INPUT)));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.SEWER_OUTPUT),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.SEWER_OUTPUT)),
-                                ValueFactory.createValue(TOPOGRAPHIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.TALWEG),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.TALWEG)),
-                                ValueFactory.createValue(MORPHOLOGIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.URBAN_PARCEL),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.URBAN_PARCEL)),
-                                ValueFactory.createValue(TOPOGRAPHIC));
-                        genericObjectDriver.addValues(
-                                ValueFactory.createValue(HydroProperties.WALL),
-                                ValueFactory.createValue(HydroProperties.toString(HydroProperties.WALL)),
-                                ValueFactory.createValue(TOPOGRAPHIC));
+                        // Build list
+                        TreeMap<String, Integer> theFieldList = new TreeMap<String, Integer>();
+                        Field[] theList = HydroProperties.class.getFields();
+                        for (Field theField : theList) {
+                                try {
+                                        int intValue = theField.getInt(theField);
+                                        theFieldList.put(theField.getName(), intValue);
+                                } catch (IllegalArgumentException ex) {
+                                } catch (IllegalAccessException ex) {
+                                }
+                        }
 
+                        // Then usees treeMap tu build result
+                        for (String fieldName : theFieldList.keySet()) {
+                                // Get informations
+                                int fieldValue = theFieldList.get(fieldName);
+                                String qualification = HydroProperties.getPropertyQualification(fieldValue);
+
+                                // Build new line
+                                genericObjectDriver.addValues(
+                                        ValueFactory.createValue(fieldValue),
+                                        ValueFactory.createValue(fieldName),
+                                        ValueFactory.createValue(qualification));
+                        }
 
                         return genericObjectDriver;
                 } catch (DriverException e) {
