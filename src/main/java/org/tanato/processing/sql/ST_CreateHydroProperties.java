@@ -260,7 +260,7 @@ public class ST_CreateHydroProperties implements Function {
                                 // Check if is the right one
                                 if (theField.getName().equals(theString)) {
                                         found = true;
-                                } else if (HydroProperties.toString(fieldValue).toUpperCase().equals(theString)) {
+                                } else if (HydroProperties.toString(fieldValue).equalsIgnoreCase(theString)) {
                                         found = true;
                                 }
 
