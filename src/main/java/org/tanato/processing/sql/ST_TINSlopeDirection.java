@@ -41,8 +41,6 @@ package org.tanato.processing.sql;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -78,7 +76,7 @@ public class ST_TINSlopeDirection implements Function {
 
 
                 } catch (DelaunayError ex) {
-                        Logger.getLogger(ST_TINSlopeDirection.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new FunctionException("an error occurred while generating or handling the triangle", ex);
                 }
                 return ValueFactory.createNullValue();
 

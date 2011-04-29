@@ -426,4 +426,26 @@ public class Tanato2SQLTest extends TestCase {
                         new Coordinate(7, 2, 6)
                 });
         }
+        
+        public void testST_TINSlopeDirection() throws Exception {
+                DataSourceFactory dsf = new DataSourceFactory("target","target");
+                ST_TINSlopeDirection fun = new ST_TINSlopeDirection();
+                assertNull(fun.getAggregateResult());
+                assertFalse(fun.isAggregate());
+                assertTrue(Type.GEOMETRY == fun.getType(new Type[]{}).getTypeCode());
+                Geometry geom = gf.createLinearRing(new Coordinate[]{
+                        new Coordinate(0,0,0),
+                        new Coordinate(4,0,0),
+                        new Coordinate(2,3,9),
+                        new Coordinate(0,0,0)
+                });
+                Value out = fun.evaluate(dsf, new Value[]{ValueFactory.createValue(geom)});
+                LineString ls = gf.createLineString(new Coordinate[]{
+                        new Coordinate(2,1,3),
+                        new Coordinate(2,0,0)
+                });
+                assertTrue(ls.equals(out.getAsGeometry()));
+                
+                
+        }
 }
