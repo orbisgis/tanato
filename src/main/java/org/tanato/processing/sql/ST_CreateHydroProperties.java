@@ -35,7 +35,6 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-
 package org.tanato.processing.sql;
 
 import java.lang.reflect.Field;
@@ -146,7 +145,7 @@ public class ST_CreateHydroProperties implements Function {
         private String getNextKeyword() {
                 // Skip unsignificant characters
                 boolean found = false;
-		StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 while ((position < length) && (!found) && (error == 0)) {
                         char theChar = theString.charAt(position);
                         if (Character.isLetterOrDigit(theChar)) {
@@ -162,20 +161,30 @@ public class ST_CreateHydroProperties implements Function {
 
                 // save characters
                 found = false;
+                boolean lastwasspace = true;
                 while ((position < length) && (!found) && (error == 0)) {
                         char theChar = theString.charAt(position);
                         if (Character.isLetterOrDigit(theChar)) {
                                 // Uppercase character when saving it
                                 sb.append(Character.toUpperCase(theChar));
                                 position++;
+                                lastwasspace = false;
                         } else if (theChar == '_') {
                                 sb.append('_');
                                 position++;
+                                lastwasspace = false;
+                        } else if (theChar == ' ') {
+                                if (!lastwasspace) {
+                                        sb.append(' ');
+                                        position++;
+                                }
+                                lastwasspace = true;
                         } else {
                                 found = true;
+                                lastwasspace = false;
                         }
                 }
-                return sb.toString();
+                return sb.toString().trim();
         }
 
         /**
@@ -190,6 +199,10 @@ public class ST_CreateHydroProperties implements Function {
                 while ((position < length) && (!found) && (error == 0)) {
                         char theChar = theString.charAt(position);
                         if (theChar == '+') {
+                                // Add value
+                                theOperator = "+";
+                                found = true;
+                        } else if (theChar == ',') {
                                 // Add value
                                 theOperator = "+";
                                 found = true;
@@ -217,7 +230,7 @@ public class ST_CreateHydroProperties implements Function {
         private int convertToInt(String theString) {
                 int returnedValue = 0;
 
-                if (theString.equals("ALL")||theString.equals("ANY")) {
+                if (theString.equals("ALL") || theString.equals("ANY")) {
                         returnedValue = -1;
                 } else if (theString.equals("NONE")) {
                         returnedValue = 0;
@@ -228,28 +241,36 @@ public class ST_CreateHydroProperties implements Function {
                         // Check all values until we find it
                         int nbProperties = theList.length;
                         boolean found = false;
+                        int fieldValue = 0;
                         int i = 0;
-                        Field field = null;
+                        Field theField = null;
                         while ((i < nbProperties) && (!found)) {
-                                field = theList[i];
-                                if (field.getName().equals(theString)) {
-                                        found = true;
-                                } else {
-                                        i++;
-                                }
-                        }
-                        if (found) {
-                                // If found is true, field is defined
+                                theField = theList[i];
+                                fieldValue = 0;
                                 try {
-                                        returnedValue = field.getInt(field);
+                                        if (theField.getType().toString().equals("int")) {
+                                                fieldValue = theField.getInt(theField);
+                                        }
                                 } catch (IllegalArgumentException ex) {
                                         logger.log(Level.SEVERE, null, ex);
                                 } catch (IllegalAccessException ex) {
                                         logger.log(Level.SEVERE, null, ex);
                                 }
+
+                                // Check if is the right one
+                                if (theField.getName().equals(theString)) {
+                                        found = true;
+                                } else if (HydroProperties.toString(fieldValue).equals(theString)) {
+                                        found = true;
+                                }
+
+                                i++;
+                        }
+                        if (found) {
+                                // If found is true, field is defined
+                                returnedValue = fieldValue;
                         }
                 }
-
                 return returnedValue;
         }
 }
