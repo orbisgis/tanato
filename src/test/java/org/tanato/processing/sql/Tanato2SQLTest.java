@@ -412,5 +412,18 @@ public class Tanato2SQLTest extends TestCase {
                 double slope = 100*10/2;
                 Value out = fun.evaluate(dsf, new Value[]{ValueFactory.createValue(geom)});
                 assertTrue(slope == out.getAsDouble());
+                geom = gf.createPoint(new Coordinate(42,42,42));
+                try {
+                        fun.evaluate(dsf, new Value[]{ValueFactory.createValue(geom)});
+                        assertTrue(false);
+                } catch (IllegalArgumentException e) {
+                        assertTrue(true);
+                }
+                geom = gf.createLineString(new Coordinate[]{
+                        new Coordinate(0,0,0),
+                        new Coordinate(2,4,6),
+                        new Coordinate(8,9,3),
+                        new Coordinate(7, 2, 6)
+                });
         }
 }
