@@ -43,7 +43,9 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.WKTReader;
 import java.io.File;
 import java.util.ArrayList;
@@ -60,6 +62,8 @@ import org.gdms.data.values.ValueFactory;
 import org.gdms.sql.customQuery.GeometryTableDefinition;
 import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.spatial.geometry.edit.ST_AddZToGeometry;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.DTriangle;
 import org.orbisgis.progress.NullProgressMonitor;
 
 /**
@@ -166,6 +170,10 @@ public class Tanato2SQLTest extends TestCase {
 				new Coordinate(5,0,0)})));
 	}
         
+        /**
+         * Test on ST_TIN. We remove flat triangles.
+         * @throws Exception 
+         */
         public void testST_TIN() throws Exception{
                 deleteFileIfExists(new File("out_points"));
                 deleteFileIfExists(new File("out_edges"));
@@ -199,6 +207,126 @@ public class Tanato2SQLTest extends TestCase {
                         Iterator<Integer> it = sds.queryIndex(daq);
                         assertTrue(it.hasNext());
                 }
+                //We must test the two remaining points.
+                DTriangle dt1 = new DTriangle(
+                        new DEdge(209, 95, 10, 175, 163, 10), 
+                        new DEdge(175, 163, 10, 217, 184, 10), 
+                        new DEdge(217, 184, 10, 209, 95, 10));
+                Point pt1 = gf.createPoint(dt1.getBarycenter().getCoordinate());
+                Point pt2 = gf.createPoint(dt1.getCircumCenter());
+                DefaultAlphaQuery daq = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt1));
+                Iterator<Integer> it = sds.queryIndex(daq);
+                DefaultAlphaQuery daq2 = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt2));
+                Iterator<Integer> it2 = sds.queryIndex(daq2);
+                assertTrue(it.hasNext() || it2.hasNext());
+                dt1 = new DTriangle(
+                        new DEdge(209, 95, 10,  217, 184, 10), 
+                        new DEdge(217, 184, 10, 310, 100, 10), 
+                        new DEdge(310, 100, 10, 209, 95, 10));
+                pt1 = gf.createPoint(dt1.getBarycenter().getCoordinate());
+                pt2 = gf.createPoint(dt1.getCircumCenter());
+                daq = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt1));
+                it = sds.queryIndex(daq);
+                daq2 = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt2));
+                it2 = sds.queryIndex(daq2);
+                assertTrue(it.hasNext() || it2.hasNext());
+                
+                ds.close();
+                ds = dsf.getDataSource("out_triangles");
+                assertNotNull(ds);
+                ds.open();
+                assertTrue(ds.getRowCount()==13);
+                ds.close();
+                
+        }
+        
+        /**
+         * We tet the small lines from chezine, but we don't remove flat triangles.
+         * @throws Exception 
+         */
+        public void testST_TINWithFlats() throws Exception{
+                deleteFileIfExists(new File("out_points"));
+                deleteFileIfExists(new File("out_edges"));
+                deleteFileIfExists(new File("out_triangles"));
+                DataSourceFactory dsf = new DataSourceFactory("target","target");
+                ST_TIN query = new ST_TIN();
+                //The original input contains exactly 9 points and 7 constrained edges.
+                DataSource in = dsf.getDataSource(new File("src/test/resources/data/source/small_data/small_courbes_chezine.shp"));
+                //Output tables will be stored in out_points, out_edges and out_triangles
+                Value[] vals = new Value[]{
+                        ValueFactory.createValue(true),
+                        ValueFactory.createValue(false),
+                        ValueFactory.createValue("out")
+                };
+                query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
+                DataSource ds = dsf.getDataSource("out_points");
+                assertNotNull(ds);
+                ds.open();
+                assertTrue(ds.getRowCount()==9);
+                SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
+                for(Point pt : SMALL_CHEZINE_POINTS){
+                        DefaultAlphaQuery daq = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt));
+                        Iterator<Integer> it = sds.queryIndex(daq);
+                        assertTrue(it.hasNext());
+                }
+                ds.close();
+                //We treat the triangles now
+                List<DTriangle> expectedTriangles = new ArrayList<DTriangle>();
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(140,125,20,175,163,10),
+                                new DEdge(175,163,10,209,95,10),
+                                new DEdge(209,95,10,140,125,20)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(140,125,20,175,163,10),
+                                new DEdge(175,163,10,108,222,20),
+                                new DEdge(108,222,20,140,125,20)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(136,262,20,175,163,10),
+                                new DEdge(175,163,10,108,222,20),
+                                new DEdge(108,222,20,136,262,20)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(136,262,20,175,163,10),
+                                new DEdge(175,163,10,217,184,10),
+                                new DEdge(217,184,10,136,262,20)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(209,95,10,175,163,10),
+                                new DEdge(175,163,10,217,184,10),
+                                new DEdge(217,184,10,209,95,10)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(209,95,10,310,100,10),
+                                new DEdge(310,100,10,217,184,10),
+                                new DEdge(217,184,10,209,95,10)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(331,142,20,310,100,10),
+                                new DEdge(310,100,10,217,184,10),
+                                new DEdge(217,184,10,331,142,20)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(331,142,20,213,273,20),
+                                new DEdge(213,273,20,217,184,10),
+                                new DEdge(217,184,10,331,142,20)));
+                expectedTriangles.add(new DTriangle(
+                                new DEdge(136,262,20,213,273,20),
+                                new DEdge(213,273,20,217,184,10),
+                                new DEdge(217,184,10,136,262,20)));
+                
+                ds = dsf.getDataSource("out_triangles");
+                assertNotNull(ds);
+                ds.open();
+                assertTrue(ds.getRowCount()==9);
+                sds = new SpatialDataSourceDecorator(ds);
+                for (DTriangle dTriangle : expectedTriangles) {
+                        Polygon geom = gf.createPolygon(gf.createLinearRing(
+                                new Coordinate[]{
+                                        dTriangle.getPoint(0).getCoordinate(),
+                                        dTriangle.getPoint(1).getCoordinate(),
+                                        dTriangle.getPoint(2).getCoordinate(),
+                                        dTriangle.getPoint(0).getCoordinate()
+                                }), new LinearRing[]{});
+                        DefaultAlphaQuery daq = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(geom));
+                        Iterator<Integer> it = sds.queryIndex(daq);
+                        assertTrue(it.hasNext());
+                }
+                ds.close();
                 
         }
         
