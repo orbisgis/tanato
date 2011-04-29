@@ -55,7 +55,7 @@ import org.jhydrocell.hydronetwork.HydroProperties;
 /**
  * This GDMS function will transform HydroProperties stored as String values into
  * their int representation, as described in jDelaunay.
- * @author erwan, kwyhr
+ * @author erwan, kwyhr, alexis
  */
 public class ST_CreateHydroProperties implements Function {
         // Logger access
@@ -217,7 +217,7 @@ public class ST_CreateHydroProperties implements Function {
         private int convertToInt(String theString) {
                 int returnedValue = 0;
 
-                if (theString.equals("ALL")) {
+                if (theString.equals("ALL")||theString.equals("ANY")) {
                         returnedValue = -1;
                 } else if (theString.equals("NONE")) {
                         returnedValue = 0;

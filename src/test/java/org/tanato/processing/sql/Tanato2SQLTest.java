@@ -217,7 +217,11 @@ public class Tanato2SQLTest extends TestCase {
                 val = ValueFactory.createValue("ALL");
                 values = new Value[]{val};
                 out = fun.evaluate(dsf, values);
-                assertTrue(out.getAsInt()==-1);
+                assertTrue(out.getAsInt()==HydroProperties.ANY);
+                val = ValueFactory.createValue("ANY");
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==HydroProperties.ANY);
                 val = ValueFactory.createValue("NONE");
                 values = new Value[]{val};
                 out = fun.evaluate(dsf, values);
