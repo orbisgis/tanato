@@ -53,7 +53,8 @@ import org.gdms.sql.function.FunctionException;
 import org.jhydrocell.hydronetwork.HydroProperties;
 
 /**
- *
+ * This GDMS function will transform HydroProperties stored as String values into
+ * their int representation, as described in jDelaunay.
  * @author erwan, kwyhr
  */
 public class ST_CreateHydroProperties implements Function {
@@ -69,12 +70,12 @@ public class ST_CreateHydroProperties implements Function {
         @Override
         public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 int returnedValue = 0;
-                if (values.length < 1) {
+                if (values.length == 0) {
                         // There MUST be at least 1 value
-                        throw new FunctionException("need string to process.");
+                        throw new FunctionException("We need at least one value to go further, and it should be a string.");
                 } else {
                         // Get value
-                        theString = values[1].getAsString();
+                        theString = values[0].getAsString();
 
                         // Initialize
                         length = theString.length();
@@ -143,7 +144,7 @@ public class ST_CreateHydroProperties implements Function {
          * @return next keyword
          */
         private String getNextKeyword() {
-                // Skip unsignifiant characters
+                // Skip unsignificant characters
                 boolean found = false;
 		StringBuilder sb = new StringBuilder();
                 while ((position < length) && (!found) && (error == 0)) {

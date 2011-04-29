@@ -61,9 +61,11 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.sql.customQuery.GeometryTableDefinition;
 import org.gdms.sql.function.Argument;
+import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.spatial.geometry.edit.ST_AddZToGeometry;
 import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DTriangle;
+import org.jhydrocell.hydronetwork.HydroProperties;
 import org.orbisgis.progress.NullProgressMonitor;
 
 /**
@@ -169,6 +171,60 @@ public class Tanato2SQLTest extends TestCase {
 				new Coordinate(1,0,0),
 				new Coordinate(5,0,0)})));
 	}
+        
+        public void testST_CreateHydroProperies() throws Exception{
+                ST_CreateHydroProperties fun = new ST_CreateHydroProperties();
+                assertNull(fun.getAggregateResult());
+                assertFalse(fun.isAggregate());
+                DataSourceFactory dsf = new DataSourceFactory("target","target");
+                Value[] values = new Value[]{};
+                try{
+                        fun.evaluate(dsf, values);
+                        assertTrue(false);
+                } catch (FunctionException f){
+                        assertTrue(true);
+                }
+                String talweg = HydroProperties.toString(HydroProperties.TALWEG);
+                Value val = ValueFactory.createValue(talweg);
+                values = new Value[]{val};
+                Value out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==HydroProperties.TALWEG);
+                talweg = "$"+ HydroProperties.toString(HydroProperties.TALWEG);
+                val = ValueFactory.createValue(talweg);
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==HydroProperties.NONE);
+                talweg = HydroProperties.toString(HydroProperties.TALWEG)+" + "+
+                        HydroProperties.toString(HydroProperties.DITCH);
+                val = ValueFactory.createValue(talweg);
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==(HydroProperties.DITCH|HydroProperties.TALWEG));
+                talweg = HydroProperties.toString(HydroProperties.TALWEG)+" &&&+ "+
+                        HydroProperties.toString(HydroProperties.DITCH);
+                val = ValueFactory.createValue(talweg);
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==(HydroProperties.TALWEG));
+                talweg = HydroProperties.toString(HydroProperties.TALWEG)+" + "+
+                        HydroProperties.toString(HydroProperties.DITCH)+" + "+
+                        HydroProperties.toString(HydroProperties.RIVER)+" - "+
+                        HydroProperties.toString(HydroProperties.DITCH);
+                val = ValueFactory.createValue(talweg);
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==(HydroProperties.RIVER|HydroProperties.TALWEG));
+                val = ValueFactory.createValue("ALL");
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==-1);
+                val = ValueFactory.createValue("NONE");
+                values = new Value[]{val};
+                out = fun.evaluate(dsf, values);
+                assertTrue(out.getAsInt()==HydroProperties.NONE);
+                
+                
+        }
         
         /**
          * Test on ST_TIN. We remove flat triangles.
