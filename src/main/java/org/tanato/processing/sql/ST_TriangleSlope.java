@@ -40,8 +40,6 @@
 package org.tanato.processing.sql;
 
 import com.vividsolutions.jts.geom.Geometry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.InvalidTypeException;
 import org.gdms.data.types.Type;
@@ -74,9 +72,8 @@ public class ST_TriangleSlope implements Function{
                         return ret;
                         
                 } catch (DelaunayError d){
-                        Logger.getLogger(ST_TINSlopeDirection.class.getName()).log(Level.SEVERE, null, d);
+                        throw new FunctionException("An error occured while creating or handling the triangle", d);
                 }
-                return ValueFactory.createNullValue();
 
         }
 
@@ -102,7 +99,7 @@ public class ST_TriangleSlope implements Function{
 
         @Override
         public String getDescription() {
-                return "Compute the slope of triangles in an TIN expresed in percent.";
+                return "Compute the slope of triangles in a TIN expressed in percents.";
         }
 
         @Override

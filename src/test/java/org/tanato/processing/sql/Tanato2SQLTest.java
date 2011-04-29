@@ -57,6 +57,7 @@ import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.DefaultAlphaQuery;
 import org.gdms.data.metadata.Metadata;
+import org.gdms.data.types.Type;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.sql.customQuery.GeometryTableDefinition;
@@ -394,5 +395,22 @@ public class Tanato2SQLTest extends TestCase {
                 if(file.exists()){
                         file.delete();
                 }
+        }
+        
+        public void testST_TriangleSlope() throws Exception{
+                DataSourceFactory dsf = new DataSourceFactory("target","target");
+                ST_TriangleSlope fun = new ST_TriangleSlope();
+                assertNull(fun.getAggregateResult());
+                assertFalse(fun.isAggregate());
+                assertTrue(Type.DOUBLE == fun.getType(new Type[]{}).getTypeCode());
+                Geometry geom = gf.createLinearRing(new Coordinate[]{
+                        new Coordinate(0,0,0),
+                        new Coordinate(4,0,0),
+                        new Coordinate(2,2,10),
+                        new Coordinate(0,0,0)
+                });
+                double slope = 100*10/2;
+                Value out = fun.evaluate(dsf, new Value[]{ValueFactory.createValue(geom)});
+                assertTrue(slope == out.getAsDouble());
         }
 }
