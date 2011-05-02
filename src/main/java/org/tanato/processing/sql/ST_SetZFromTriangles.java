@@ -71,12 +71,13 @@ import org.tanato.factory.TINFeatureFactory;
 /**
  * This custom query will try to affect a z value to each point of a geometry. To do so,
  * it will use a triangular irregulated network, and will interpolate the z values from it.
- * @author alexis
+ * @author erwan, alexis
  */
 public class ST_SetZFromTriangles implements CustomQuery {
 
         @Override
-        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, 
+                                Value[] values, IProgressMonitor pm) throws ExecutionException {
 
 
                 DataSource ds = tables[0];
@@ -130,18 +131,17 @@ public class ST_SetZFromTriangles implements CustomQuery {
                         return driver;
 
                 } catch (IndexException ex) {
-                        Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new ExecutionException("Can't build the geometric index.",ex);
 
                 } catch (NoSuchTableException ex) {
-                        Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new ExecutionException("It seems that the table of triangle does not exist", ex);
 
                 } catch (DriverException ex) {
-                        Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new ExecutionException("The driver failed whil handling the datasource", ex);
 
                 } catch (DelaunayError ex) {
-                        Logger.getLogger(ST_SetZFromTriangles.class.getName()).log(Level.SEVERE, null, ex);
+                        throw new ExecutionException("Are you sure that this table only contains triangles ?", ex);
                 }
-                return null;
         }
 
         @Override
@@ -154,7 +154,7 @@ public class ST_SetZFromTriangles implements CustomQuery {
                 return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
         }
 
-        private class TINZFilter implements CoordinateSequenceFilter {
+        private static class TINZFilter implements CoordinateSequenceFilter {
 
                 private boolean done = false;
                 private final ArrayList<DTriangle> triangles;

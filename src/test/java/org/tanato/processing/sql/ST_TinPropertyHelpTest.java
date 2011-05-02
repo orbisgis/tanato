@@ -21,7 +21,7 @@ import org.orbisgis.progress.NullProgressMonitor;
  */
 public class ST_TinPropertyHelpTest extends TestCase {
 
-        public void test_property() throws Exception {
+        public void testProperty() throws Exception {
                 // Generate object
                 ST_TINPropertyHelp function2 = new ST_TINPropertyHelp();
                 assertNull(function2.getMetadata(new Metadata[]{}));
