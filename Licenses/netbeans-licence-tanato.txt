@@ -1,0 +1,41 @@
+<#if licenseFirst??>
+${licenseFirst}
+</#if>
+${licensePrefix}TANATO  is a library dedicated to the modelling of water pathways based on 
+${licensePrefix}triangulate irregular network. TANATO takes into account anthropogenic and 
+${licensePrefix}natural artifacts to evaluate their impacts on the watershed response. 
+${licensePrefix}It ables to compute watershed, main slope directions and water flow pathways.
+${licensePrefix}
+${licensePrefix}This library has been originally created  by Erwan Bocher during his thesis 
+${licensePrefix}“Impacts des activités humaines sur le parcours des écoulements de surface dans 
+${licensePrefix}un bassin versant bocager : essai de modélisation spatiale. Application au 
+${licensePrefix}Bassin versant du Jaudy-Guindy-Bizien (France)”. It has been funded by the 
+${licensePrefix}Bassin versant du Jaudy-Guindy-Bizien and Syndicat d’Eau du Trégor.
+${licensePrefix}
+${licensePrefix}The new version is developed at French IRSTV institut as part of the 
+${licensePrefix}AvuPur project, funded by the French Agence Nationale de la Recherche 
+${licensePrefix}(ANR) under contract ANR-07-VULN-01.
+${licensePrefix}
+${licensePrefix}TANATO is distributed under GPL 3 license. It is produced by the "Atelier SIG" team of
+${licensePrefix}the IRSTV Institute <http://www.irstv.cnrs.fr/> CNRS FR 2488.
+${licensePrefix}Copyright (C) 2010 Erwan BOCHER, Alexis GUEGANNO, Jean-Yves MARTIN
+${licensePrefix}Copyright (C) 2011 Erwan BOCHER, Alexis GUEGANNO, Jean-Yves MARTIN
+${licensePrefix}
+${licensePrefix}TANATO is free software: you can redistribute it and/or modify it under the
+${licensePrefix}terms of the GNU General Public License as published by the Free Software
+${licensePrefix}Foundation, either version 3 of the License, or (at your option) any later
+${licensePrefix}version.
+${licensePrefix}
+${licensePrefix}TANATO is distributed in the hope that it will be useful, but WITHOUT ANY
+${licensePrefix}WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+${licensePrefix}A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+${licensePrefix}
+${licensePrefix}You should have received a copy of the GNU General Public License along with
+${licensePrefix}TANATO. If not, see <http://www.gnu.org/licenses/>.
+${licensePrefix}
+${licensePrefix}For more information, please consult: <http://trac.orbisgis.org/>
+${licensePrefix}or contact directly:
+${licensePrefix}info_at_ orbisgis.org
+<#if licenseLast??>
+${licenseLast}
+</#if>
