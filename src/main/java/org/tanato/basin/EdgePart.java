@@ -45,6 +45,11 @@ import org.jdelaunay.delaunay.Tools;
  * @author alexis
  */
 class EdgePart implements Comparable<EdgePart>{
+        /**
+         * The default number of iterations that can be done on a single EdgePart
+         * whose length is inferior to org.jdelaunay.jdelaunay.Tools.EPSILON
+         */
+        public static final int DEFAULT_MAX_ITER = 10;
 	private int gid;
 	private double start;
 	private double end;
@@ -52,6 +57,8 @@ class EdgePart implements Comparable<EdgePart>{
 	private int gidEnd;
 	private int gidLeft;
 	private int gidRight;
+        private int occuredIter;
+        private static int MAX_ITER = DEFAULT_MAX_ITER;
 
 	/**
 	 * Instanciate a new EdgePart
@@ -78,6 +85,7 @@ class EdgePart implements Comparable<EdgePart>{
 		this.gidEnd = gidEnd;
 		this.gidLeft = gidLeft;
 		this.gidRight = gidRight;
+                occuredIter=0;
 	}
 
 	/**
@@ -200,7 +208,51 @@ class EdgePart implements Comparable<EdgePart>{
 	public final String toString(){
 		return "Defining edge GID : "+gid;
 	}
+        
+        /**
+         * Increase the number of iterations used to count the times we have tried
+         * to process this EdgePart while its length was inferior to Tools.EPSILON.
+         */
+        public final void increaseIterNumber(){
+                occuredIter++;
+        }
+        
+        /**
+         * Reset the iteration number, setting it to 0;
+         */
+        public final void resetIterNumber(){
+                occuredIter=0;
+        }
+        
+        /**
+         * Get the number of times we've tried to process this EdgePart.
+         * @return 
+         */
+        public final int getIterNumber(){
+                return occuredIter;
+        }
 
+        /**
+         * Return the maximum number of time we can try to process an EdgePart.
+         * @return 
+         */
+        public static int getMaxIterNumber() {
+                return MAX_ITER;
+        }
+        
+        /**
+         * Set the maximum number of time we can try to process an EdgePart. This is
+         * a configuration at the system level, not at the object level.
+         * @param max 
+         */
+        public static void setMaxIterNumber(int max){
+                MAX_ITER = max;
+        }
+        
+        public final boolean isMaxIterReached(){
+                return occuredIter>=MAX_ITER;
+        }
+        
         /**
          * Check if this EdgePart contains other. The two EdgeParts must share the 
          * same parent gid, ie they must lie on the same edge of the mesh,

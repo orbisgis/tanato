@@ -188,4 +188,26 @@ public class EdgePartTest extends TestCase{
                 assertFalse(e1.equals(new Integer(8)));
         }
         
+        /**
+         * We test the management of the counting of iteration in the EdgePart.
+         * @throws Exception 
+         */
+        public void testIterNumber() throws Exception {
+                EdgePart e1 = new EdgePart(8, 0.75, 0.76, 6, 4, 8, 2);
+                assertTrue(e1.getIterNumber() == 0);
+                e1.increaseIterNumber();
+                assertTrue(e1.getIterNumber() == 1);
+                e1.resetIterNumber();
+                assertTrue(e1.getIterNumber() == 0);
+                assertTrue(EdgePart.getMaxIterNumber() == EdgePart.DEFAULT_MAX_ITER);
+                EdgePart.setMaxIterNumber(90);
+                assertTrue(EdgePart.getMaxIterNumber() == 90);
+                EdgePart.setMaxIterNumber(2);
+                e1.increaseIterNumber();
+                e1.increaseIterNumber();
+                e1.increaseIterNumber();
+                e1.increaseIterNumber();
+                assertTrue(e1.isMaxIterReached());
+        }
+        
 }
