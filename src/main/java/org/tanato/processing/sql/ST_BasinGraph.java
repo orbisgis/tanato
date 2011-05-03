@@ -38,9 +38,6 @@
 
 package org.tanato.processing.sql;
 
-import com.vividsolutions.jts.geom.Geometry;
-import java.io.File;
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.gdms.data.DataSource;
@@ -57,7 +54,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.gdms.GdmsWriter;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.gdms.sql.customQuery.CustomQuery;
 import org.gdms.sql.customQuery.TableDefinition;
 import org.gdms.sql.function.Argument;
@@ -108,13 +105,15 @@ public class ST_BasinGraph implements CustomQuery  {
 				BasinBuilder bb = new BasinBuilder(dsf, sdsPoints, sdsEdges, sdsTriangles,
 						values[0].getAsInt(), values[1].getAsInt());
 				bb.computeBasin();
-				registerFile(values[2].getAsString(), dsf, bb.getBasin());
+                                Metadata md = new DefaultMetadata(
+                                        new Type[]{TypeFactory.createType(Type.GEOMETRY),},
+                                        new String[]{TINSchema.GEOM_FIELD});
+                                GenericObjectDriver od = new GenericObjectDriver(md);
+                                od.addValues(ValueFactory.createValue(bb.getBasin()));
 				sdsEdges.close();
 				sdsTriangles.close();
 				sdsPoints.close();
-
-			} catch (IOException ex) {
-				Logger.getLogger(ST_BasinGraph.class.getName()).log(Level.SEVERE, null, ex);
+                                return od;
 			} catch (NoSuchTableException ex) {
 				Logger.getLogger(ST_DropletPath.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (IndexException ex) {
@@ -138,7 +137,7 @@ public class ST_BasinGraph implements CustomQuery  {
 
 	@Override
 	public final String getSqlOrder() {
-		return "SELECT ST_BasinGraph(555,0,'out') FROM points, edges, triangles;";
+		return "SELECT ST_BasinGraph(555,0) FROM points, edges, triangles;";
 	}
 
 	@Override
@@ -153,23 +152,7 @@ public class ST_BasinGraph implements CustomQuery  {
 
 	@Override
 	public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.INT, Argument.INT, Argument.STRING)};
+                return new Arguments[]{new Arguments(Argument.INT, Argument.INT)};
 	}
-	
-	private void registerFile(String name, DataSourceFactory dsf, Geometry geom) throws IOException, DriverException {
-                File out = new File(name + ".gdms");
-                GdmsWriter writer = new GdmsWriter(out);
-                Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),},
-                        new String[]{TINSchema.GEOM_FIELD});
-                int triangleCount = 1;
-                writer.writeMetadata(triangleCount, md);
-		writer.addValues(new Value[]{ValueFactory.createValue(geom),});
-                // write the row indexes
-                writer.writeRowIndexes();
-                // write envelope
-                writer.writeExtent();
-                writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
-        }
+        
 }

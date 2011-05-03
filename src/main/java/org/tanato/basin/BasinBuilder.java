@@ -91,7 +91,7 @@ public class BasinBuilder {
         public static final int TIN_EDGE = 1;
         public static final int TIN_TRIANGLE = 2;
         private final DataSourceFactory dsf;
-	private LinkedList<EdgePart> remainingElements;
+	private EdgePartManager remainingEP;
 	private LinkedList<PointPart> remainingPoints;
 	private Geometry basin;
 	private MultiLineString lines;
@@ -126,7 +126,7 @@ public class BasinBuilder {
                 this.sdsEdges = sdsEdges;
                 this.sdsPoints = sdsPoints;
                 this.dsf=dsf;
-		remainingElements = new LinkedList<EdgePart>();
+		remainingEP = new EdgePartManager();
 		remainingPoints = new LinkedList<PointPart>();
 		lines = new MultiLineString(new LineString[0], gf);
 		basin = gf.createPolygon(gf.createLinearRing(new Coordinate[0]), new LinearRing[0]);
@@ -158,6 +158,8 @@ public class BasinBuilder {
 	 */
 	public final void computeBasin() throws DriverException {
 		try {
+                        //We start by building the indexes we'll need for each data structure. Note that
+                        //if they already exist, we acn use tem directly.
 			if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GEOM_FIELD)) {
 				dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GEOM_FIELD, new NullProgressMonitor());
 			}
@@ -179,6 +181,7 @@ public class BasinBuilder {
 			if(!dsf.getIndexManager().isIndexed(sdsPoints.getName(), TINSchema.GID)){
 				dsf.getIndexManager().buildIndex(sdsPoints.getName(), TINSchema.GID, new NullProgressMonitor());
 			}
+                        //we define the type of input that has been given.
 			if(startType==TIN_POINT){
 				processMeshPoint(firstGID);
 			} else if(startType == TIN_EDGE) {
@@ -196,11 +199,13 @@ public class BasinBuilder {
 			} else if (startType ==TIN_TRIANGLE){
 				throw new IllegalArgumentException("Triangles are not supported as an input currently");
 			}
-			while(!remainingElements.isEmpty()||!remainingPoints.isEmpty()){
-				if(!remainingElements.isEmpty()){
-					EdgePart ep =remainingElements.getFirst();
-					remainingElements.removeFirst();
-					processEdgePart(ep);
+                        //This loop is the one that actually build the geometry we'll return
+                        //as an output. We'll always process edges before points,
+                        //as they give more often a polygon as a result.
+			while(!remainingEP.isEmpty()||!remainingPoints.isEmpty()){
+				if(!remainingEP.isEmpty()){
+					List<EdgePart> ep =remainingEP.getEdgeParts();
+					processEdgeParts(ep);
 				} else {
 					PointPart pp = remainingPoints.getFirst();
 					remainingPoints.removeFirst();
@@ -275,7 +280,7 @@ public class BasinBuilder {
 						edLine[gidEdgeStart].getAsInt(),
 						edLine[gidEdgeEnd].getAsInt());
 					//We've added an element that needs to be analyzed
-					remainingElements.add(ep);
+					remainingEP.addEdgePart(ep);
 				} else if(HydroProperties.check(edProp, HydroProperties.RIGHTSLOPE)){
 					//We analyze the left triangle
 					//We can have only a line, here.
@@ -342,7 +347,7 @@ public class BasinBuilder {
 					Coordinate[] cs = new Coordinate[] {ed.getStartPoint().getCoordinate(),ed.getEndPoint().getCoordinate()};
 					LineString ls = gf.createLineString(cs);
 					if(!basin.covers(ls)&& !lines.covers(ls)){
-						remainingElements.add(ep);
+						remainingEP.addEdgePart(ep);
 					}
 				}
 				//If we have a right or left slope, we must go a little further to know
@@ -458,6 +463,12 @@ public class BasinBuilder {
 
 		}
 	}
+        
+        private void processEdgeParts(List<EdgePart> list){
+                for(EdgePart e : list){
+                        processEdgePart(e);
+                }
+        }
 
 	/**
 	 * This method determines which behaviour to have when processing an EdgePart,
@@ -581,7 +592,7 @@ public class BasinBuilder {
 									p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						if(!isCoveredByBasin(poly)&&!poly.isEmpty()){
-							remainingElements.add(buildEdgePart(e1, 
+							remainingEP.addEdgePart(buildEdgePart(e1, 
 											proj1,
 											proj2,
 											e1.getGID(),
@@ -608,7 +619,7 @@ public class BasinBuilder {
 									p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
-							remainingElements.add(buildEdgePart(e1, 
+							remainingEP.addEdgePart(buildEdgePart(e1, 
 										proj1,
 										lastPoint,
 										e1.getGID(),
@@ -630,7 +641,7 @@ public class BasinBuilder {
 						poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
 						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
-							remainingElements.add(buildEdgePart(e2, 
+							remainingEP.addEdgePart(buildEdgePart(e2, 
 											proj2,
 											lastPoint,
 											e2.getGID(),
@@ -651,7 +662,7 @@ public class BasinBuilder {
 								proj2.getCoordinate(),proj1.getCoordinate(),p1.getCoordinate()};
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
-							remainingElements.add(buildEdgePart(e2, 
+							remainingEP.addEdgePart(buildEdgePart(e2, 
 											proj1,
 											proj2,
 											e2.getGID(),
@@ -675,7 +686,7 @@ public class BasinBuilder {
 						Polygon poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
 						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
-							remainingElements.add(buildEdgePart(e2, 
+							remainingEP.addEdgePart(buildEdgePart(e2, 
 											proj1,
 											lastPoint,
 											e2.getGID(),
@@ -697,7 +708,7 @@ public class BasinBuilder {
 						poly = gf.createPolygon(gf.createLinearRing(cs), new LinearRing[]{});
 						//We check that we're not already in the basin.
 						if(!isCoveredByBasin(poly) && !poly.isEmpty()){
-							remainingElements.add(buildEdgePart(e1, 
+							remainingEP.addEdgePart(buildEdgePart(e1, 
 											proj2,
 											lastPoint,
 											e1.getGID(),

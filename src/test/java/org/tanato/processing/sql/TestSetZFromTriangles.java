@@ -65,10 +65,6 @@ public class TestSetZFromTriangles extends TestCase {
         private DataSourceFactory dsf = new DataSourceFactory("target","target");
         
         public void testWithoutFlatRemoval() throws Exception {
-                File targ = new File("target/points_to_interpolate_chezine.gdms");
-                if(targ.exists()){
-                        targ.delete();
-                }
                 DataSource inp = dsf.getDataSource(new File("src/test/resources/data/source/small_data"
                         + "/points_to_interpolate_chezine.gdms"));
                 DataSource triang = dsf.getDataSource(new File("src/test/resources/data/tin/small_courbes_chezine/"
@@ -94,10 +90,6 @@ public class TestSetZFromTriangles extends TestCase {
                                 assertTrue(geom.getCoordinates()[0].z==10);
                                 assertTrue(geom.getCoordinates()[1].z==10);
                         }
-                                
-                        
                 }
-                
-                
         }
 }
