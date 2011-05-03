@@ -89,7 +89,7 @@ public abstract class DropletFollower implements CustomQuery {
         private SpatialDataSourceDecorator sdsPoints = null;
         private SpatialDataSourceDecorator sdsEdges = null;
         private SpatialDataSourceDecorator sdsTriangles = null;
-         // List of reached points
+        // List of reached points
         private ArrayList<DPoint> theList = null;
         // Count each times we stay on the same point and stop when max is reached
         private int currentStagnation = 0;
@@ -175,9 +175,9 @@ public abstract class DropletFollower implements CustomQuery {
         @Override
         public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.GEOMETRY),
-                                        new Arguments(Argument.GEOMETRY, Argument.INT),
-                                        new Arguments(Argument.GEOMETRY, Argument.INT, Argument.INT)
-                };
+                                new Arguments(Argument.GEOMETRY, Argument.INT),
+                                new Arguments(Argument.GEOMETRY, Argument.INT, Argument.INT)
+                        };
         }
 
         /**
@@ -262,7 +262,7 @@ public abstract class DropletFollower implements CustomQuery {
         }
 
         /**
-         * Get initia point from values
+         * Get initial point and force it to add a z
          * @param values
          * @return
          * @throws ExecutionException
@@ -273,6 +273,12 @@ public abstract class DropletFollower implements CustomQuery {
                         throw new ExecutionException("invalid point geometry.");
                 } else if (!testPoint.getGeometryType().equals("Point")) {
                         throw new ExecutionException("invalid point geometry.");
+                } else {
+                        Coordinate coord = testPoint.getCoordinate();
+                        if (Double.isNaN(testPoint.getCoordinate().z)) {
+                                coord.z = 0;
+                                testPoint = testPoint.getFactory().createPoint(coord);
+                        }
                 }
                 return testPoint;
         }
@@ -1052,9 +1058,7 @@ public abstract class DropletFollower implements CustomQuery {
                 Element theElement = null;
 
                 if (lastEdge == null) {
-                        
                 } else {
-
                 }
                 return theElement;
         }
@@ -1072,19 +1076,18 @@ public abstract class DropletFollower implements CustomQuery {
 
                 if (anEdge.getStartPoint().getGID() == lastPoint.getGID()) {
                         theElement = anEdge.getEndPoint();
-                }
-                else {
+                } else {
                         theElement = anEdge.getStartPoint();
                 }
                 // Take care we do not exit from sewers
-                if ((! theElement.hasProperty(HydroProperties.SEWER_INPUT)) && (theElement.hasProperty(HydroProperties.SEWER_OUTPUT))) {
+                if ((!theElement.hasProperty(HydroProperties.SEWER_INPUT)) && (theElement.hasProperty(HydroProperties.SEWER_OUTPUT))) {
                         // The point exists from sewers
                         isInSewers = false;
                 }
                 return theElement;
         }
 
-       /**
+        /**
          * process a droplet on a Truangle.
          *
          * Current element is a triangle. We can be inside, or on an edge.
@@ -1379,14 +1382,14 @@ public abstract class DropletFollower implements CustomQuery {
                                 if (theElement.hasProperty(endingProperties)) {
                                         // If we reach an ending property, we stop
                                         theElement = null;
-                                } else if(theElement instanceof DTriangle) {
+                                } else if (theElement instanceof DTriangle) {
                                         // current element is a triangle
                                         aTriangle = (DTriangle) theElement;
                                         lastElement = theElement;
                                         theElement = processDropletOnTriangle(aPoint, aTriangle);
                                         aPoint = theList.get(theList.size() - 1);
                                         previousTriangle = aTriangle;
-                                 } else if (theElement instanceof DEdge) {
+                                } else if (theElement instanceof DEdge) {
                                         // current element is an edge
                                         // the next element follows the greatest slope
                                         anEdge = (DEdge) theElement;
