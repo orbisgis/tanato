@@ -248,21 +248,19 @@ public class Tanato2SQLTest extends TestCase {
                 ST_TIN query = new ST_TIN();
                 assertNull(query.getMetadata(new Metadata[]{}));
                 assertTrue(query.getTablesDefinitions()[0] instanceof GeometryTableDefinition);
-                assertTrue(query.getFunctionArguments().length == 1);
-                assertTrue(query.getFunctionArguments()[0].getArgumentCount() == 3);
-                assertTrue(query.getFunctionArguments()[0].getArgument(0) == Argument.BOOLEAN);
-                assertTrue(query.getFunctionArguments()[0].getArgument(1) == Argument.BOOLEAN);
-                assertTrue(query.getFunctionArguments()[0].getArgument(2) == Argument.STRING);
+                assertTrue(query.getFunctionArguments()[0].getArgumentCount() == 0);
+                assertTrue(query.getFunctionArguments()[1].getArgumentCount() == 2);
+                assertTrue(query.getFunctionArguments()[1].getArgument(0) == Argument.BOOLEAN);
+                assertTrue(query.getFunctionArguments()[1].getArgument(1) == Argument.BOOLEAN);
                 //The original input contains exactly 9 points and 7 constrained edges.
                 DataSource in = dsf.getDataSource(new File("src/test/resources/data/source/small_data/small_courbes_chezine.shp"));
                 //Output tables will be stored in out_points, out_edges and out_triangles
                 Value[] vals = new Value[]{
                         ValueFactory.createValue(true),
-                        ValueFactory.createValue(true),
-                        ValueFactory.createValue("out")
+                        ValueFactory.createValue(true)
                 };
                 query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
-                DataSource ds = dsf.getDataSource("out_points");
+                DataSource ds = dsf.getDataSource(in.getName()+ "_points");
                 assertNotNull(ds);
                 ds.open();
                 //There have been two insertions, because two triangles were flat.
@@ -298,7 +296,7 @@ public class Tanato2SQLTest extends TestCase {
                 assertTrue(it.hasNext() || it2.hasNext());
                 
                 ds.close();
-                ds = dsf.getDataSource("out_triangles");
+                ds = dsf.getDataSource(in.getName()+ "_triangles");
                 assertNotNull(ds);
                 ds.open();
                 assertTrue(ds.getRowCount()==13);
@@ -311,21 +309,22 @@ public class Tanato2SQLTest extends TestCase {
          * @throws Exception 
          */
         public void testST_TINWithFlats() throws Exception{
-                deleteFileIfExists(new File("out_points"));
-                deleteFileIfExists(new File("out_edges"));
-                deleteFileIfExists(new File("out_triangles"));
                 DataSourceFactory dsf = new DataSourceFactory("target","target");
                 ST_TIN query = new ST_TIN();
                 //The original input contains exactly 9 points and 7 constrained edges.
                 DataSource in = dsf.getDataSource(new File("src/test/resources/data/source/small_data/small_courbes_chezine.shp"));
+
+
+                deleteFileIfExists(new File(in.getName()+"_points"));
+                deleteFileIfExists(new File(in.getName()+"_edges"));
+                deleteFileIfExists(new File(in.getName()+"_triangles"));
                 //Output tables will be stored in out_points, out_edges and out_triangles
                 Value[] vals = new Value[]{
                         ValueFactory.createValue(true),
-                        ValueFactory.createValue(false),
-                        ValueFactory.createValue("out")
+                        ValueFactory.createValue(false)
                 };
                 query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
-                DataSource ds = dsf.getDataSource("out_points");
+                DataSource ds = dsf.getDataSource(in.getName()+"_points");
                 assertNotNull(ds);
                 ds.open();
                 assertTrue(ds.getRowCount()==9);
@@ -375,7 +374,7 @@ public class Tanato2SQLTest extends TestCase {
                                 new DEdge(213,273,20,217,184,10),
                                 new DEdge(217,184,10,136,262,20)));
                 
-                ds = dsf.getDataSource("out_triangles");
+                ds = dsf.getDataSource(in.getName()+"_triangles");
                 assertNotNull(ds);
                 ds.open();
                 assertTrue(ds.getRowCount()==9);

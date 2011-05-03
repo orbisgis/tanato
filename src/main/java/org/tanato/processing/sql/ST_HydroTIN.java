@@ -35,7 +35,6 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-
 package org.tanato.processing.sql;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -106,7 +105,6 @@ public class ST_HydroTIN implements CustomQuery {
                         //We need to read our source.
                         SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
                         sds.open();
-                        boolean useTriangulationRules = values[2].getAsBoolean();
                         HashMap<Integer, Integer> weights = new HashMap<Integer, Integer>();
 
                         int propertyIndex = sds.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
@@ -118,17 +116,22 @@ public class ST_HydroTIN implements CustomQuery {
                         if ((propertyIndex == -1) || (heightIndex == -1)) {
                                 throw new IllegalArgumentException("The table must contains a property and height fields");
                         }
-                        if (useTriangulationRules) {
-                                if ((weigthIndex == -1)) {
-                                        throw new IllegalArgumentException("The table must contains a weight field that defines rules weight.");
+
+                        boolean useTriangulationRules = false;
+                        boolean inter = true;
+                        boolean flat = true;
+                        if (values.length != 0) {
+                                //We retrieve the values to know how we are supposed to proceed.
+                                inter = values[0].getAsBoolean();
+                                flat = values[1].getAsBoolean();
+                                useTriangulationRules = values[2].getAsBoolean();
+                                if (useTriangulationRules) {
+                                        if ((weigthIndex == -1)) {
+                                                throw new IllegalArgumentException("The table must contains a weight field that defines rules weight.");
+                                        }
                                 }
                         }
-
-
-                        //We retrieve the values to know how we are supposed to proceed.
-                        boolean inter = values[0].getAsBoolean();
-                        boolean flat = values[1].getAsBoolean();
-                        String name = values[3].getAsString();
+                        String name = ds.getName();
                         long count = sds.getRowCount();
                         Geometry geom = null;
                         //We prepare our input structures.
@@ -142,7 +145,7 @@ public class ST_HydroTIN implements CustomQuery {
                                 double heightValue = sds.getFieldValue(i, heightIndex).getAsDouble();
                                 propertyValue = sds.getFieldValue(i, propertyIndex).getAsInt();
                                 if (gidIndex != -1) {
-                                        gidIndex = sds.getFieldValue(i, gidIndex).getAsInt();
+                                        int gidValue = sds.getFieldValue(i, gidIndex).getAsInt();
                                 }
                                 //If rules is used then get property and weight
                                 if (useTriangulationRules) {
@@ -237,7 +240,7 @@ public class ST_HydroTIN implements CustomQuery {
 
         @Override
         public final String getSqlOrder() {
-                return "SELECT ST_HydroTIN(true, true, false, tinName) FROM source_table;";
+                return "SELECT ST_HydroTIN(true, true, false) FROM source_table;";
 
 
         }
@@ -267,18 +270,15 @@ public class ST_HydroTIN implements CustomQuery {
          * BOOLEAN : Flat triangles removal or not.<br/>
          * BOOLEAN : Intersection processing <br/>
          * BOOLEAN : Rules used or not  <br/>
-         * STRING : Name of the TIN table<br/>
          *
          * @return
          */
         @Override
         public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.BOOLEAN, Argument.STRING)};
+                return new Arguments[]{new Arguments(), new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.BOOLEAN)};
 
 
         }
-
-      
 
         /**
          * We add a geometry to the given list
@@ -358,6 +358,7 @@ public class ST_HydroTIN implements CustomQuery {
          * @throws DriverException
          */
         private void registerEdges(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
+                name = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(name + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
@@ -370,15 +371,15 @@ public class ST_HydroTIN implements CustomQuery {
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT)},
-                        new String[]{	TINSchema.GEOM_FIELD,
-					TINSchema.GID,
-					TINSchema.STARTPOINT_NODE_FIELD,
-					TINSchema.ENDPOINT_NODE_FIELD,
-					TINSchema.LEFT_TRIANGLE_FIELD,
-					TINSchema.RIGHT_TRIANGLE_FIELD,
-					TINSchema.HEIGHT_FIELD,
-					TINSchema.PROPERTY_FIELD,
-					TINSchema.GID_SOURCE_FIELD});
+                        new String[]{TINSchema.GEOM_FIELD,
+                                TINSchema.GID,
+                                TINSchema.STARTPOINT_NODE_FIELD,
+                                TINSchema.ENDPOINT_NODE_FIELD,
+                                TINSchema.LEFT_TRIANGLE_FIELD,
+                                TINSchema.RIGHT_TRIANGLE_FIELD,
+                                TINSchema.HEIGHT_FIELD,
+                                TINSchema.PROPERTY_FIELD,
+                                TINSchema.GID_SOURCE_FIELD});
 
 
                 int triangleCount = mesh.getEdges().size();
@@ -408,10 +409,11 @@ public class ST_HydroTIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
+                dsf.getSourceManager().register(name, out);
         }
 
         private void registerPoints(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
+                name = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(name + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
@@ -420,11 +422,11 @@ public class ST_HydroTIN implements CustomQuery {
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),},
-                        new String[]{	TINSchema.GEOM_FIELD,
-					TINSchema.GID,
-					TINSchema.HEIGHT_FIELD,
-					TINSchema.PROPERTY_FIELD,
-					TINSchema.GID_SOURCE_FIELD});
+                        new String[]{TINSchema.GEOM_FIELD,
+                                TINSchema.GID,
+                                TINSchema.HEIGHT_FIELD,
+                                TINSchema.PROPERTY_FIELD,
+                                TINSchema.GID_SOURCE_FIELD});
 
 
                 int triangleCount = mesh.getPoints().size();
@@ -452,12 +454,13 @@ public class ST_HydroTIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
+                dsf.getSourceManager().register(name, out);
 
 
         }
 
         private void registerTriangles(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
+                name = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(name + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
@@ -504,7 +507,7 @@ public class ST_HydroTIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
+                dsf.getSourceManager().register(name, out);
 
         }
 }

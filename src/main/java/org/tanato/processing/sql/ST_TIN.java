@@ -35,7 +35,6 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-
 package org.tanato.processing.sql;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -101,10 +100,20 @@ public class ST_TIN implements CustomQuery {
                 //We need to read our source.
                 SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
                 long count = 0;
-                //We retrieve the values to know how we are supposed to proceed.
-                boolean inter = values[0].getAsBoolean();
-                boolean flat = values[1].getAsBoolean();
-                String name = values[2].getAsString();
+
+                //To simplify the use of st_tin the user can execute only st_tin() without any arguments.
+                //Consequently some parameters are filled by default.
+                boolean inter = true;
+                boolean flat = false;
+                String name = ds.getName();
+
+                if (values.length != 0) {
+                        //We retrieve the values to know how we are supposed to proceed.
+                        inter = values[0].getAsBoolean();
+                        flat = values[1].getAsBoolean();
+                }
+
+
                 //We open the source
                 try {
                         sds.open();
@@ -230,7 +239,7 @@ public class ST_TIN implements CustomQuery {
          */
         @Override
         public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.STRING)};
+                return new Arguments[]{new Arguments(), new Arguments(Argument.BOOLEAN, Argument.BOOLEAN)};
         }
 
         /**
@@ -244,7 +253,7 @@ public class ST_TIN implements CustomQuery {
                 try {
                         points.add(new DPoint(pt.x, pt.y, z));
                 } catch (DelaunayError ex) {
-                        logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n", ex);
+                        logger.log(Level.SEVERE, "You're trying to create a 3D point with a NaN value.\n", ex);
                 }
 
         }
@@ -309,6 +318,7 @@ public class ST_TIN implements CustomQuery {
          * @throws DriverException
          */
         private void registerEdges(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
+                name = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(name + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
@@ -317,12 +327,9 @@ public class ST_TIN implements CustomQuery {
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.FLOAT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.LEFT_TRIANGLE_FIELD, TINSchema.RIGHT_TRIANGLE_FIELD,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
+                                TypeFactory.createType(Type.INT)},
+                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.LEFT_TRIANGLE_FIELD, TINSchema.RIGHT_TRIANGLE_FIELD
+                        });
                 int triangleCount = mesh.getEdges().size();
                 writer.writeMetadata(triangleCount, md);
                 GeometryFactory gf = new GeometryFactory();
@@ -338,10 +345,7 @@ public class ST_TIN implements CustomQuery {
                                         ValueFactory.createValue(dt.getStartPoint().getGID()),
                                         ValueFactory.createValue(dt.getEndPoint().getGID()),
                                         ValueFactory.createValue(dt.getLeft() == null ? -1 : dt.getLeft().getGID()),
-                                        ValueFactory.createValue(dt.getRight() == null ? -1 : dt.getRight().getGID()),
-                                        ValueFactory.createValue(dt.getHeight()),
-                                        ValueFactory.createValue(dt.getProperty()),
-                                        ValueFactory.createValue(dt.getExternalGID()),});
+                                        ValueFactory.createValue(dt.getRight() == null ? -1 : dt.getRight().getGID())});
                 }
 
                 // write the row indexes
@@ -349,20 +353,17 @@ public class ST_TIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
+                dsf.getSourceManager().register(name, out);
         }
 
         private void registerPoints(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
+                name = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(name + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.FLOAT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),},
-                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD});
+                                TypeFactory.createType(Type.INT)},
+                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
                 int triangleCount = mesh.getPoints().size();
                 writer.writeMetadata(triangleCount, md);
                 GeometryFactory gf = new GeometryFactory();
@@ -375,9 +376,7 @@ public class ST_TIN implements CustomQuery {
 
                         writer.addValues(new Value[]{ValueFactory.createValue(mp),
                                         ValueFactory.createValue(dt.getGID()),
-                                        ValueFactory.createValue(dt.getHeight()),
-                                        ValueFactory.createValue(dt.getProperty()),
-                                        ValueFactory.createValue(dt.getExternalGID()),});
+                                        ValueFactory.createValue(dt.getExternalGID())});
                 }
 
                 // write the row indexes
@@ -385,23 +384,20 @@ public class ST_TIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
+                dsf.getSourceManager().register(name, out);
         }
 
         private void registerTriangles(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
+                name = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(name + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY),
                                 TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.FLOAT),
-                                TypeFactory.createType(Type.INT),
-                                TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID,
-                                TINSchema.HEIGHT_FIELD, TINSchema.PROPERTY_FIELD, TINSchema.GID_SOURCE_FIELD,
                                 TINSchema.EDGE_0_GID_FIELD, TINSchema.EDGE_1_GID_FIELD, TINSchema.EDGE_2_GID_FIELD});
 
                 int triangleCount = mesh.getTriangleList().size();
@@ -420,9 +416,6 @@ public class ST_TIN implements CustomQuery {
 
                         writer.addValues(new Value[]{ValueFactory.createValue(mp),
                                         ValueFactory.createValue(dt.getGID()),
-                                        ValueFactory.createValue(dt.getHeight()),
-                                        ValueFactory.createValue(dt.getProperty()),
-                                        ValueFactory.createValue(dt.getExternalGID()),
                                         ValueFactory.createValue(dt.getEdge(0).getGID()),
                                         ValueFactory.createValue(dt.getEdge(1).getGID()),
                                         ValueFactory.createValue(dt.getEdge(2).getGID())});
@@ -433,6 +426,6 @@ public class ST_TIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(dsf.getSourceManager().getUniqueName(name), out);
+                dsf.getSourceManager().register(name, out);
         }
 }
