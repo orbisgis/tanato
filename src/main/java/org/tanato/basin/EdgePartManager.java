@@ -125,6 +125,14 @@ final class EdgePartManager {
         }
         
         /**
+         * Returns true if the queue of the EdgePartManager is empty.
+         * @return 
+         */
+        public boolean isEmpty() {
+                return epQueue.isEmpty();
+        }
+        
+        /**
          * Try to include an <code>EdgePart</code> in a sorted list of <code>EdgePart</code>s
          * This inclusion will be a merge of edgeparts if it is possible, as it is the 
          * main goal of this class.

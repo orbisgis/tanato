@@ -54,10 +54,20 @@ public class EdgePartTest extends TestCase{
 		assertEquals(ep.getEnd(), 0.6);
 		assertEquals(ep.getStart(), 0.5);
 		assertEquals(ep.getGid(), 0);
+                ep.setGid(7);
+                assertEquals(ep.getGid(),7);
 		assertEquals(ep.getGidStart(), 8);
+                ep.setGidStart(70);
+		assertEquals(ep.getGidStart(), 70);
 		assertEquals(ep.getGidEnd(), 9);
+                ep.setGidEnd(60);
+		assertEquals(ep.getGidEnd(), 60);
 		assertEquals(ep.getGidLeft(), 40);
+                ep.setGidLeft(88);
+		assertEquals(ep.getGidLeft(), 88);
 		assertEquals(ep.getGidRight(), 41);
+                ep.setGidRight(5);
+		assertEquals(ep.getGidRight(), 5);
 	}
         
         /**
@@ -175,6 +185,7 @@ public class EdgePartTest extends TestCase{
                 assertTrue(e1.equals(e2));
                 int hash = e2.hashCode();
                 assertTrue(hash == 1958558354);
+                assertFalse(e1.equals(new Integer(8)));
         }
         
 }

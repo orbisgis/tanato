@@ -52,13 +52,16 @@ public class EdgePartManagerTest extends TestCase {
         public void testAddEdgePart() {
                 EdgePartManager epm = new EdgePartManager();
                 assertTrue(epm.getQueueSize()==0);
+                assertTrue(epm.isEmpty());
                 EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
                 epm.addEdgePart(ep);
                 assertTrue(epm.getQueueSize()==1);
+                assertFalse(epm.isEmpty());
                 List<EdgePart> out = epm.getEdgeParts();
                 assertTrue(out.size()==1);
                 assertTrue(out.get(0)==ep);
                 assertTrue(epm.getQueueSize()==0);
+                assertTrue(epm.isEmpty());
         }
         
         public void testTwoBehindEdges() {
