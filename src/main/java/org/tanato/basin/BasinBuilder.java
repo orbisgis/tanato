@@ -812,6 +812,8 @@ public class BasinBuilder {
 			}
 			ret.setGID(gid);
 			ret.setProperty(epProp);
+                        ret.getStartPoint().setGID(sdsEdges.getInt(edgeIndex, TINSchema.STARTPOINT_NODE_FIELD));
+                        ret.getEndPoint().setGID(sdsEdges.getInt(edgeIndex, TINSchema.ENDPOINT_NODE_FIELD));
 			return ret;
 		} catch (DelaunayError d){
 			Logger.getLogger(BasinBuilder.class.getName()).log(Level.SEVERE, null, d);
@@ -831,6 +833,9 @@ public class BasinBuilder {
 	private EdgePart buildEdgePart(DEdge ed, DPoint ptStart, DPoint ptEnd, int gid, int gidLeft, int gidRight, int gidStart, int gidEnd){
 		double ratiostart;
 		double ratioend;
+                ed.getStartPoint().setGID(gidStart);
+                ed.getEndPoint().setGID(gidEnd);
+                ed.setGID(gid);
 		if(!ed.isVertical()){
 			ratiostart = (ptStart.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
 			ratioend = (ptEnd.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
@@ -852,7 +857,7 @@ public class BasinBuilder {
 				}
 
 			}
-			return new EdgePart(gid, ratiostart, ratioend, gidStart, gidEnd, gidLeft, gidRight);
+			return new EdgePart(ed, ratiostart, ratioend, gidLeft, gidRight);
 		} else {
 			if(Math.abs(ratioend)<Tools.EPSILON){
 				PointPart pp = new PointPart(ptStart.getCoordinate(), gidStart, 0);
@@ -866,7 +871,7 @@ public class BasinBuilder {
 					remainingPoints.add(pp);
 				}
 			}
-			return new EdgePart(gid, ratioend, ratiostart, gidStart, gidEnd, gidLeft, gidRight);
+			return new EdgePart(ed, ratioend, ratiostart, gidLeft, gidRight);
 		}
 	}
 

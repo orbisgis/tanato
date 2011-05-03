@@ -39,6 +39,8 @@ package org.tanato.basin;
 
 import java.util.List;
 import junit.framework.TestCase;
+import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.Tools;
 
 /**
  *
@@ -53,7 +55,9 @@ public class EdgePartManagerTest extends TestCase {
                 EdgePartManager epm = new EdgePartManager();
                 assertTrue(epm.getQueueSize()==0);
                 assertTrue(epm.isEmpty());
-                EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
+                DEdge ed = new DEdge(2,2,2,4,3,2);
+                ed.setGID(8);
+                EdgePart ep = new EdgePart(ed, 0.38, 0.40,1,2);
                 epm.addEdgePart(ep);
                 assertTrue(epm.getQueueSize()==1);
                 assertFalse(epm.isEmpty());
@@ -67,8 +71,12 @@ public class EdgePartManagerTest extends TestCase {
         public void testTwoBehindEdges() {
                 EdgePartManager epm = new EdgePartManager();
                 assertTrue(epm.getQueueSize()==0);
-                EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
-                EdgePart e2 = new EdgePart(9, 0.38, 0.40, 5, 9, 64, 52);
+                DEdge ed = new DEdge(2,2,2,4,3,2);
+                ed.setGID(8);
+                EdgePart ep = new EdgePart(ed, 0.38, 0.40,1,2);
+                DEdge ed2 = new DEdge(2,2,2,4,3,2);
+                ed2.setGID(9);
+                EdgePart e2 = new EdgePart(ed2, 0.38, 0.40,1,2);
                 epm.addEdgePart(ep);
                 epm.addEdgePart(e2);
                 assertTrue(epm.getQueueSize()==2);
@@ -84,8 +92,10 @@ public class EdgePartManagerTest extends TestCase {
          */
         public void testAddAndMerge(){
                 EdgePartManager epm = new EdgePartManager();
-                EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
-                EdgePart e2 = new EdgePart(8, 0.39, 0.41, 5, 9, 64, 52);
+                DEdge ed = new DEdge(2,2,2,4,3,2);
+                ed.setGID(8);
+                EdgePart ep = new EdgePart(ed, 0.38, 0.40,1,2);
+                EdgePart e2 = new EdgePart(ed, 0.39, 0.41,1,2);
                 epm.addEdgePart(ep);
                 epm.addEdgePart(e2);
                 assertTrue(epm.getQueueSize()==1);
@@ -101,15 +111,17 @@ public class EdgePartManagerTest extends TestCase {
          */
         public void testAddAndMergeManyElements(){
                 EdgePartManager epm = new EdgePartManager();
-                EdgePart ep = new EdgePart(8, 0.38, 0.40, 5, 9, 64, 52);
-                EdgePart e2 = new EdgePart(8, 0.45, 0.50, 5, 9, 64, 52);
-                EdgePart e3 = new EdgePart(8, 0.55, 0.60, 5, 9, 64, 52);
-                EdgePart e4 = new EdgePart(8, 0.95, 0.97, 5, 9, 64, 52);
-                EdgePart e5 = new EdgePart(8, 0.15, 0.17, 5, 9, 64, 52);
+                DEdge ed = new DEdge(2,2,2,4,3,2);
+                ed.setGID(8);
+                EdgePart ep = new EdgePart(ed, 0.38, 0.40,1,2);
+                EdgePart e2 = new EdgePart(ed, 0.45, 0.50,1,2);
+                EdgePart e3 = new EdgePart(ed, 0.55, 0.60,1,2);
+                EdgePart e4 = new EdgePart(ed, 0.95, 0.97,1,2);
+                EdgePart e5 = new EdgePart(ed, 0.15, 0.17,1,2);
                 //There will be a merging here.
-                EdgePart e6 = new EdgePart(8, 0.12, 0.16, 5, 9, 64, 52);
-                EdgePart e7 = new EdgePart(8, 0.25, 0.30, 5, 9, 64, 52);
-                EdgePart e8 = new EdgePart(8, 0.32, 0.33, 5, 9, 64, 52);
+                EdgePart e6 = new EdgePart(ed, 0.12, 0.16,1,2);
+                EdgePart e7 = new EdgePart(ed, 0.25, 0.30,1,2);
+                EdgePart e8 = new EdgePart(ed, 0.32, 0.33,1,2);
                 epm.addEdgePart(ep);
                 epm.addEdgePart(e2);
                 epm.addEdgePart(e3);
@@ -118,14 +130,14 @@ public class EdgePartManagerTest extends TestCase {
                 epm.addEdgePart(e6);
                 epm.addEdgePart(e7);
                 epm.addEdgePart(e8);
-                EdgePart e9 = new EdgePart(8, 0.31, 0.85, 5, 9, 64, 52);
+                EdgePart e9 = new EdgePart(ed, 0.31, 0.85,1,2);
                 epm.addEdgePart(e9);
                 List<EdgePart> out = epm.getEdgeParts();
                 assertTrue(out.size()==4);
-                assertTrue(out.get(0).equals(new EdgePart(8,0.12,0.17,5,9,64,62)));
-                assertTrue(out.get(1).equals(new EdgePart(8,0.25,0.30,5,9,64,62)));
-                assertTrue(out.get(2).equals(new EdgePart(8,0.31,0.85,5,9,64,62)));
-                assertTrue(out.get(3).equals(new EdgePart(8,0.95,0.97,5,9,64,62)));
+                assertTrue(out.get(0).equals(new EdgePart(ed,0.12,0.17,1,2)));
+                assertTrue(out.get(1).equals(new EdgePart(ed,0.25,0.30,1,2)));
+                assertTrue(out.get(2).equals(new EdgePart(ed,0.31,0.85,1,2)));
+                assertTrue(out.get(3).equals(new EdgePart(ed,0.95,0.97,1,2)));
                 
         }
         
@@ -134,18 +146,38 @@ public class EdgePartManagerTest extends TestCase {
          */
         public void testTwoKeysInMap()  {
                 EdgePartManager epm = new EdgePartManager();
-                EdgePart ep = new EdgePart(9, 0.38, 0.40, 5, 9, 64, 52);
-                EdgePart e2 = new EdgePart(8, 0.45, 0.50, 5, 9, 64, 52);
-                EdgePart e3 = new EdgePart(8, 0.35, 0.47, 5, 9, 64, 52);
+                DEdge ed = new DEdge(2,2,2,4,3,2);
+                ed.setGID(8);
+                DEdge edZ = new DEdge(9,6,4,5,7,2);
+                ed.setGID(9);
+                EdgePart ep = new EdgePart(edZ, 0.38, 0.40,1,2);
+                EdgePart e2 = new EdgePart(ed, 0.45, 0.50,1,2);
+                EdgePart e3 = new EdgePart(ed, 0.35, 0.47,1,2);
                 epm.addEdgePart(ep);
                 epm.addEdgePart(e2);
                 epm.addEdgePart(e3);
                 assertTrue(epm.getQueueSize()==2);
                 List<EdgePart> out = epm.getEdgeParts();
                 assertTrue(out.size()==1);
-                assertTrue(out.get(0).equals(new EdgePart(9, 0.38, 0.40, 5, 9, 64, 52)));
+                assertTrue(out.get(0).equals(new EdgePart(edZ, 0.38, 0.40,1,2)));
                 out = epm.getEdgeParts();
                 assertTrue(out.size()==1);
-                assertTrue(out.get(0).equals(new EdgePart(8, 0.35, 0.50, 5, 9, 64, 52)));
+                assertTrue(out.get(0).equals(new EdgePart(ed, 0.35, 0.50,1,2)));
+        }
+        
+        public void testGetTooSmallEdgePart() {
+                EdgePartManager epm = new EdgePartManager();
+                DEdge ed = new DEdge(1,0,0,0,0,0);
+                ed.setGID(8);
+                EdgePart e2 = new EdgePart(ed, 0.45, 0.45+Tools.EPSILON2,1,2);
+                epm.addEdgePart(e2);
+                assertFalse(epm.isEmpty());
+                assertTrue(epm.getEdgeParts().isEmpty());
+                EdgePart.setMaxIterNumber(3);
+                epm.getEdgeParts();
+                epm.getEdgeParts();
+                epm.getEdgeParts();
+                assertTrue(epm.isEmpty());
+                assertTrue(epm.getEdgeParts().isEmpty());
         }
 }

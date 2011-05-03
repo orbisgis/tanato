@@ -37,6 +37,7 @@
  */
 package org.tanato.basin;
 
+import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.Tools;
 
 /**
@@ -50,13 +51,11 @@ class EdgePart implements Comparable<EdgePart>{
          * whose length is inferior to org.jdelaunay.jdelaunay.Tools.EPSILON
          */
         public static final int DEFAULT_MAX_ITER = 10;
-	private int gid;
+        private DEdge edge;
 	private double start;
 	private double end;
-	private int gidStart;
-	private int gidEnd;
-	private int gidLeft;
-	private int gidRight;
+        private int gidLeft;
+        private int gidRight;
         private int occuredIter;
         private static int MAX_ITER = DEFAULT_MAX_ITER;
 
@@ -77,14 +76,12 @@ class EdgePart implements Comparable<EdgePart>{
 	 * @param gidRight
 	 *	The GID of the right triangle of the edge.
 	 */
-	public EdgePart(int gid, double start, double end, int gidStart, int gidEnd, int gidLeft, int gidRight){
-		this.gid = gid;
+	public EdgePart(DEdge edge, double start, double end, int leftGID, int rightGID){
+		this.edge = edge;
 		this.start = start;
 		this.end = end;
-		this.gidStart = gidStart;
-		this.gidEnd = gidEnd;
-		this.gidLeft = gidLeft;
-		this.gidRight = gidRight;
+                gidLeft = leftGID;
+                gidRight = rightGID;
                 occuredIter=0;
 	}
 
@@ -111,15 +108,7 @@ class EdgePart implements Comparable<EdgePart>{
 	 * @return
 	 */
 	public final int getGid() {
-		return gid;
-	}
-
-	/**
-	 * Set the GID of the DEdge associated to this in the mesh.
-	 * @param gid
-	 */
-	public final void setGid(int gid) {
-		this.gid = gid;
+		return edge.getGID();
 	}
 
 	/**
@@ -127,15 +116,7 @@ class EdgePart implements Comparable<EdgePart>{
 	 * @return
 	 */
 	public final int getGidEnd() {
-		return gidEnd;
-	}
-
-	/**
-	 * Set the GID of the end point of the underlying edge.
-	 * @param gidEnd
-	 */
-	public final void setGidEnd(int gidEnd) {
-		this.gidEnd = gidEnd;
+		return edge.getEndPoint().getGID();
 	}
 
 	/**
@@ -175,15 +156,7 @@ class EdgePart implements Comparable<EdgePart>{
 	 * @return
 	 */
 	public final int getGidStart() {
-		return gidStart;
-	}
-
-	/**
-	 * Set the GID of the start point of the underlying edge in the mesh.
-	 * @param gidStart
-	 */
-	public final void setGidStart(int gidStart) {
-		this.gidStart = gidStart;
+		return edge.getStartPoint().getGID();
 	}
 
 	/**
@@ -206,7 +179,7 @@ class EdgePart implements Comparable<EdgePart>{
 
 	@Override
 	public final String toString(){
-		return "Defining edge GID : "+gid;
+		return "Defining edge GID : "+getGid();
 	}
         
         /**
@@ -263,7 +236,7 @@ class EdgePart implements Comparable<EdgePart>{
          * @return 
          */
         public final boolean contains(EdgePart other){
-                if(this.gid == other.gid){
+                if(this.getGid() == other.getGid()){
                         boolean oStart = other.start - this.start > -Tools.EPSILON;
                         boolean oEnd = this.end - other.end > -Tools.EPSILON;
                         if(oStart && oEnd){
@@ -273,6 +246,11 @@ class EdgePart implements Comparable<EdgePart>{
                 return false;
         }
 
+        public final boolean isProcessable(){
+                double length = (end - start)*edge.get2DLength();
+                return length > Tools.EPSILON;
+        }
+        
         /**
          * Try to merge this EdgePart with other. The two <code>EdgePart</code>s can
          * be merged if they lie on the same edge of the mesh, and if they share
@@ -314,9 +292,9 @@ class EdgePart implements Comparable<EdgePart>{
          */
         @Override
         public final int compareTo(EdgePart other){
-                if(this.gid<other.gid){
+                if(this.getGid()<other.getGid()){
                         return -1;
-                } else if(this.gid>other.gid){
+                } else if(this.getGid()>other.getGid()){
                         return 1;
                 } else  if(this.end < other.start-Tools.EPSILON){
                         return -1;
@@ -339,7 +317,7 @@ class EdgePart implements Comparable<EdgePart>{
         public final boolean equals(Object other){
                 if(other instanceof EdgePart){
                         EdgePart ep = (EdgePart) other;
-                        return ep.gid==gid && Math.abs(end-ep.end)<Tools.EPSILON && 
+                        return ep.getGid()==getGid() && Math.abs(end-ep.end)<Tools.EPSILON && 
                                 Math.abs(start-ep.start)<Tools.EPSILON;
                 } else {
                         return false;
@@ -352,7 +330,7 @@ class EdgePart implements Comparable<EdgePart>{
                 final int coef = 67;
                 final int bitDec = 32;
                 int hash = base;
-                hash = coef * hash + this.gid;
+                hash = coef * hash + this.getGid();
                 hash = coef * hash + (int) (Double.doubleToLongBits(this.start) ^ (Double.doubleToLongBits(this.start) >>> bitDec));
                 hash = coef * hash + (int) (Double.doubleToLongBits(this.end) ^ (Double.doubleToLongBits(this.end) >>> bitDec));
                 return hash;

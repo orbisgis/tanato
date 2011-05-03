@@ -40,6 +40,7 @@ package org.tanato.basin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,7 @@ final class EdgePartManager {
                 int gid = ep.getGid();
                 List<EdgePart> list = mergingStructure.get(gid);
                 if(list==null){
-                        list = new ArrayList<EdgePart>();
+                        list = new LinkedList<EdgePart>();
                         list.add(ep);
                         epQueue.addLast(gid);
                         mergingStructure.put(gid, list);
@@ -110,9 +111,33 @@ final class EdgePartManager {
          * @return 
          */
         public List<EdgePart> getEdgeParts(){
+                if(epQueue.isEmpty()){
+                        return new LinkedList<EdgePart>();
+                }
                 int key = epQueue.getFirst();
                 epQueue.removeFirst();
-                return mergingStructure.remove(key);
+                List<EdgePart> ret = mergingStructure.get(key);
+                LinkedList<EdgePart> memory = new LinkedList<EdgePart>();
+                for (Iterator<EdgePart> it = ret.iterator(); it.hasNext();) {
+                        EdgePart edgePart = it.next();
+                        if(!edgePart.isProcessable()){
+                                //The edge can't be processed, we will put it back
+                                //at the end of the queue if it can still be processed.
+                                 if(edgePart.getIterNumber()<EdgePart.getMaxIterNumber()){
+                                        edgePart.increaseIterNumber();
+                                        memory.add(edgePart);
+                                 }
+                                //In any cases, we remove it from the list that will be returned
+                                it.remove();
+                        } 
+                }
+                if(!memory.isEmpty()){
+                        mergingStructure.put(key, memory);
+                        epQueue.addLast(key);
+                } else {
+                        mergingStructure.remove(key);
+                }
+                return ret;
         }
         
         /**
