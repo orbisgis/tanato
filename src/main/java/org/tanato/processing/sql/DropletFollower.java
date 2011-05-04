@@ -1263,7 +1263,7 @@ public abstract class DropletFollower implements CustomQuery {
                         if (nextElement == null) {
                                 // next step is on the edge
                                 // => follow the edge
-                                DPoint pt = aPoint;
+                                DPoint pt;
                                 if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
                                         pt = anEdge.getEndPoint();
                                 } else {
