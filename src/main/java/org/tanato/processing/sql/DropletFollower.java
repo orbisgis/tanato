@@ -93,14 +93,14 @@ public abstract class DropletFollower implements CustomQuery {
         private ArrayList<DPoint> theList = null;
         // Count each times we stay on the same point and stop when max is reached
         private int currentStagnation = 0;
-        private static final int maxStagnation = 10;
+        private static final int MAX_STAGNATION = 10;
         private DPoint lastPoint;
         // to follow walls
-        private int wallSide = edgeNoWall;
+        private int wallSide = EDGE_NO_WALL;
         private DTriangle previousTriangle = null;
-        private static final int edgeNoWall = 0;
-        private static final int edgeWallLeft = 1;
-        private static final int edgeWallRight = 2;
+        private static final int EDGE_NO_WALL = 0;
+        private static final int EDGE_WALL_LEFT  = 1;
+        private static final int EDGE_WALL_RIGHT = 2;
         // to follow sewers
         private boolean isInSewers;
         // using properties
@@ -1153,7 +1153,7 @@ public abstract class DropletFollower implements CustomQuery {
                         // The triangle might be flat
                         theElement = null;
                 }
-                wallSide = edgeNoWall;
+                wallSide = EDGE_NO_WALL;
                 return theElement;
         }
 
@@ -1171,7 +1171,7 @@ public abstract class DropletFollower implements CustomQuery {
          * @return the element we go into
          * @throws DelaunayError
          */
-        private Element processDropletOnAnEdge(DPoint aPoint, DEdge anEdge) throws DelaunayError {
+        private Element processDropletOnAnEdge(final DPoint aPoint, final DEdge anEdge) throws DelaunayError {
                 Element theElement = null;
 
                 // current element is an edge
@@ -1186,38 +1186,38 @@ public abstract class DropletFollower implements CustomQuery {
                 if (isInSewers) {
                         // We are in sewers - next element is a point
                         previousTriangle = null;
-                        wallSide = edgeNoWall;
+                        wallSide = EDGE_NO_WALL;
                         maxSlope = 1.0;
                         nextElement = selectNextSewer(anEdge, aPoint);
                 } else if ((anEdge.hasProperty(HydroProperties.RIVER)) && (canUseProperty(HydroProperties.RIVER))) {
                         // do not have a look on triangles
                         previousTriangle = null;
-                        wallSide = edgeNoWall;
+                        wallSide = EDGE_NO_WALL;
                 } else if ((anEdge.hasProperty(HydroProperties.DITCH)) && (canUseProperty(HydroProperties.DITCH))) {
                         // do not have a look on triangles
                         previousTriangle = null;
-                        wallSide = edgeNoWall;
+                        wallSide = EDGE_NO_WALL;
                 } else if ((anEdge.hasProperty(HydroProperties.WALL)) && (canUseProperty(HydroProperties.WALL))) {
                         // following the wall
                         if (previousTriangle != null) {
                                 // We arrived on the edge with a triangle
                                 if (right == null) {
                                         // Come from left
-                                        wallSide = edgeWallLeft;
+                                        wallSide = EDGE_WALL_LEFT;
                                 } else if (left == null) {
                                         // Come from right
-                                        wallSide = edgeWallRight;
+                                        wallSide = EDGE_WALL_RIGHT;
                                 } else if (previousTriangle.getGID() == left.getGID()) {
                                         // Come from left
-                                        wallSide = edgeWallLeft;
+                                        wallSide = EDGE_WALL_LEFT;
                                 } else {
                                         // Come from right
-                                        wallSide = edgeWallRight;
+                                        wallSide = EDGE_WALL_RIGHT;
                                 }
                         } else {
                                 // We come from another edge (last one was a point)
                                 // Define the new value for previousTriangle
-                                if (wallSide == edgeWallLeft) {
+                                if (wallSide == EDGE_WALL_LEFT) {
                                         // Stay left
                                         if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
                                                 previousTriangle = left;
@@ -1256,22 +1256,23 @@ public abstract class DropletFollower implements CustomQuery {
                                 }
                         }
                         previousTriangle = null;
-                        wallSide = edgeNoWall;
+                        wallSide = EDGE_NO_WALL;
                 }
 
                 if (maxSlope > 0) {
                         if (nextElement == null) {
                                 // next step is on the edge
                                 // => follow the edge
+                                DPoint pt = aPoint;
                                 if (anEdge.getStartPoint().getZ() > anEdge.getEndPoint().getZ()) {
-                                        aPoint = anEdge.getEndPoint();
+                                        pt = anEdge.getEndPoint();
                                 } else {
-                                        aPoint = anEdge.getStartPoint();
+                                        pt = anEdge.getStartPoint();
                                 }
 
                                 // We memorise the lowest point
-                                addPointToDropletPath(aPoint);
-                                theElement = aPoint;
+                                addPointToDropletPath(pt);
+                                theElement = pt;
                         } else {
                                 // Next element is a triangle
                                 theElement = nextElement;
@@ -1305,7 +1306,7 @@ public abstract class DropletFollower implements CustomQuery {
                         && (canUseProperty(HydroProperties.SEWER_INPUT))) {
                         // go into sewers
                         isInSewers = true;
-                        wallSide = edgeNoWall;
+                        wallSide = EDGE_NO_WALL;
 
                         // try to find the point connected that is in sewers
                         theElement = selectNextSewer(aPoint, lastEdge);
@@ -1371,10 +1372,10 @@ public abstract class DropletFollower implements CustomQuery {
                         Element theElement = aTriangle;         // current processed element
                         Element lastElement = null;             // last Element we were in
                         previousTriangle = null;                // to manage walls we are following
-                        wallSide = edgeNoWall;                  // To know on which side of the wall we are
+                        wallSide = EDGE_NO_WALL;                  // To know on which side of the wall we are
                         isInSewers = false;
 
-                        while ((theElement != null) && (currentStagnation < maxStagnation)) {
+                        while ((theElement != null) && (currentStagnation < MAX_STAGNATION)) {
                                 // we've got a Point (aPoint)
                                 // and the element we are in (theElement)
                                 // theElement can be a triangle, an edge or a point

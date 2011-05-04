@@ -54,8 +54,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.ExecutionException;
@@ -92,8 +90,6 @@ import org.tanato.model.TINSchema;
  * @author alexis
  */
 public class ST_HydroTIN implements CustomQuery {
-
-        private static final Logger logger = Logger.getLogger(ST_HydroTIN.class.getName());
 
         @Override
         public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
@@ -205,17 +201,11 @@ public class ST_HydroTIN implements CustomQuery {
 
 
                 } catch (IOException ex) {
-                        logger.log(Level.SEVERE, "Failed to write the file containing the edges.\n", ex);
-
-
+                        throw new ExecutionException("Failed to write the file containing the edges.\n", ex);
                 } catch (DriverException ex) {
-                        logger.log(Level.SEVERE, "Driver failure while saving the edges.\n", ex);
-
-
+                        throw new ExecutionException("Driver failure while saving the edges.\n", ex);
                 } catch (DelaunayError ex) {
-                        logger.log(Level.SEVERE, "Generation of the mesh failed.\n", ex);
-
-
+                        throw new ExecutionException("Generation of the mesh failed.\n", ex);
                 }
 
                 return null;
@@ -285,7 +275,8 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, double height, int gidSource) {
+        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, 
+                                double height, int gidSource) throws ExecutionException {
                 if (geom instanceof Point) {
                         addPoint(pointsToAdd, (Point) geom, propertyValue, height, gidSource);
 
@@ -304,7 +295,8 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height, int gidSource) {
+        private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height, 
+                                int gidSource) throws ExecutionException{
                 try {
                         DPoint dPoint = TINFeatureFactory.createDPoint(geom.getCoordinate());
                         dPoint.setProperty(propertyValue);
@@ -314,14 +306,13 @@ public class ST_HydroTIN implements CustomQuery {
 
 
                 } catch (DelaunayError ex) {
-                        logger.log(Level.SEVERE, "You're trying to create a 3D point with a NaN value.\n", ex);
-
-
+                        throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", ex);
                 }
 
         }
 
-        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, double height, int gidSource) {
+        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, 
+                                double height, int gidSource) throws ExecutionException {
 
                 Coordinate c1 = geometry.getCoordinates()[0];
                 Coordinate c2;
@@ -339,9 +330,7 @@ public class ST_HydroTIN implements CustomQuery {
                                 edge.setHeight(height);
                                 edges.add(edge);
                         } catch (DelaunayError d) {
-                                logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n", d);
-
-
+                                throw new ExecutionException("You're trying to craete a 3D point with a NaN value.\n", d);
                         }
                         c1 = c2;
 
