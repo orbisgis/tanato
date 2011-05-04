@@ -44,6 +44,7 @@ import com.vividsolutions.jts.geom.CoordinateSequenceFilter;
 import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.gdms.data.DataSource;
@@ -157,9 +158,9 @@ public class ST_SetZFromTriangles implements CustomQuery {
         private static class TINZFilter implements CoordinateSequenceFilter {
 
                 private boolean done = false;
-                private final ArrayList<DTriangle> triangles;
+                private final List<DTriangle> triangles;
 
-                public TINZFilter(ArrayList<DTriangle> triangles) {
+                public TINZFilter(List<DTriangle> triangles) {
                         this.triangles = triangles;
                 }
 
@@ -182,7 +183,7 @@ public class ST_SetZFromTriangles implements CustomQuery {
                         return done;
                 }
 
-                private double getZFromTriangles(Coordinate coord, ArrayList<DTriangle> triangles) {
+                private double getZFromTriangles(Coordinate coord, List<DTriangle> triangles) {
                         try {
                                 coord.z = 0;
                                 for (DTriangle dTriangle : triangles) {

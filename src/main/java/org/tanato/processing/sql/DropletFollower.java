@@ -1142,8 +1142,7 @@ public abstract class DropletFollower implements CustomQuery {
 
                 if (intersection != null) {
                         // We memorise the point
-                        aPoint = intersection;
-                        addPointToDropletPath(aPoint);
+                        addPointToDropletPath(intersection);
 
                         // set next element data
                         theElement = populateEdgeWithGDMS(intersectedEdge.getGID());
