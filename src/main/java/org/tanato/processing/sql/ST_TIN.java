@@ -54,8 +54,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.gdms.data.AlreadyClosedException;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
@@ -91,8 +89,6 @@ import org.tanato.model.TINSchema;
  */
 public class ST_TIN implements CustomQuery {
 
-        private static final Logger logger = Logger.getLogger(ST_TIN.class.getName());
-
         @Override
         public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
                 Value[] values, IProgressMonitor pm) throws ExecutionException {
@@ -119,7 +115,7 @@ public class ST_TIN implements CustomQuery {
                         sds.open();
                         count = sds.getRowCount();
                 } catch (DriverException ex) {
-                        logger.log(Level.SEVERE, "There has been an error while opening the table, or counting its lines.\n", ex);
+                        throw new ExecutionException("There has been an error while opening the table, or counting its lines.\n", ex);
                 }
                 Geometry geom = null;
                 //We prepare our input structures.
@@ -130,8 +126,7 @@ public class ST_TIN implements CustomQuery {
                         try {
                                 geom = sds.getGeometry(i);
                         } catch (DriverException ex) {
-                                logger.log(Level.SEVERE, "Can't retrieve the  geometry.\n", ex);
-                                break;
+                                throw new ExecutionException("Can't retrieve the  geometry.\n", ex);
                         }
                         if (geom instanceof Point) {
                                 addPoint(pointsToAdd, (Point) geom);
@@ -147,9 +142,9 @@ public class ST_TIN implements CustomQuery {
                 try {
                         sds.close();
                 } catch (DriverException ex) {
-                        logger.log(Level.SEVERE, "The driver failed during the closure.\n", ex);
+                        throw new ExecutionException( "The driver failed during the closure.\n", ex);
                 } catch (AlreadyClosedException ex) {
-                        logger.log(Level.SEVERE, "The source seems to have been closed externally\n", ex);
+                        throw new ExecutionException("The source seems to have been closed externally\n", ex);
                 }
                 Collections.sort(edges);
 
@@ -170,7 +165,7 @@ public class ST_TIN implements CustomQuery {
                                 mesh.removeFlatTriangles();
                         }
                 } catch (DelaunayError ex) {
-                        logger.log(Level.SEVERE, "Generation of the mesh failed.\n", ex);
+                        throw new ExecutionException("Generation of the mesh failed.\n", ex);
                 }
                 //And we write and register our results.
                 String edgesOut = name + "_edges";
@@ -179,23 +174,23 @@ public class ST_TIN implements CustomQuery {
                 try {
                         registerEdges(edgesOut, dsf, mesh);
                 } catch (IOException ex) {
-                        logger.log(Level.SEVERE, "Failed to write the file containing the edges.\n", ex);
+                        throw new ExecutionException("Failed to write the file containing the edges.\n", ex);
                 } catch (DriverException ex) {
-                        logger.log(Level.SEVERE, "Driver failure while saving the edges.\n", ex);
+                        throw new ExecutionException("Driver failure while saving the edges.\n", ex);
                 }
                 try {
                         registerPoints(pointsOut, dsf, mesh);
                 } catch (IOException ex) {
-                        logger.log(Level.SEVERE, "Failed to write the file containing the points.\n", ex);
+                        throw new ExecutionException("Failed to write the file containing the points.\n", ex);
                 } catch (DriverException ex) {
-                        logger.log(Level.SEVERE, "Driver failure while saving the points.\n", ex);
+                        throw new ExecutionException("Driver failure while saving the points.\n", ex);
                 }
                 try {
                         registerTriangles(trianglesOut, dsf, mesh);
                 } catch (IOException ex) {
-                        logger.log(Level.SEVERE, "Failed to write the file containing the triangles.\n", ex);
+                        throw new ExecutionException("Failed to write the file containing the triangles.\n", ex);
                 } catch (DriverException ex) {
-                        logger.log(Level.SEVERE, "Driver failure while saving the triangles.\n", ex);
+                        throw new ExecutionException("Driver failure while saving the triangles.\n", ex);
                 }
                 return null;
         }
@@ -246,14 +241,15 @@ public class ST_TIN implements CustomQuery {
          * We add a point to the given list
          * @param points
          * @param geom
+         * @throws ExecutionException
          */
-        private void addPoint(List<DPoint> points, Point geom) {
+        private void addPoint(List<DPoint> points, Point geom)  throws ExecutionException {
                 Coordinate pt = geom.getCoordinate();
                 double z = Double.isNaN(pt.z) ? 0 : pt.z;
                 try {
                         points.add(new DPoint(pt.x, pt.y, z));
                 } catch (DelaunayError ex) {
-                        logger.log(Level.SEVERE, "You're trying to create a 3D point with a NaN value.\n", ex);
+                        throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", ex);
                 }
 
         }
@@ -262,14 +258,15 @@ public class ST_TIN implements CustomQuery {
          * Add a MultiPoint geometry.
          * @param points
          * @param pts
+         * @throws ExecutionException
          */
-        private void addMultiPoint(List<DPoint> points, MultiPoint pts) {
+        private void addMultiPoint(List<DPoint> points, MultiPoint pts) throws ExecutionException{
                 Coordinate[] coords = pts.getCoordinates();
                 for (int i = 0; i < coords.length; i++) {
                         try {
                                 points.add(new DPoint(coords[i].x, coords[i].y, coords[i].z));
                         } catch (DelaunayError ex) {
-                                logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n", ex);
+                                throw new ExecutionException("You're trying to craete a 3D point with a NaN value.\n", ex);
                         }
                 }
         }
@@ -278,8 +275,9 @@ public class ST_TIN implements CustomQuery {
          * add a geometry to the input.
          * @param edges
          * @param geom
+         * @throws ExecutionException
          */
-        private void addGeometry(List<DEdge> edges, Geometry geom) {
+        private void addGeometry(List<DEdge> edges, Geometry geom) throws ExecutionException{
                 if (geom.isValid()) {
                         Coordinate c1 = geom.getCoordinates()[0];
                         c1.z = Double.isNaN(c1.z) ? 0 : c1.z;
@@ -290,7 +288,7 @@ public class ST_TIN implements CustomQuery {
                                 try {
                                         edges.add(new DEdge(new DPoint(c1), new DPoint(c2)));
                                 } catch (DelaunayError d) {
-                                        logger.log(Level.SEVERE, "You're trying to craete a 3D point with a NaN value.\n", d);
+                                        throw new ExecutionException("You're trying to craete a 3D point with a NaN value.\n", d);
                                 }
                                 c1 = c2;
                         }
@@ -301,8 +299,9 @@ public class ST_TIN implements CustomQuery {
          * Add a GeometryCollection
          * @param edges
          * @param geomcol
+         * @throws ExecutionException
          */
-        private void addGeometryCollection(List<DEdge> edges, GeometryCollection geomcol) {
+        private void addGeometryCollection(List<DEdge> edges, GeometryCollection geomcol) throws ExecutionException {
                 int num = geomcol.getNumGeometries();
                 for (int i = 0; i < num; i++) {
                         addGeometry(edges, geomcol.getGeometryN(i));
@@ -317,9 +316,10 @@ public class ST_TIN implements CustomQuery {
          * @throws IOException
          * @throws DriverException
          */
-        private void registerEdges(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
-                name = dsf.getSourceManager().getUniqueName(name);
-                File out = new File(name + ".gdms");
+        private void registerEdges(final String name, final DataSourceFactory dsf, 
+                        final ConstrainedMesh mesh) throws IOException, DriverException {
+                final String acName = dsf.getSourceManager().getUniqueName(name);
+                File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY),
@@ -353,12 +353,13 @@ public class ST_TIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(name, out);
+                dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerPoints(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
-                name = dsf.getSourceManager().getUniqueName(name);
-                File out = new File(name + ".gdms");
+        private void registerPoints(final String name, final DataSourceFactory dsf, 
+                        final ConstrainedMesh mesh) throws IOException, DriverException {
+                final String acName = dsf.getSourceManager().getUniqueName(name);
+                File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY),
@@ -384,12 +385,13 @@ public class ST_TIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(name, out);
+                dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerTriangles(String name, DataSourceFactory dsf, ConstrainedMesh mesh) throws IOException, DriverException {
-                name = dsf.getSourceManager().getUniqueName(name);
-                File out = new File(name + ".gdms");
+        private void registerTriangles(final String name, final DataSourceFactory dsf, 
+                        final ConstrainedMesh mesh) throws IOException, DriverException {
+                final String acName = dsf.getSourceManager().getUniqueName(name);
+                File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY),
@@ -404,7 +406,7 @@ public class ST_TIN implements CustomQuery {
                 writer.writeMetadata(triangleCount, md);
                 GeometryFactory gf = new GeometryFactory();
                 for (DTriangle dt : mesh.getTriangleList()) {
-                        Coordinate[] coords = new Coordinate[4];
+                        Coordinate[] coords = new Coordinate[DTriangle.PT_NB+1];
                         coords[0] = dt.getPoint(0).getCoordinate();
                         coords[1] = dt.getPoint(1).getCoordinate();
                         coords[2] = dt.getPoint(2).getCoordinate();
@@ -426,6 +428,6 @@ public class ST_TIN implements CustomQuery {
                 // write envelope
                 writer.writeExtent();
                 writer.close();
-                dsf.getSourceManager().register(name, out);
+                dsf.getSourceManager().register(acName, out);
         }
 }
