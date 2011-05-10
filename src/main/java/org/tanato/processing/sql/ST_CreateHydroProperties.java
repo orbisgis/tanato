@@ -65,7 +65,7 @@ public class ST_CreateHydroProperties implements Function {
         private int length = 0;
         private int position = 0;
         private int error = 0;
-
+        
         @Override
         public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
                 int returnedValue = 0;
@@ -100,41 +100,41 @@ public class ST_CreateHydroProperties implements Function {
                 }
                 return ValueFactory.createValue(returnedValue);
         }
-
+        
         @Override
         public final String getName() {
                 return "ST_CreateHydroProperties";
         }
-
+        
         @Override
         public final boolean isAggregate() {
                 return false;
         }
-
+        
         @Override
         public final Value getAggregateResult() {
                 return null;
         }
-
+        
         @Override
         public final Type getType(Type[] types) {
                 return TypeFactory.createType(Type.INT);
         }
-
+        
         @Override
         public final String getDescription() {
                 return "Combine the hydro property as int";
         }
-
+        
         @Override
         public final String getSqlOrder() {
                 return "SELECT ST_CreateHHydroProperties(propertyField)";
         }
-
+        
         @Override
         public final Arguments[] getFunctionArguments() {
                 return new Arguments[]{new Arguments(Argument.STRING)};
-
+                
         }
 
         // -----------------------------------------------------------
@@ -151,6 +151,8 @@ public class ST_CreateHydroProperties implements Function {
                         if (Character.isLetterOrDigit(theChar)) {
                                 found = true;
                         } else if (theChar == '_') {
+                                found = true;
+                        } else if (theChar == '*') {
                                 found = true;
                         } else if (theChar != ' ') {
                                 error = 1;
@@ -173,6 +175,14 @@ public class ST_CreateHydroProperties implements Function {
                                 sb.append('_');
                                 position++;
                                 lastwasspace = false;
+                        } else if (theChar == '*') {
+                                if (sb.equals("")) {
+                                        sb.append("ALL");
+                                        position++;
+                                        found = true;
+                                } else {
+                                        error = 1;
+                                }
                         } else if (theChar == ' ') {
                                 if (!lastwasspace) {
                                         sb.append(' ');
@@ -216,7 +226,7 @@ public class ST_CreateHydroProperties implements Function {
                         }
                         position++;
                 }
-
+                
                 return theOperator;
         }
 
@@ -229,7 +239,7 @@ public class ST_CreateHydroProperties implements Function {
          */
         private int convertToInt(String theString) {
                 int returnedValue = 0;
-
+                
                 if (theString.equals("ALL") || theString.equals("ANY")) {
                         returnedValue = -1;
                 } else if (theString.equals("NONE")) {
@@ -248,7 +258,7 @@ public class ST_CreateHydroProperties implements Function {
                                 theField = theList[i];
                                 fieldValue = 0;
                                 try {
-                                        if (theField.getType().toString().equals("int")) {
+                                        if (theField.getType().isAssignableFrom(Integer.TYPE)) {
                                                 fieldValue = theField.getInt(theField);
                                         }
                                 } catch (IllegalArgumentException ex) {
@@ -263,7 +273,7 @@ public class ST_CreateHydroProperties implements Function {
                                 } else if (HydroProperties.toString(fieldValue).equalsIgnoreCase(theString)) {
                                         found = true;
                                 }
-
+                                
                                 i++;
                         }
                         if (found) {
