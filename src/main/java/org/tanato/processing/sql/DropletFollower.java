@@ -99,7 +99,7 @@ public abstract class DropletFollower implements CustomQuery {
         private int wallSide = EDGE_NO_WALL;
         private DTriangle previousTriangle = null;
         private static final int EDGE_NO_WALL = 0;
-        private static final int EDGE_WALL_LEFT  = 1;
+        private static final int EDGE_WALL_LEFT = 1;
         private static final int EDGE_WALL_RIGHT = 2;
         // to follow sewers
         private boolean isInSewers;
@@ -756,6 +756,8 @@ public abstract class DropletFollower implements CustomQuery {
         private ArrayList<Element> getElementsToProcess(DPoint aPoint, Element anElement, boolean withWallConstraint) throws DelaunayError, DriverException {
                 ArrayList<Element> elementToProcess = new ArrayList<Element>();
                 elementToProcess.add(anElement);
+
+                int GID = aPoint.getGID();
                 int currentElement = 0;
                 while (currentElement < elementToProcess.size()) {
                         Element elementToTest = elementToProcess.get(currentElement);
@@ -768,8 +770,8 @@ public abstract class DropletFollower implements CustomQuery {
                                 // Check all edges : add edges that contains the point
                                 for (int i = 0; i < 3; i++) {
                                         DEdge possibleEdge = aTriangle.getEdge(i);
-                                        if ((possibleEdge.getStartPoint().getGID() == aPoint.getGID())
-                                                || (possibleEdge.getEndPoint().getGID() == aPoint.getGID())) {
+                                        if ((possibleEdge.getStartPoint().getGID() == GID)
+                                                || (possibleEdge.getEndPoint().getGID() == GID)) {
                                                 // The edge contains aPoint => it is the one we look for.
                                                 // generate full element
                                                 if (!isElementInArray(elementToProcess, possibleEdge)) {
@@ -1029,7 +1031,6 @@ public abstract class DropletFollower implements CustomQuery {
          * @param aPoint
          */
         private void addPointToDropletPath(DPoint aPoint) {
-                aPoint.setGID(-1);
                 if (lastPoint == null) {
                         // No previous point
                         theList.add(aPoint);
@@ -1142,6 +1143,7 @@ public abstract class DropletFollower implements CustomQuery {
 
                 if (intersection != null) {
                         // We memorise the point
+                        intersection.setGID(-1);
                         addPointToDropletPath(intersection);
 
                         // set next element data
@@ -1311,8 +1313,7 @@ public abstract class DropletFollower implements CustomQuery {
                         theElement = selectNextSewer(aPoint, lastEdge);
                 } else {
                         // First, we get the element we come from. It might be an edge.
-                        Element selectedElement;
-                        selectedElement = turnAroundthePoint(aPoint, lastEdge, previousTriangle);
+                        Element selectedElement = turnAroundthePoint(aPoint, lastEdge, previousTriangle);
                         if (selectedElement != null) {
                                 // We go to a next edge
                                 theElement = selectedElement;
@@ -1358,6 +1359,7 @@ public abstract class DropletFollower implements CustomQuery {
                 DTriangle aTriangle = getSpottedTriangle(initialGeometry, initialPoint);
                 if (aTriangle == null) {
                         // Droplet stays on initial point : it is outside mesh
+                        initialPoint.setGID(-1);
                         addPointToDropletPath(initialPoint);
                 } else {
                         // point is on the mesh, in a triangle
@@ -1365,6 +1367,7 @@ public abstract class DropletFollower implements CustomQuery {
 
                         // Project the point on the surface and memorise it
                         DPoint aPoint = new DPoint(initialPoint.getX(), initialPoint.getY(), aTriangle.interpolateZ(initialPoint));
+                        aPoint.setGID(-1);
                         addPointToDropletPath(aPoint);
 
                         // The current element we are in
