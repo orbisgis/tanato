@@ -35,13 +35,14 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-
 package org.tanato.processing.sql;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import org.gdms.data.DataSourceFactory;
+import org.gdms.data.types.DimensionConstraint;
+import org.gdms.data.types.GeometryConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -99,7 +100,8 @@ public class ST_TINSlopeDirection implements Function {
 
         @Override
         public final Type getType(Type[] types) {
-                return TypeFactory.createType(Type.GEOMETRY);
+                return TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                        GeometryConstraint.LINESTRING));
         }
 
         @Override
