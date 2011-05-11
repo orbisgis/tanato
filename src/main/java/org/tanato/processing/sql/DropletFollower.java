@@ -78,6 +78,15 @@ import org.tanato.model.TINSchema;
 /**
  * This class designs a custom query for GDMS. The goal of the query is to process
  * a droplet path on an existing triangularization.
+ * Two options can be set to constraint the drop path processing.
+ * The two options implement the same object definition : a property.
+ * A property describes a TIN features as a road , a sewer...
+ * The user can set that kind of properties will be used to build the path (second argument).
+ * It can also set if the process must stop when a property is found (last argument).
+ *
+ * Note if the property option is used the datasources must contains two fields : property and heigth.
+ * Take a look the Tanato model user documentation.
+ *
  *
  *
  * @author kwyhr
@@ -106,6 +115,7 @@ public abstract class DropletFollower implements CustomQuery {
         // using properties
         private int autorizedProperties;
         private int endingProperties;
+        private boolean requieredAdditionalFields = false;
 
         @Override
         public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
@@ -124,16 +134,21 @@ public abstract class DropletFollower implements CustomQuery {
                         theList = null;
 
                         try {
-                                // Set informations from tables and Values
-                                populateData(dsf, pm, tables);
-                                Geometry testPoint = getInitiaPoint(values[0]);
-
+                               
                                 if (values.length >= 2) {
                                         autorizedProperties = values[1].getAsInt();
+                                        checkMetadata(tables);
+                                        requieredAdditionalFields = true;
                                 }
                                 if (values.length >= 3) {
                                         endingProperties = values[1].getAsInt();
+                                        requieredAdditionalFields = true;
                                 }
+
+                                 // Set informations from tables and Values
+                                populateData(dsf, pm, tables);
+                                Geometry testPoint = getInitiaPoint(values[0]);
+
 
                                 // process path
                                 dropletFollows(testPoint);
@@ -486,9 +501,10 @@ public abstract class DropletFollower implements CustomQuery {
                 // Set informations
                 if (aTriangle != null) {
                         aTriangle.setGID(sdsTriangles.getInt(tIndex, TINSchema.GID));
+                        if(requieredAdditionalFields){
                         aTriangle.setHeight(sdsTriangles.getDouble(tIndex, TINSchema.HEIGHT_FIELD));
                         aTriangle.setProperty(sdsTriangles.getInt(tIndex, TINSchema.PROPERTY_FIELD));
-                        aTriangle.setExternalGID(sdsTriangles.getInt(tIndex, TINSchema.GID_SOURCE_FIELD));
+                        }                        
                 }
 
                 return aTriangle;
@@ -577,9 +593,10 @@ public abstract class DropletFollower implements CustomQuery {
                         theEdge.setRight(triangleRight);
 
                         theEdge.setGID(sdsEdges.getInt(eIndex, TINSchema.GID));
+                        if (requieredAdditionalFields){
                         theEdge.setHeight(sdsEdges.getDouble(eIndex, TINSchema.HEIGHT_FIELD));
                         theEdge.setProperty(sdsEdges.getInt(eIndex, TINSchema.PROPERTY_FIELD));
-                        theEdge.setExternalGID(sdsEdges.getInt(eIndex, TINSchema.GID_SOURCE_FIELD));
+                        }
                 }
 
                 return theEdge;
@@ -949,7 +966,7 @@ public abstract class DropletFollower implements CustomQuery {
                 DPoint p3 = anEdge.getPointLeft();
                 DPoint p4 = anEdge.getPointRight();
                 DPoint p1 = point1;
-
+                
                 // (v1.x) t1 - (x4 - x3) t2 = (x3 - x1)
                 // (v1.y) t1 - (y4 - y3) t2 = (y3 - y1)
 
@@ -1409,6 +1426,21 @@ public abstract class DropletFollower implements CustomQuery {
                                         previousTriangle = null;
                                 }
                         }
+                }
+        }
+
+        /**
+         * A method to check if the datasource contains two fields :  property and height. The field is used to tag the TIN feature
+         * @param tables
+         * @throws DriverException
+         */
+        private void checkMetadata(DataSource[] tables) throws DriverException {
+                for (DataSource dataSource : tables) {
+                        Metadata md = dataSource.getMetadata();                        
+                        if ((md.getFieldIndex(TINSchema.PROPERTY_FIELD)==-1)||(md.getFieldIndex(TINSchema.HEIGHT_FIELD)==-1)){
+                                 throw new IllegalArgumentException("The table " + dataSource.getName() + " must contains two fields  : property and height");
+                        }
+
                 }
         }
 }
