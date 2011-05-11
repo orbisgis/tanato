@@ -60,6 +60,8 @@ import org.gdms.data.ExecutionException;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.metadata.DefaultMetadata;
 import org.gdms.data.metadata.Metadata;
+import org.gdms.data.types.DimensionConstraint;
+import org.gdms.data.types.GeometryConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -275,8 +277,8 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue, 
-                                double height, int gidSource) throws ExecutionException {
+        private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue,
+                double height, int gidSource) throws ExecutionException {
                 if (geom instanceof Point) {
                         addPoint(pointsToAdd, (Point) geom, propertyValue, height, gidSource);
 
@@ -295,8 +297,8 @@ public class ST_HydroTIN implements CustomQuery {
          * @param points
          * @param geom
          */
-        private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height, 
-                                int gidSource) throws ExecutionException{
+        private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height,
+                int gidSource) throws ExecutionException {
                 try {
                         DPoint dPoint = TINFeatureFactory.createDPoint(geom.getCoordinate());
                         dPoint.setProperty(propertyValue);
@@ -311,8 +313,8 @@ public class ST_HydroTIN implements CustomQuery {
 
         }
 
-        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue, 
-                                double height, int gidSource) throws ExecutionException {
+        private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue,
+                double height, int gidSource) throws ExecutionException {
 
                 Coordinate c1 = geometry.getCoordinates()[0];
                 Coordinate c2;
@@ -346,13 +348,14 @@ public class ST_HydroTIN implements CustomQuery {
          * @throws IOException
          * @throws DriverException
          */
-        private void registerEdges(final String name, final DataSourceFactory dsf, 
-                                final ConstrainedMesh mesh) throws IOException, DriverException {
+        private void registerEdges(final String name, final DataSourceFactory dsf,
+                final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                                GeometryConstraint.LINESTRING), new DimensionConstraint(3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -402,13 +405,14 @@ public class ST_HydroTIN implements CustomQuery {
                 dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerPoints(final String name, final DataSourceFactory dsf, 
-                                final ConstrainedMesh mesh) throws IOException, DriverException {
+        private void registerPoints(final String name, final DataSourceFactory dsf,
+                final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                                GeometryConstraint.POINT), new DimensionConstraint(3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
@@ -450,13 +454,14 @@ public class ST_HydroTIN implements CustomQuery {
 
         }
 
-        private void registerTriangles(final String name, final DataSourceFactory dsf, 
-                                final ConstrainedMesh mesh) throws IOException, DriverException {
+        private void registerTriangles(final String name, final DataSourceFactory dsf,
+                final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                                GeometryConstraint.POLYGON), new DimensionConstraint(3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),

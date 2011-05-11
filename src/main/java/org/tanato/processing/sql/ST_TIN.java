@@ -61,6 +61,8 @@ import org.gdms.data.ExecutionException;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.metadata.DefaultMetadata;
 import org.gdms.data.metadata.Metadata;
+import org.gdms.data.types.DimensionConstraint;
+import org.gdms.data.types.GeometryConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -142,7 +144,7 @@ public class ST_TIN implements CustomQuery {
                 try {
                         sds.close();
                 } catch (DriverException ex) {
-                        throw new ExecutionException( "The driver failed during the closure.\n", ex);
+                        throw new ExecutionException("The driver failed during the closure.\n", ex);
                 } catch (AlreadyClosedException ex) {
                         throw new ExecutionException("The source seems to have been closed externally\n", ex);
                 }
@@ -243,7 +245,7 @@ public class ST_TIN implements CustomQuery {
          * @param geom
          * @throws ExecutionException
          */
-        private void addPoint(List<DPoint> points, Point geom)  throws ExecutionException {
+        private void addPoint(List<DPoint> points, Point geom) throws ExecutionException {
                 Coordinate pt = geom.getCoordinate();
                 double z = Double.isNaN(pt.z) ? 0 : pt.z;
                 try {
@@ -260,7 +262,7 @@ public class ST_TIN implements CustomQuery {
          * @param pts
          * @throws ExecutionException
          */
-        private void addMultiPoint(List<DPoint> points, MultiPoint pts) throws ExecutionException{
+        private void addMultiPoint(List<DPoint> points, MultiPoint pts) throws ExecutionException {
                 Coordinate[] coords = pts.getCoordinates();
                 for (int i = 0; i < coords.length; i++) {
                         try {
@@ -277,7 +279,7 @@ public class ST_TIN implements CustomQuery {
          * @param geom
          * @throws ExecutionException
          */
-        private void addGeometry(List<DEdge> edges, Geometry geom) throws ExecutionException{
+        private void addGeometry(List<DEdge> edges, Geometry geom) throws ExecutionException {
                 if (geom.isValid()) {
                         Coordinate c1 = geom.getCoordinates()[0];
                         c1.z = Double.isNaN(c1.z) ? 0 : c1.z;
@@ -316,13 +318,15 @@ public class ST_TIN implements CustomQuery {
          * @throws IOException
          * @throws DriverException
          */
-        private void registerEdges(final String name, final DataSourceFactory dsf, 
-                        final ConstrainedMesh mesh) throws IOException, DriverException {
+        private void registerEdges(final String name, final DataSourceFactory dsf,
+                final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                                GeometryConstraint.LINESTRING),
+                                new DimensionConstraint(3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -356,13 +360,14 @@ public class ST_TIN implements CustomQuery {
                 dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerPoints(final String name, final DataSourceFactory dsf, 
-                        final ConstrainedMesh mesh) throws IOException, DriverException {
+        private void registerPoints(final String name, final DataSourceFactory dsf,
+                final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                                GeometryConstraint.POINT), new DimensionConstraint(3)),
                                 TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
                 int triangleCount = mesh.getPoints().size();
@@ -388,13 +393,14 @@ public class ST_TIN implements CustomQuery {
                 dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerTriangles(final String name, final DataSourceFactory dsf, 
-                        final ConstrainedMesh mesh) throws IOException, DriverException {
+        private void registerTriangles(final String name, final DataSourceFactory dsf,
+                final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                                GeometryConstraint.POLYGON), new DimensionConstraint(3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -406,7 +412,7 @@ public class ST_TIN implements CustomQuery {
                 writer.writeMetadata(triangleCount, md);
                 GeometryFactory gf = new GeometryFactory();
                 for (DTriangle dt : mesh.getTriangleList()) {
-                        Coordinate[] coords = new Coordinate[DTriangle.PT_NB+1];
+                        Coordinate[] coords = new Coordinate[DTriangle.PT_NB + 1];
                         coords[0] = dt.getPoint(0).getCoordinate();
                         coords[1] = dt.getPoint(1).getCoordinate();
                         coords[2] = dt.getPoint(2).getCoordinate();
