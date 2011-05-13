@@ -39,6 +39,13 @@
 			<url>http://geosysin.iict.ch/irstv-web/maven-repo</url>
 		</repository>				
 	</repositories>
+        <distributionManagement>
+                <repository>
+                        <id>IRSTV</id>
+                        <name>IRSTV repository</name>
+                        <url>sftp://irstv@www.orbisgis.org:/var/www/repo.orbisgis.org/htdocs</url>
+                </repository>
+        </distributionManagement>
 	<build>
 		<plugins>
 			<plugin>
