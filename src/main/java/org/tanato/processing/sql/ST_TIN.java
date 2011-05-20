@@ -290,7 +290,7 @@ public class ST_TIN implements CustomQuery {
                                 try {
                                         edges.add(new DEdge(new DPoint(c1), new DPoint(c2)));
                                 } catch (DelaunayError d) {
-                                        throw new ExecutionException("You're trying to craete a 3D point with a NaN value.\n", d);
+                                        throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", d);
                                 }
                                 c1 = c2;
                         }
