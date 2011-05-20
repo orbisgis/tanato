@@ -39,16 +39,36 @@ package org.tanato.processing.sql;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.CoordinateSequence;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
+import org.gdms.data.ExecutionException;
+import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.metadata.DefaultMetadata;
+import org.gdms.data.metadata.Metadata;
+import org.gdms.data.types.GeometryConstraint;
+import org.gdms.data.types.Type;
+import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
+import org.gdms.driver.ObjectDriver;
+import org.gdms.geometryUtils.GeometryTypeUtil;
+import org.gdms.sql.customQuery.CustomQuery;
+import org.gdms.sql.customQuery.TableDefinition;
+import org.gdms.sql.function.Argument;
+import org.gdms.sql.function.Arguments;
 import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.DelaunayError;
+import org.orbisgis.progress.IProgressMonitor;
+import org.tanato.model.TINSchema;
 
 /**
  * This class designs a custom query for GDMS. The goal of the query is to process
@@ -57,43 +77,89 @@ import org.jdelaunay.delaunay.DPoint;
  *
  * @author kwyhr
  */
-public class ST_DropletPath extends DropletFollower {
+public class ST_DropletPath implements CustomQuery {
 
-        @Override
         public final String getName() {
                 return "ST_DropletPath";
         }
 
-        @Override
         public final String getDescription() {
                 return "get the path a droplet will follow on the TIN.";
         }
 
-        @Override
         public final String getSqlOrder() {
-                return "SELECT ST_DropletPath(pointGeom [, autorizedProperties [, endingproperties]]) FROM out_point, out_edges, out_triangles";
+                return "SELECT ST_DropletPath([, autorizedProperties [, endingproperties]]) FROM out_point, out_edges, out_triangles, startPoints";
         }
 
         @Override
-        protected final DiskBufferDriver createDataSource(DataSourceFactory dsf, ArrayList<DPoint> result) throws DriverException {
-                // Create writer
-                DiskBufferDriver writer = new DiskBufferDriver(dsf, getMetadata(null));
+        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+                try {
+                        DropletFollower dropletFollower = new DropletFollower(dsf, tables, values, pm);
+                        // Create writer
+                        DiskBufferDriver writer = new DiskBufferDriver(dsf, getMetadata(null));
 
-                // Process all coordinates and save each point
-                GeometryFactory gf = new GeometryFactory();
-                Coordinate[] coords = new Coordinate[1];
-                int i = 0;
-                for (DPoint aPoint : result) {
-                        coords[0] = aPoint.getCoordinate();
-                        CoordinateSequence cs = new CoordinateArraySequence(coords);
-                        Point thePoint = new Point(cs, gf);
-                        i++;
-                        writer.addValues(new Value[]{ValueFactory.createValue(thePoint),
-                                        ValueFactory.createValue(i)});
+                        SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(tables[3]);
+                        sds.open();
+                        pm.startTask("Processing runoff path");
+                        long rowCount = sds.getRowCount();
+                        for (int i = 0; i < sds.getRowCount(); i++) {
+                                if (i / 100 == i / 100.0) {
+                                        if (pm.isCancelled()) {
+                                                break;
+                                        } else {
+                                                pm.progressTo((int) (100 * i / rowCount));
+                                        }
+                                }
+                                Geometry geom = sds.getGeometry(i);
+                                if (GeometryTypeUtil.isPoint(geom)) {
+
+                                        ArrayList<DPoint> result = dropletFollower.getPath(geom);
+
+                                        if (result != null) {
+                                                // Process all coordinates and save each point
+                                                int k = 0;
+                                                for (DPoint aPoint : result) {
+                                                        writer.addValues(new Value[]{ValueFactory.createValue(geom.getFactory().createPoint(aPoint.getCoordinate())), ValueFactory.createValue(i),
+                                                                        ValueFactory.createValue(k)});
+                                                        k++;
+                                                }
+                                        }
+                                }
+                        }
+                        pm.endTask();
+                        writer.writingFinished();
+                        sds.close();
+                        dropletFollower.closeData();
+                        return writer;
+                } catch (DelaunayError ex) {
+                        Logger.getLogger(ST_DropletLine.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (DriverException ex) {
+                        Logger.getLogger(ST_DropletLine.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                // Close writer
-                writer.writingFinished();
+                return null;
 
-                return writer;
+
+        }
+
+        @Override
+        public Metadata getMetadata(Metadata[] tables) throws DriverException {
+                Metadata md = new DefaultMetadata(
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
+                                GeometryConstraint.POINT)), TypeFactory.createType(Type.INT), TypeFactory.createType(Type.INT)},
+                        new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, "path"});
+                return md;
+        }
+
+        public final TableDefinition[] getTablesDefinitions() {
+                return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
+
+
+        }
+
+        public final Arguments[] getFunctionArguments() {
+                return new Arguments[]{new Arguments(),
+                                new Arguments(Argument.INT),
+                                new Arguments(Argument.INT, Argument.INT)
+                        };
         }
 }

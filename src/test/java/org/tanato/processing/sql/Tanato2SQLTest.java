@@ -48,7 +48,6 @@ import com.vividsolutions.jts.geom.Polygon;
 import com.vividsolutions.jts.io.WKTReader;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import junit.framework.TestCase;
@@ -56,16 +55,19 @@ import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.DefaultAlphaQuery;
+import org.gdms.data.metadata.DefaultMetadata;
 import org.gdms.data.metadata.Metadata;
 import org.gdms.data.types.Type;
+import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.generic.GenericObjectDriver;
 import org.gdms.sql.customQuery.GeometryTableDefinition;
 import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.FunctionException;
-import org.gdms.sql.function.spatial.geometry.edit.ST_AddZToGeometry;
+import org.gdms.sql.function.spatial.geometry.edit.ST_AddZ;
 import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DTriangle;
 import org.jhydrocell.hydronetwork.HydroProperties;
@@ -146,7 +148,7 @@ public class Tanato2SQLTest extends TestCase {
          * @throws Exception
          */
         public void testST_LinearInterpolation() throws Exception {
-                ST_AddZToGeometry function = new ST_AddZToGeometry();
+                ST_AddZ function = new ST_AddZ();
 
                 Value[] values = new Value[]{ValueFactory.createValue(jTSLineString2D), ValueFactory.createValue(12)};
                 Geometry geom = function.evaluate(null, values).getAsGeometry();
@@ -482,13 +484,20 @@ public class Tanato2SQLTest extends TestCase {
                 //Now compute the runoff path with the droplet function
                 ST_DropletLine sT_DropletLine = new ST_DropletLine();
 
+                DefaultMetadata metadata = new DefaultMetadata();
+                metadata.addField("the_geom", TypeFactory.createType(Type.GEOMETRY));
+
+                GenericObjectDriver driver = new GenericObjectDriver(metadata);
+
                 WKTReader wKTReader = new WKTReader();
-                //This target point start on the triangle gid number 174
+                //This target point start on the triangle gid number 5
                 // The result geometry path crosses the TIN features :
-                // triangle 5  -> triangle 6 -> edge 30 (a talweg) -> -> edge 38 (a talweg) -> points 9
+                // triangle 5  -> edge 34 -> triangle 6 -> edge 30 (a talweg) -> -> edge 38 (a talweg) -> points 9
                 Geometry targetPoint = wKTReader.read("POINT (178.11619336849773 180.89460753843517)");
-                Value[] vals = new Value[]{ValueFactory.createValue(targetPoint)};
-                ObjectDriver result = sT_DropletLine.evaluate(dsf, new DataSource[]{dsPoints, dsEdges, dsTriangles}, vals, new NullProgressMonitor());
+                driver.addValues(new Value[]{ValueFactory.createValue(targetPoint)});
+
+
+                ObjectDriver result = sT_DropletLine.evaluate(dsf, new DataSource[]{dsPoints, dsEdges, dsTriangles, dsf.getDataSource(driver)}, new Value[]{}, new NullProgressMonitor());
 
                 assertTrue(result != null);
                 SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(dsf.getDataSource(result));
@@ -497,10 +506,42 @@ public class Tanato2SQLTest extends TestCase {
                 Geometry geom = sds.getGeometry(0);
                 assertTrue(geom.getDimension() == 1);
                 sds.close();
-
                 //TODO : Check if the result geometry intersects excepted TIN features
-                //Check triangle                
-                
+                Coordinate[] coords = geom.getCoordinates();
+
+                //Check for each coordinate path if the coordinate intersects a geometry in the input datasource
+                assertTrue(checkFeature(coords[0], 5, dsTriangles));
+                assertTrue(checkFeature(coords[1], 34, dsEdges));
+                assertTrue(checkFeature(coords[2], 6, dsTriangles));
+                assertTrue(checkFeature(coords[2], 30, dsEdges));
+                assertTrue(checkFeature(coords[3], 30, dsTriangles));
+                assertTrue(checkFeature(coords[3], 30, dsEdges));
+                assertTrue(checkFeature(coords[3], 38, dsEdges));
+                assertTrue(checkFeature(coords[4], 38, dsEdges));
+
+
         }
-        
+
+        /**
+         * A method to check if the coordinate intersect a requiered geometry defined by its GID
+         * @param coordinate
+         * @param gid
+         * @param ds
+         * @return
+         */
+        private boolean checkFeature(Coordinate coordinate, int gid, DataSource ds) throws DriverException {
+                ds.open();
+                int gidIndex = ds.getFieldIndexByName(TINSchema.GID);
+                int geomDSIndex = ds.getFieldIndexByName(TINSchema.GEOM_FIELD);
+                Geometry geomDS = null;
+                for (int i = 0; i < ds.getRowCount(); i++) {
+                        Value[] values = ds.getRow(i);
+                        if (values[gidIndex].getAsInt() == gid) {
+                                geomDS = values[geomDSIndex].getAsGeometry();
+                                break;
+                        }
+                }
+                ds.close();
+                return gf.createPoint(coordinate).intersects(geomDS);
+        }
 }
