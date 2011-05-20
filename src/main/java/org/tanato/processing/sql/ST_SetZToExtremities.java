@@ -44,7 +44,6 @@ import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.geometryUtils.CoordinatesUtils;
 import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.Arguments;
 import org.gdms.sql.function.Function;
@@ -53,6 +52,7 @@ import org.gdms.sql.function.FunctionException;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiLineString;
+import org.gdms.geometryUtils.GeometryEdit;
 
 public class ST_SetZToExtremities implements Function {
 
@@ -67,11 +67,11 @@ public class ST_SetZToExtremities implements Function {
                         LineString[] lines = new LineString[nbGeom];
                         for (int i = 0; i < nbGeom; i++) {
                                 Geometry subGeom = geom.getGeometryN(i);
-                                lines[i] = (LineString) CoordinatesUtils.force_3DStartEnd(subGeom, startZ, endZ);
+                                lines[i] = (LineString) GeometryEdit.force_3DStartEnd(subGeom, startZ, endZ);
                         }
 
                 } else if (geom instanceof LineString) {
-                        geom = CoordinatesUtils.force_3DStartEnd(geom, startZ, endZ);
+                        geom = GeometryEdit.force_3DStartEnd(geom, startZ, endZ);
                 }
 
 
