@@ -519,6 +519,25 @@ public class Tanato2SQLTest extends TestCase {
                 assertTrue(checkFeature(coords[3], 38, dsEdges));
                 assertTrue(checkFeature(coords[4], 38, dsEdges));
 
+                dsPoints = dsf.getDataSource(new File("src/test/resources/data/tin/chezine_amont/chezine_amont_points.shp"));
+                dsEdges = dsf.getDataSource(new File("src/test/resources/data/tin/chezine_amont/chezine_amont_edges.shp"));
+                dsTriangles = dsf.getDataSource(new File("src/test/resources/data/tin/chezine_amont/chezine_amont_triangles.shp"));
+
+
+                driver = new GenericObjectDriver(metadata);
+                //This target point starts on a flat and thin triangle
+                targetPoint = wKTReader.read("POINT (343725.4125771761 6698264.727716073)");
+                driver.addValues(new Value[]{ValueFactory.createValue(targetPoint)});
+
+                result = sT_DropletLine.evaluate(dsf, new DataSource[]{dsPoints, dsEdges, dsTriangles, dsf.getDataSource(driver)}, new Value[]{}, new NullProgressMonitor());
+
+                assertTrue(result != null);
+                sds = new SpatialDataSourceDecorator(dsf.getDataSource(result));
+                sds.open();
+                assertTrue(sds.getRowCount() > 0);
+                geom = sds.getGeometry(0);
+                assertTrue(geom.getDimension() == 1);
+                sds.close();
 
         }
 
