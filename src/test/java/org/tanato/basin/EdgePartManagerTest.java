@@ -40,6 +40,7 @@ package org.tanato.basin;
 import java.util.List;
 import junit.framework.TestCase;
 import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.Tools;
 
 /**
@@ -51,7 +52,7 @@ public class EdgePartManagerTest extends TestCase {
         /**
          * test that we can add an EdgePart, and then retrieve it later.
          */
-        public void testAddEdgePart() {
+        public void testAddEdgePart() throws DelaunayError {
                 EdgePartManager epm = new EdgePartManager();
                 assertTrue(epm.getQueueSize()==0);
                 assertTrue(epm.isEmpty());
@@ -68,7 +69,7 @@ public class EdgePartManagerTest extends TestCase {
                 assertTrue(epm.isEmpty());
         }
         
-        public void testTwoBehindEdges() {
+        public void testTwoBehindEdges() throws DelaunayError {
                 EdgePartManager epm = new EdgePartManager();
                 assertTrue(epm.getQueueSize()==0);
                 DEdge ed = new DEdge(2,2,2,4,3,2);
@@ -90,7 +91,7 @@ public class EdgePartManagerTest extends TestCase {
         /**
          * A simple merging test.
          */
-        public void testAddAndMerge(){
+        public void testAddAndMerge() throws DelaunayError{
                 EdgePartManager epm = new EdgePartManager();
                 DEdge ed = new DEdge(2,2,2,4,3,2);
                 ed.setGID(8);
@@ -109,7 +110,7 @@ public class EdgePartManagerTest extends TestCase {
         /**
          * A more complicated merging test.
          */
-        public void testAddAndMergeManyElements(){
+        public void testAddAndMergeManyElements() throws DelaunayError{
                 EdgePartManager epm = new EdgePartManager();
                 DEdge ed = new DEdge(2,2,2,4,3,2);
                 ed.setGID(8);
@@ -144,7 +145,7 @@ public class EdgePartManagerTest extends TestCase {
         /**
          * A merge operation is performed while there are two keys in the map.
          */
-        public void testTwoKeysInMap()  {
+        public void testTwoKeysInMap() throws DelaunayError  {
                 EdgePartManager epm = new EdgePartManager();
                 DEdge ed = new DEdge(2,2,2,4,3,2);
                 ed.setGID(8);
@@ -165,7 +166,7 @@ public class EdgePartManagerTest extends TestCase {
                 assertTrue(out.get(0).equals(new EdgePart(ed, 0.35, 0.50,1,2)));
         }
         
-        public void testGetTooSmallEdgePart() {
+        public void testGetTooSmallEdgePart() throws DelaunayError {
                 EdgePartManager epm = new EdgePartManager();
                 DEdge ed = new DEdge(1,0,0,0,0,0);
                 ed.setGID(8);

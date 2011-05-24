@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import junit.framework.TestCase;
 import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.DelaunayError;
 import org.jdelaunay.delaunay.Tools;
 
 /**
@@ -49,7 +50,7 @@ import org.jdelaunay.delaunay.Tools;
  */
 public class EdgePartTest extends TestCase {
 
-        public void testConstructor() {
+        public void testConstructor() throws DelaunayError {
                 DEdge edge = new DEdge(0, 0, 0, 5, 5, 0);
                 edge.getStartPoint().setGID(8);
                 edge.getEndPoint().setGID(9);
@@ -71,7 +72,7 @@ public class EdgePartTest extends TestCase {
         /**
          * Test the merge operations between two EdgeParts
          */
-        public void testMerging() {
+        public void testMerging() throws DelaunayError {
                 DEdge edge = new DEdge(0, 0, 0, 5, 5, 0);
                 edge.getStartPoint().setGID(8);
                 edge.getEndPoint().setGID(9);
@@ -129,7 +130,7 @@ public class EdgePartTest extends TestCase {
         /**
          * Test the EdgePart.contains method.
          */
-        public void testContains() {
+        public void testContains() throws DelaunayError {
                 DEdge edge = new DEdge(0, 0, 0, 5, 5, 0);
                 edge.getStartPoint().setGID(8);
                 edge.getEndPoint().setGID(9);
@@ -146,7 +147,7 @@ public class EdgePartTest extends TestCase {
                 assertFalse(ep.contains(other));
         }
 
-        public void testComparison() {
+        public void testComparison() throws DelaunayError {
                 DEdge edge = new DEdge(0, 0, 0, 5, 5, 0);
                 edge.getStartPoint().setGID(6);
                 edge.getEndPoint().setGID(4);
@@ -170,7 +171,7 @@ public class EdgePartTest extends TestCase {
                 assertTrue(other.compareTo(ep) == 1);
         }
 
-        public void testSort() {
+        public void testSort() throws DelaunayError {
                 DEdge edge = new DEdge(0, 0, 0, 5, 5, 0);
                 edge.getStartPoint().setGID(6);
                 edge.getEndPoint().setGID(4);
@@ -194,7 +195,7 @@ public class EdgePartTest extends TestCase {
                 }
         }
 
-        public void testEquality() {
+        public void testEquality() throws DelaunayError {
                 DEdge edge = new DEdge(0, 0, 0, 5, 5, 0);
                 edge.getStartPoint().setGID(6);
                 edge.getEndPoint().setGID(4);
