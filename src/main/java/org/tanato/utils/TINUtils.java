@@ -47,6 +47,9 @@ import org.jdelaunay.delaunay.DelaunayError;
  * @author ebocher
  */
 public class TINUtils {
+        
+        //The constructor of utility class must be kept hidden
+        private TINUtils(){}
 
         /**
          * Computes the contribution of a triangle .
@@ -140,13 +143,11 @@ public class TINUtils {
                                 pt = dTriangle.getOppositePoint(edge1);
                                 ridgeLine = new DEdge(edge1.getMiddle(), pt);
                         }
-                } else if (goToEdge2) {
-                        if (goToEdge3) {
-                                // the ridge crosses edge2 and edge3
-                                pt = dTriangle.getOppositePoint(edge1);
-                                ptRidge = dTriangle.getCounterSteepestIntersection(pt);
-                                ridgeLine = new DEdge(ptRidge, pt);
-                        }
+                } else if (goToEdge2 && goToEdge3) {
+                        // the ridge crosses edge2 and edge3
+                        pt = dTriangle.getOppositePoint(edge1);
+                        ptRidge = dTriangle.getCounterSteepestIntersection(pt);
+                        ridgeLine = new DEdge(ptRidge, pt);
                 }
                 return ridgeLine;
 
