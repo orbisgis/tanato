@@ -67,6 +67,10 @@ public class EdgePartTest extends TestCase {
                 assertEquals(ep.getGidRight(), 2);
                 ep.setGidRight(798);
                 assertEquals(ep.getGidRight(), 798);
+                ep.setStart(.4);
+                assertTrue(ep.getStart()==.4);
+                ep.setEnd(.99);
+                assertTrue(ep.getEnd()==.99);
         }
 
         /**
