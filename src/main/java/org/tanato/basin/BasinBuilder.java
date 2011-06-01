@@ -155,6 +155,7 @@ public class BasinBuilder {
 	/**
 	 * This method actually computes the basin from the informations given to build the BasinBuilder.
 	 * @throws DriverException
+         *      If we encounter a problem while handling a datasource.
 	 */
 	public final void computeBasin() throws DriverException {
 		try {
@@ -224,6 +225,7 @@ public class BasinBuilder {
 	 * Return the basin graph computed previously. The resulting geometry will be a collection
 	 * containing a MultiPolygon and a MultiLineString.
 	 * @return
+         *      The computed geometry
 	 */
 	public final Geometry getBasin(){
 		return gf.createGeometryCollection(new Geometry[] {basin, lines});
