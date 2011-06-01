@@ -54,6 +54,7 @@ public class TINUtils {
          * @param dTriangle
          * @return
          * @throws DelaunayError
+         *      if dEdge is not an edge of dTriangle.
          */
         public static float getProportion(DTriangle dTriangle, DEdge dEdge) throws DelaunayError {
                 double contribution = 0;
@@ -109,6 +110,7 @@ public class TINUtils {
          * @param dTriangle
          * @return
          * @throws DelaunayError
+         *      If dTriangle is malformed.
          */
         public static DEdge getRidgeLine(DTriangle dTriangle) throws DelaunayError {
                 DEdge[] edges = dTriangle.getEdges();
