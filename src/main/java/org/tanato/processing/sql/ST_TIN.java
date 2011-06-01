@@ -137,7 +137,7 @@ public class ST_TIN implements CustomQuery {
                         } else if (geom instanceof GeometryCollection) {
                                 addGeometryCollection(edges, (GeometryCollection) geom);
                         } else {
-                                addGeometry(edges, (Geometry) geom);
+                                addGeometry(edges, geom);
                         }
                 }
                 //We have filled the input of our mesh. We can close our source.
@@ -266,9 +266,12 @@ public class ST_TIN implements CustomQuery {
                 Coordinate[] coords = pts.getCoordinates();
                 for (int i = 0; i < coords.length; i++) {
                         try {
-                                points.add(new DPoint(coords[i].x, coords[i].y, coords[i].z));
+                                points.add(new DPoint(
+                                                coords[i].x, 
+                                                coords[i].y, 
+                                                Double.isNaN(coords[i].z) ? 0 : coords[i].z));
                         } catch (DelaunayError ex) {
-                                throw new ExecutionException("You're trying to craete a 3D point with a NaN value.\n", ex);
+                                throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", ex);
                         }
                 }
         }
