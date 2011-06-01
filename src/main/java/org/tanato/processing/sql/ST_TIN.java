@@ -324,7 +324,7 @@ public class ST_TIN implements CustomQuery {
         private void registerEdges(final String name, final DataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
-                File out = new File(acName + ".gdms");
+                File out = new File(dsf.getResultDir()+acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
@@ -366,7 +366,7 @@ public class ST_TIN implements CustomQuery {
         private void registerPoints(final String name, final DataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
-                File out = new File(acName + ".gdms");
+                File out = new File(dsf.getResultDir()+acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
@@ -399,7 +399,7 @@ public class ST_TIN implements CustomQuery {
         private void registerTriangles(final String name, final DataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
-                File out = new File(acName + ".gdms");
+                File out = new File(dsf.getResultDir()+acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
