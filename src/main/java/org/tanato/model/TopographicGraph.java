@@ -46,14 +46,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.NoSuchTableException;
 import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.indexes.rtree.DiskRTree;
 import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
 import org.gdms.data.types.GeometryConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -357,10 +355,8 @@ public class TopographicGraph extends HydroGraph {
                 }
         }
 
-        
-
         /**
-         * Build all indexes to improve the graph computing
+         * Build an index to improve the graph computing
          */
         public void createIndex(SpatialDataSourceDecorator sds, String field, IProgressMonitor pm) throws NoSuchTableException, IndexException {
                 if (!dsf.getIndexManager().isIndexed(sds.getName(), field)) {
@@ -369,7 +365,7 @@ public class TopographicGraph extends HydroGraph {
         }
 
         /**
-         * Get the interior point of triangle using an alphanumeric index
+         * Create a DTriangle according its gid attribute in the datasource of triangles.
          * @param field
          * @param gid
          * @return

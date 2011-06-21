@@ -48,7 +48,7 @@ import org.gdms.driver.DriverException;
 public abstract class HydroGraph {
 
         /**
-         * A method to check if the datasource contains two fields :  property and height. The field is used to tag the TIN feature
+         * A method to check if the datasource contains the two fields :  property and height. The field is used to tag the TIN feature
          * @param dataSource
          * @throws DriverException
          */
