@@ -31,8 +31,11 @@
 
 package org.jhydrocell.hydronetwork;
 
+import java.util.ArrayList;
+import java.util.List;
 import junit.framework.TestCase;
 import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.DPoint;
 import org.jdelaunay.delaunay.DelaunayError;
 
 /**
@@ -41,6 +44,48 @@ import org.jdelaunay.delaunay.DelaunayError;
  */
 public class TestHydroTinBuilder extends TestCase{
 
+        	/**
+	 * Generate an array of points
+	 * @return
+	 * @throws DelaunayError 
+	 */
+	public static ArrayList<DPoint> getPoints() throws DelaunayError {
+		ArrayList<DPoint> points = new ArrayList<DPoint>();
+		points.add(new DPoint(12, 10, 2));
+		points.add(new DPoint(120, 10, 20));
+		points.add(new DPoint(12, 100, 12));
+		points.add(new DPoint(102, 100, 1));
+		points.add(new DPoint(52, 100, 1));
+		points.add(new DPoint(10, 50, 5));
+		points.add(new DPoint(50, 50, 1));
+		points.add(new DPoint(150, 50, 11));
+		points.add(new DPoint(50, 150, 2));
+		points.add(new DPoint(5, 50, 3));
+		points.add(new DPoint(5, 5, 10));
+
+		return points;
+	}
+        
+	public void testEdgesMorphologicalClassification() throws DelaunayError {
+
+		HydroTINBuilder aMesh = new HydroTINBuilder();
+		aMesh.setPrecision(1.0e-3);
+		aMesh.setVerbose(true);
+		aMesh.setPoints(getPoints());
+		aMesh.processDelaunay();
+		
+		
+		
+		aMesh.morphologicalQualification();
+
+		List<DEdge> edges = aMesh.getEdges();
+
+		for (DEdge myEdge : edges) {
+
+			myEdge.getProperty();
+		}
+		
+	}
 
 	public void testMorphologicalQualification() throws DelaunayError {
 		DEdge ed = new DEdge(0,0,10,3,5,5);
