@@ -839,11 +839,11 @@ public class BasinBuilder {
                 ed.getEndPoint().setGID(gidEnd);
                 ed.setGID(gid);
 		if(!ed.isVertical()){
-			ratiostart = (ptStart.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
-			ratioend = (ptEnd.getX()-ed.getStart().getX())/(ed.getEnd().getX()-ed.getStart().getX());
+			ratiostart = (ptStart.getX()-ed.getStartPoint().getX())/(ed.getEndPoint().getX()-ed.getStartPoint().getX());
+			ratioend = (ptEnd.getX()-ed.getStartPoint().getX())/(ed.getEndPoint().getX()-ed.getStartPoint().getX());
 		} else {
-			ratiostart = (ptStart.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
-			ratioend = (ptEnd.getY()-ed.getStart().getY())/(ed.getEnd().getY()-ed.getStart().getY());
+			ratiostart = (ptStart.getY()-ed.getStartPoint().getY())/(ed.getEndPoint().getY()-ed.getStartPoint().getY());
+			ratioend = (ptEnd.getY()-ed.getStartPoint().getY())/(ed.getEndPoint().getY()-ed.getStartPoint().getY());
 		}
 		if(ratiostart<ratioend){
 			if(Math.abs(ratiostart)<Tools.EPSILON){
