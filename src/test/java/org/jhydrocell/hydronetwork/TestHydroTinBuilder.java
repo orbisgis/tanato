@@ -31,7 +31,7 @@
 
 package org.jhydrocell.hydronetwork;
 
-import org.jdelaunay.delaunay.BaseUtility;
+import junit.framework.TestCase;
 import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DelaunayError;
 
@@ -39,7 +39,7 @@ import org.jdelaunay.delaunay.DelaunayError;
  *
  * @author alexis
  */
-public class TestHydroTinBuilder extends BaseUtility{
+public class TestHydroTinBuilder extends TestCase{
 
 
 	public void testMorphologicalQualification() throws DelaunayError {

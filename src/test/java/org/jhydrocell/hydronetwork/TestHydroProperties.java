@@ -31,7 +31,7 @@
 
 package org.jhydrocell.hydronetwork;
 
-import org.jdelaunay.delaunay.BaseUtility;
+import junit.framework.TestCase;
 import org.jdelaunay.delaunay.DEdge;
 import org.jdelaunay.delaunay.DelaunayError;
 
@@ -39,7 +39,7 @@ import org.jdelaunay.delaunay.DelaunayError;
  *
  * @author alexis
  */
-public class TestHydroProperties extends BaseUtility {
+public class TestHydroProperties extends TestCase {
         
         public void testPropertiesOnEdge() throws DelaunayError {
                 DEdge ed = new DEdge(0,0,0,3,3,3);
