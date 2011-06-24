@@ -50,8 +50,8 @@ import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.Arguments;
 import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
-import org.jdelaunay.delaunay.DTriangle;
-import org.jdelaunay.delaunay.DelaunayError;
+import org.jdelaunay.delaunay.geometries.DTriangle;
+import org.jdelaunay.delaunay.error.DelaunayError;
 import org.tanato.factory.TINFeatureFactory;
 
 /**

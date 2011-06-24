@@ -52,7 +52,7 @@ import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.geometries.DPoint;
 import org.tanato.model.TINSchema;
 
 /**

@@ -59,8 +59,8 @@ import org.gdms.sql.customQuery.CustomQuery;
 import org.gdms.sql.customQuery.TableDefinition;
 import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.Arguments;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DelaunayError;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.error.DelaunayError;
 import org.orbisgis.progress.IProgressMonitor;
 import org.tanato.model.TINSchema;
 

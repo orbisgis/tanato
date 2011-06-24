@@ -43,7 +43,7 @@ import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
-import org.jdelaunay.delaunay.DPoint;
+import org.jdelaunay.delaunay.geometries.DPoint;
 
 /**
  * This class designs a custom query for GDMS. The goal of the query is to process

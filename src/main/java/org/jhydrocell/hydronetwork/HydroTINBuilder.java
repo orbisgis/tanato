@@ -33,13 +33,13 @@ package org.jhydrocell.hydronetwork;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jdelaunay.delaunay.DelaunayError;
-import org.jdelaunay.delaunay.DEdge;
+import org.jdelaunay.delaunay.error.DelaunayError;
+import org.jdelaunay.delaunay.geometries.DEdge;
 import org.jdelaunay.delaunay.ConstrainedMesh;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DTriangle;
-import org.jdelaunay.delaunay.Element;
-import org.jdelaunay.delaunay.Tools;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.geometries.DTriangle;
+import org.jdelaunay.delaunay.geometries.Element;
+import org.jdelaunay.delaunay.tools.Tools;
 
 /**
  * The representation of a hydrologic network, based on a constrained triangulation.

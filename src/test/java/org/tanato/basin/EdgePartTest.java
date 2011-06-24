@@ -40,9 +40,9 @@ package org.tanato.basin;
 import java.util.ArrayList;
 import java.util.Collections;
 import junit.framework.TestCase;
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.DelaunayError;
-import org.jdelaunay.delaunay.Tools;
+import org.jdelaunay.delaunay.geometries.DEdge;
+import org.jdelaunay.delaunay.error.DelaunayError;
+import org.jdelaunay.delaunay.tools.Tools;
 
 /**
  *

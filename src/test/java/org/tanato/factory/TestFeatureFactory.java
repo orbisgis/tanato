@@ -42,10 +42,10 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LinearRing;
 import junit.framework.TestCase;
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DTriangle;
-import org.jdelaunay.delaunay.DelaunayError;
+import org.jdelaunay.delaunay.geometries.DEdge;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.geometries.DTriangle;
+import org.jdelaunay.delaunay.error.DelaunayError;
 
 /**
  * Test the methods taht are in TINFeatureFactory

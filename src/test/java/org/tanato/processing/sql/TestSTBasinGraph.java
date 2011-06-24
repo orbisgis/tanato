@@ -50,7 +50,7 @@ import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.ObjectDriver;
-import org.jdelaunay.delaunay.Tools;
+import org.jdelaunay.delaunay.tools.Tools;
 
 /**
  * Tests on the ST_BasinGraph class.

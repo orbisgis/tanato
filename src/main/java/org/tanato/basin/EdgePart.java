@@ -37,8 +37,8 @@
  */
 package org.tanato.basin;
 
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.Tools;
+import org.jdelaunay.delaunay.geometries.DEdge;
+import org.jdelaunay.delaunay.tools.Tools;
 
 /**
  * EdgePart are used to process just the area that really interests us when computing

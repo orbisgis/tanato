@@ -39,10 +39,10 @@ package org.tanato.factory;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DTriangle;
-import org.jdelaunay.delaunay.DelaunayError;
+import org.jdelaunay.delaunay.geometries.DEdge;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.geometries.DTriangle;
+import org.jdelaunay.delaunay.error.DelaunayError;
 
 /**
  * A small factory used to create jDelaunay objects from JTS geometries.

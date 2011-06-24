@@ -34,9 +34,9 @@ package org.jhydrocell.hydronetwork;
 import java.util.ArrayList;
 import java.util.List;
 import junit.framework.TestCase;
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DelaunayError;
+import org.jdelaunay.delaunay.geometries.DEdge;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.error.DelaunayError;
 
 /**
  *

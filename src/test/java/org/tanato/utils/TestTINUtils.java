@@ -38,9 +38,9 @@
 package org.tanato.utils;
 
 import junit.framework.TestCase;
-import org.jdelaunay.delaunay.DEdge;
-import org.jdelaunay.delaunay.DPoint;
-import org.jdelaunay.delaunay.DTriangle;
+import org.jdelaunay.delaunay.geometries.DEdge;
+import org.jdelaunay.delaunay.geometries.DPoint;
+import org.jdelaunay.delaunay.geometries.DTriangle;
 
 /**
  *
