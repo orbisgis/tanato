@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.tanato</groupId>
   <artifactId>tanato</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.2</version>
   <name>tanato</name>
   <description>Tool for hydrological modelling</description>
   <properties>
