@@ -72,10 +72,10 @@ import org.tanato.model.TINSchema;
  * a droplet path on an existing triangularization.
  *
  *
- * @author kwyhr
+ * @author kwyhr, alexis
  */
 public abstract class ST_DropletAbstract extends AbstractTableFunction {
-		DiskBufferDriver writer = null;
+        DiskBufferDriver writer = null;
 		
         @Override
         public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
@@ -109,7 +109,7 @@ public abstract class ST_DropletAbstract extends AbstractTableFunction {
 
                         dropletFollower.closeData();
                         writer.writingFinished();
-
+                        writer.start();
                         pm.endTask();
 
                         return writer;
@@ -119,6 +119,11 @@ public abstract class ST_DropletAbstract extends AbstractTableFunction {
                         Logger.getLogger(ST_DropletLine.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 return null;
+        }
+
+        @Override
+        public void workFinished() throws DriverException {
+                writer.stop();
         }
 
         @Override
