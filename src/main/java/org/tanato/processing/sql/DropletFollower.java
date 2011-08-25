@@ -40,26 +40,22 @@ package org.tanato.processing.sql;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.PrecisionModel;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.DefaultAlphaQuery;
 import org.gdms.data.indexes.IndexException;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
+import org.gdms.sql.function.FunctionException;
 import org.jdelaunay.delaunay.geometries.DEdge;
 import org.jdelaunay.delaunay.geometries.DPoint;
 import org.jdelaunay.delaunay.geometries.DTriangle;
@@ -67,7 +63,7 @@ import org.jdelaunay.delaunay.error.DelaunayError;
 import org.jdelaunay.delaunay.geometries.Element;
 import org.jdelaunay.delaunay.tools.Tools;
 import org.jhydrocell.hydronetwork.HydroProperties;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.factory.TINFeatureFactory;
 import org.tanato.model.TINSchema;
 
@@ -85,15 +81,15 @@ import org.tanato.model.TINSchema;
  *
  *
  *
- * @author kwyhr
+ * @author kwyhr,alexis
  */
 public class DropletFollower {
 
         private static final Logger logger = Logger.getLogger(DropletFollower.class.getName());
         // Table informations to navigate
-        private SpatialDataSourceDecorator sdsPoints = null;
-        private SpatialDataSourceDecorator sdsEdges = null;
-        private SpatialDataSourceDecorator sdsTriangles = null;
+        private DataSet sdsPoints = null;
+        private DataSet sdsEdges = null;
+        private DataSet sdsTriangles = null;
         // List of reached points
         private ArrayList<DPoint> theList = null;
         // Count each times we stay on the same point and stop when max is reached
@@ -112,15 +108,17 @@ public class DropletFollower {
         private int autorizedProperties;
         private int endingProperties;
         private boolean requieredAdditionalFields = false;
+        private SQLDataSourceFactory dsf;
 
-        public DropletFollower(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public DropletFollower(SQLDataSourceFactory dsft, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
                 if (tables.length < 4) {
                         // There MUST be at least 3 tables
-                        throw new ExecutionException("needs points, edges , triangles and start points.");
+                        throw new FunctionException("needs points, edges , triangles and start points.");
                 } else if (values.length > 2) {
                         // There MUST be at least 1 value
-                        throw new ExecutionException("number of parameters exceeded.");
+                        throw new FunctionException("number of parameters exceeded.");
                 } else {
+                        dsf = dsft;
                         autorizedProperties = -1;
                         endingProperties = 0;
                         theList = null;
@@ -146,7 +144,7 @@ public class DropletFollower {
                 }
         }
 
-        public ArrayList<DPoint> getPath(Geometry geom) throws ExecutionException, DriverException, DelaunayError {
+        public ArrayList<DPoint> getPath(Geometry geom) throws FunctionException, DriverException, DelaunayError {
                 Geometry testPoint = getInitiaPoint(geom);
                 // process path
                 dropletFollows(testPoint);
@@ -163,22 +161,20 @@ public class DropletFollower {
          * @param aTable
          * @return
          * @throws DriverException
-         * @throws ExecutionException
+         * @throws FunctionException
          */
-        private SpatialDataSourceDecorator populateDecorator(DataSourceFactory dsf, IProgressMonitor pm, DataSource aTable) throws DriverException, ExecutionException {
+        private DataSet populateDecorator(SQLDataSourceFactory dsf, ProgressMonitor pm, DataSet aSourceGenerator) throws DriverException, FunctionException {
                 // Open it
-                SpatialDataSourceDecorator aSourceGenerator = new SpatialDataSourceDecorator(aTable);
-                aSourceGenerator.open();
 
                 // Generate index on GID
                 try {
-                        if (!dsf.getIndexManager().isIndexed(aTable.getName(), TINSchema.GID)) {
-                                dsf.getIndexManager().buildIndex(aTable.getName(), TINSchema.GID, pm);
+                        if (!dsf.getIndexManager().isIndexed(aSourceGenerator, TINSchema.GID)) {
+                                dsf.getIndexManager().buildIndex(aSourceGenerator, TINSchema.GID, pm);
                         }
                 } catch (IndexException ex) {
-                        throw new ExecutionException("Unable to create index.", ex);
+                        throw new FunctionException("Unable to create index.", ex);
                 } catch (NoSuchTableException ex) {
-                        throw new ExecutionException("Unable to create index.", ex);
+                        throw new FunctionException("Unable to create index.", ex);
                 }
                 return aSourceGenerator;
         }
@@ -188,10 +184,10 @@ public class DropletFollower {
          * @param dsf
          * @param pm
          * @param tables
-         * @throws ExecutionException
+         * @throws FunctionException
          * @throws DriverException
          */
-        private void populateData(DataSourceFactory dsf, IProgressMonitor pm, DataSource[] tables) throws DriverException, ExecutionException {
+        private void populateData(SQLDataSourceFactory dsf, ProgressMonitor pm, DataSet[] tables) throws DriverException, FunctionException {
                 sdsPoints = populateDecorator(dsf, pm, tables[0]);
                 sdsEdges = populateDecorator(dsf, pm, tables[1]);
                 sdsTriangles = populateDecorator(dsf, pm, tables[2]);
@@ -201,7 +197,7 @@ public class DropletFollower {
          * close decorator
          * @param aDecorator
          */
-        private void closeDecorator(SpatialDataSourceDecorator aDecorator) {
+        private void closeDecorator(DataSource aDecorator) {
                 if (aDecorator != null) {
                         try {
                                 aDecorator.close();
@@ -216,33 +212,25 @@ public class DropletFollower {
          * @throws DriverException
          */
         public void closeData() {
-                closeDecorator(this.sdsPoints);
-                this.sdsPoints = null;
-
-                closeDecorator(this.sdsEdges);
-                this.sdsEdges = null;
-
-                closeDecorator(this.sdsTriangles);
-                this.sdsTriangles = null;
         }
 
         /**
          * Get initial point and force it to add a z
          * @param values
          * @return
-         * @throws ExecutionException
+         * @throws FunctionException
          */
-        private Geometry getInitiaPoint(Geometry testPoint) throws ExecutionException {
+        private Geometry getInitiaPoint(Geometry testPoint) throws FunctionException {
                 if (!testPoint.isValid()) {
-                        throw new ExecutionException("invalid point geometry.");
+                        throw new FunctionException("invalid point geometry.");
                 } else if (!testPoint.getGeometryType().equals("Point")) {
-                        throw new ExecutionException("invalid point geometry.");
+                        throw new FunctionException("invalid point geometry.");
                 } else {
                         Coordinate coord = testPoint.getCoordinate();
 
                         if (Double.isNaN(testPoint.getCoordinate().z)) {
                                 coord.z = 0;
-                                testPoint = testPoint.getFactory().createPoint(coord);
+                                return testPoint.getFactory().createPoint(coord);
                         }
                 }
                 return testPoint;
@@ -258,13 +246,14 @@ public class DropletFollower {
          * @return
          * @throws DriverException
          */
-        private long getElementIndex(SpatialDataSourceDecorator sds, int theGID) throws DriverException {
+        private long getElementIndex(DataSet sds, int theGID) throws DriverException {
                 if (sds == null) {
                         // sds not set
                         return -1;
                 } else {
-                        DefaultAlphaQuery defaultAlphaQuery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(theGID));
-                        Iterator<Integer> queryResult = sds.queryIndex(defaultAlphaQuery);
+                        DefaultAlphaQuery defaultAlphaQuery = 
+                                new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(theGID));
+                        Iterator<Integer> queryResult = sds.queryIndex(dsf,defaultAlphaQuery);
 
                         if (queryResult == null) {
                                 return -1;
@@ -428,20 +417,20 @@ public class DropletFollower {
                 }
                 long p2Index = getPointIndex(pGID2);
                 point2.setGID(pGID2);
-
+                int geomIndex = MetadataUtilities.getGeometryFieldIndex(sdsPoints.getMetadata()); 
                 // Set points location
                 Coordinate coord;
-                coord = sdsPoints.getGeometry(p0Index).getCoordinate();
+                coord = sdsPoints.getGeometry(p0Index, geomIndex).getCoordinate();
                 point0.setX(coord.x);
                 point0.setY(coord.y);
                 point0.setZ(coord.z);
 
-                coord = sdsPoints.getGeometry(p1Index).getCoordinate();
+                coord = sdsPoints.getGeometry(p1Index, geomIndex).getCoordinate();
                 point1.setX(coord.x);
                 point1.setY(coord.y);
                 point1.setZ(coord.z);
 
-                coord = sdsPoints.getGeometry(p2Index).getCoordinate();
+                coord = sdsPoints.getGeometry(p2Index, geomIndex).getCoordinate();
                 point2.setX(coord.x);
                 point2.setY(coord.y);
                 point2.setZ(coord.z);
@@ -604,6 +593,7 @@ public class DropletFollower {
                 try {
                         countTriangles = sdsTriangles.getRowCount();
                         DTriangle possibleTriangle = null;
+                        int geomIndex = MetadataUtilities.getGeometryFieldIndex(sdsTriangles.getMetadata()); 
 
                         // Process triangles until we find it
                         Geometry geom = null;
@@ -612,7 +602,7 @@ public class DropletFollower {
 
                         while ((i < countTriangles) && (found == null)) {
                                 // get geometry
-                                geom = sdsTriangles.getGeometry(i);
+                                geom = sdsTriangles.getGeometry(i, geomIndex);
 
                                 if (geom instanceof MultiPolygon) {
                                         // we get a MultiPlolygon -> az triangle
@@ -1465,15 +1455,16 @@ public class DropletFollower {
          * @param tables
          * @throws DriverException
          */
-        private void checkMetadata(DataSource[] tables) throws DriverException {
+        private void checkMetadata(DataSet[] tables) throws DriverException {
 
                 for (int i = 0; i
                         < tables.length - 1; i++) {
-                        DataSource dataSource = tables[i];
-                        Metadata md = dataSource.getMetadata();
+                        DataSet ds = tables[i];
+                        Metadata md = ds.getMetadata();
 
                         if ((md.getFieldIndex(TINSchema.PROPERTY_FIELD) == -1) || (md.getFieldIndex(TINSchema.HEIGHT_FIELD) == -1)) {
-                                throw new IllegalArgumentException("The table " + dataSource.getName() + " must contains two fields  : property and height");
+                                String name = ds instanceof DataSource ? ((DataSource) ds).getName() : "";
+                                throw new IllegalArgumentException("The table " + name + " must contains two fields  : property and height");
                         }
 
                 }

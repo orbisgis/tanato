@@ -51,20 +51,19 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import junit.framework.TestCase;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.DefaultAlphaQuery;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.generic.GenericObjectDriver;
-import org.gdms.sql.customQuery.GeometryTableDefinition;
+import org.gdms.driver.memory.MemoryDataSetDriver;
 import org.gdms.sql.function.Argument;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.sql.function.spatial.geometry.edit.ST_AddZ;
@@ -93,7 +92,7 @@ public class Tanato2SQLTest extends TestCase {
         protected Geometry jTSLineString3D;
         protected GeometryCollection jTS3DCollection;
         private static final GeometryFactory gf = new GeometryFactory();
-        private DataSourceFactory dsf;
+        private SQLDataSourceFactory dsf;
 
         static {
                 SMALL_CHEZINE_POINTS = new ArrayList<Point>();
@@ -115,7 +114,7 @@ public class Tanato2SQLTest extends TestCase {
                 FileUtils.deleteDir(backUpFile);
                 backUpFile.mkdir();
                 //Create the datasourcefactory that uses the folder
-                dsf = new DataSourceFactory("target/backup", "target/backup");
+                dsf = new SQLDataSourceFactory("target/backup", "target/backup");
 
                 //Create some geometries
                 WKTReader wktr = new WKTReader();
@@ -188,7 +187,7 @@ public class Tanato2SQLTest extends TestCase {
                                 new Coordinate(5, 1, 0)});
                 Value first = ValueFactory.createValue(edge);
                 Value second = ValueFactory.createValue(1.0d);
-                Value res = fun.evaluate(new DataSourceFactory(), new Value[]{first, second});
+                Value res = fun.evaluate(new SQLDataSourceFactory(), new Value[]{first, second});
                 Geometry geom = res.getAsGeometry();
                 assertTrue(geom.equals(gf.createLineString(new Coordinate[]{
                                 new Coordinate(1, 0, 0),
@@ -197,7 +196,6 @@ public class Tanato2SQLTest extends TestCase {
 
         public void testST_CreateHydroProperies() throws Exception {
                 ST_CreateHydroProperties fun = new ST_CreateHydroProperties();
-                assertNull(fun.getAggregateResult());
                 assertFalse(fun.isAggregate());
                 Value[] values = new Value[]{};
                 try {
@@ -263,12 +261,6 @@ public class Tanato2SQLTest extends TestCase {
          */
         public void testST_TIN() throws Exception {
                 ST_TIN query = new ST_TIN();
-                assertNull(query.getMetadata(new Metadata[]{}));
-                assertTrue(query.getTablesDefinitions()[0] instanceof GeometryTableDefinition);
-                assertTrue(query.getFunctionArguments()[0].getArgumentCount() == 0);
-                assertTrue(query.getFunctionArguments()[1].getArgumentCount() == 2);
-                assertTrue(query.getFunctionArguments()[1].getArgument(0) == Argument.BOOLEAN);
-                assertTrue(query.getFunctionArguments()[1].getArgument(1) == Argument.BOOLEAN);
                 //The original input contains exactly 9 points and 7 constrained edges.
                 DataSource in = dsf.getDataSource(new File("src/test/resources/data/source/small_data/small_courbes_chezine.shp"));
                 //Output tables will be stored in out_points, out_edges and out_triangles
@@ -277,12 +269,11 @@ public class Tanato2SQLTest extends TestCase {
                         ValueFactory.createValue(true)
                 };
                 query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
-                DataSource ds = dsf.getDataSource(in.getName() + "_points");
-                assertNotNull(ds);
-                ds.open();
+                DataSource sds = dsf.getDataSource(in.getName() + "_points");
+                assertNotNull(sds);
+                sds.open();
                 //There have been two insertions, because two triangles were flat.
-                assertTrue(ds.getRowCount() == 11);
-                SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
+                assertTrue(sds.getRowCount() == 11);
                 for (Point pt : SMALL_CHEZINE_POINTS) {
                         DefaultAlphaQuery daq = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt));
                         Iterator<Integer> it = sds.queryIndex(daq);
@@ -312,12 +303,12 @@ public class Tanato2SQLTest extends TestCase {
                 it2 = sds.queryIndex(daq2);
                 assertTrue(it.hasNext() || it2.hasNext());
 
-                ds.close();
-                ds = dsf.getDataSource(in.getName() + "_triangles");
-                assertNotNull(ds);
-                ds.open();
-                assertTrue(ds.getRowCount() == 13);
-                ds.close();
+                sds.close();
+                sds = dsf.getDataSource(in.getName() + "_triangles");
+                assertNotNull(sds);
+                sds.open();
+                assertTrue(sds.getRowCount() == 13);
+                sds.close();
 
         }
 
@@ -339,17 +330,16 @@ public class Tanato2SQLTest extends TestCase {
                         ValueFactory.createValue(false)
                 };
                 query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
-                DataSource ds = dsf.getDataSource(in.getName() + "_points");
-                assertNotNull(ds);
-                ds.open();
-                assertTrue(ds.getRowCount() == 9);
-                SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
+                DataSource sds = dsf.getDataSource(in.getName() + "_points");
+                assertNotNull(sds);
+                sds.open();
+                assertTrue(sds.getRowCount() == 9);
                 for (Point pt : SMALL_CHEZINE_POINTS) {
                         DefaultAlphaQuery daq = new DefaultAlphaQuery("the_geom", ValueFactory.createValue(pt));
                         Iterator<Integer> it = sds.queryIndex(daq);
                         assertTrue(it.hasNext());
                 }
-                ds.close();
+                sds.close();
                 //We treat the triangles now
                 List<DTriangle> expectedTriangles = new ArrayList<DTriangle>();
                 expectedTriangles.add(new DTriangle(
@@ -389,11 +379,10 @@ public class Tanato2SQLTest extends TestCase {
                         new DEdge(213, 273, 20, 217, 184, 10),
                         new DEdge(217, 184, 10, 136, 262, 20)));
 
-                ds = dsf.getDataSource(in.getName() + "_triangles");
-                assertNotNull(ds);
-                ds.open();
-                assertTrue(ds.getRowCount() == 9);
-                sds = new SpatialDataSourceDecorator(ds);
+                sds = dsf.getDataSource(in.getName() + "_triangles");
+                assertNotNull(sds);
+                sds.open();
+                assertTrue(sds.getRowCount() == 9);
                 for (DTriangle dTriangle : expectedTriangles) {
                         Polygon geom = gf.createPolygon(gf.createLinearRing(
                                 new Coordinate[]{
@@ -406,7 +395,7 @@ public class Tanato2SQLTest extends TestCase {
                         Iterator<Integer> it = sds.queryIndex(daq);
                         assertTrue(it.hasNext());
                 }
-                ds.close();
+                sds.close();
 
         }
 
@@ -418,8 +407,6 @@ public class Tanato2SQLTest extends TestCase {
 
         public void testST_TriangleSlope() throws Exception {
                 ST_TriangleSlope fun = new ST_TriangleSlope();
-                assertNull(fun.getAggregateResult());
-                assertFalse(fun.isAggregate());
                 assertTrue(Type.DOUBLE == fun.getType(new Type[]{}).getTypeCode());
                 Geometry geom = gf.createLinearRing(new Coordinate[]{
                                 new Coordinate(0, 0, 0),
@@ -447,8 +434,6 @@ public class Tanato2SQLTest extends TestCase {
 
         public void testST_TINSlopeDirection() throws Exception {
                 ST_TINSlopeDirection fun = new ST_TINSlopeDirection();
-                assertNull(fun.getAggregateResult());
-                assertFalse(fun.isAggregate());
                 assertTrue(Type.GEOMETRY == fun.getType(new Type[]{}).getTypeCode());
                 Geometry geom = gf.createLinearRing(new Coordinate[]{
                                 new Coordinate(0, 0, 0),
@@ -468,8 +453,6 @@ public class Tanato2SQLTest extends TestCase {
 
         public void testST_GetHydroProperty() throws Exception {
                 ST_GetHydroProperty fun = new ST_GetHydroProperty();
-                assertFalse(fun.isAggregate());
-                assertNull(fun.getAggregateResult());
                 assertTrue(Type.STRING == fun.getType(new Type[]{}).getTypeCode());
                 Value out = fun.evaluate(null, new Value[]{ValueFactory.createValue(HydroProperties.BORDER)});
                 assertTrue(out.getAsString().contentEquals(HydroProperties.toString(HydroProperties.BORDER)));
@@ -487,7 +470,7 @@ public class Tanato2SQLTest extends TestCase {
                 DefaultMetadata metadata = new DefaultMetadata();
                 metadata.addField("the_geom", TypeFactory.createType(Type.GEOMETRY));
 
-                GenericObjectDriver driver = new GenericObjectDriver(metadata);
+                MemoryDataSetDriver driver = new MemoryDataSetDriver(metadata);
 
                 WKTReader wKTReader = new WKTReader();
                 //This target point start on the triangle gid number 5
@@ -497,15 +480,12 @@ public class Tanato2SQLTest extends TestCase {
                 driver.addValues(new Value[]{ValueFactory.createValue(targetPoint)});
 
 
-                ObjectDriver result = sT_DropletLine.evaluate(dsf, new DataSource[]{dsPoints, dsEdges, dsTriangles, dsf.getDataSource(driver)}, new Value[]{}, new NullProgressMonitor());
+                DataSet sds = sT_DropletLine.evaluate(dsf, new DataSet[]{dsPoints, dsEdges, dsTriangles, driver}, new Value[]{}, new NullProgressMonitor());
 
-                assertTrue(result != null);
-                SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(dsf.getDataSource(result));
-                sds.open();
+                assertTrue(sds != null);
                 assertTrue(sds.getRowCount() > 0);
-                Geometry geom = sds.getGeometry(0);
+                Geometry geom = sds.getGeometry(0, MetadataUtilities.getGeometryFieldIndex(sds.getMetadata()));
                 assertTrue(geom.getDimension() == 1);
-                sds.close();
                 //TODO : Check if the result geometry intersects excepted TIN features
                 Coordinate[] coords = geom.getCoordinates();
 
@@ -530,22 +510,19 @@ public class Tanato2SQLTest extends TestCase {
                 DefaultMetadata metadata = new DefaultMetadata();
                 metadata.addField("the_geom", TypeFactory.createType(Type.GEOMETRY));
 
-                GenericObjectDriver driver = new GenericObjectDriver(metadata);
+                MemoryDataSetDriver driver = new MemoryDataSetDriver(metadata);
                 WKTReader wKTReader = new WKTReader();
 
                 //This target point starts on a flat and thin triangle
                 Geometry targetPoint = wKTReader.read("POINT (343725.4125771761 6698264.727716073)");
                 driver.addValues(new Value[]{ValueFactory.createValue(targetPoint)});
 
-                ObjectDriver result = sT_DropletLine.evaluate(dsf, new DataSource[]{dsPoints, dsEdges, dsTriangles, dsf.getDataSource(driver)}, new Value[]{}, new NullProgressMonitor());
+                DataSet sds = sT_DropletLine.evaluate(dsf, new DataSet[]{dsPoints, dsEdges, dsTriangles, driver}, new Value[]{}, new NullProgressMonitor());
 
-                assertTrue(result != null);
-                SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(dsf.getDataSource(result));
-                sds.open();
+                assertTrue(sds != null);
                 assertTrue(sds.getRowCount() > 0);
-                Geometry geom = sds.getGeometry(0);
+                Geometry geom = sds.getGeometry(0, MetadataUtilities.getGeometryFieldIndex(sds.getMetadata()));
                 assertTrue(geom.getDimension() == 1);
-                sds.close();
         }
 
         /**

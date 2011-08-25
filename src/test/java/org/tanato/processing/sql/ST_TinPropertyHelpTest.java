@@ -7,12 +7,12 @@ package org.tanato.processing.sql;
 import java.lang.reflect.Field;
 import org.gdms.data.DataSource;
 import junit.framework.TestCase;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.schema.Metadata;
 import org.gdms.data.values.Value;
-import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.DataSet;
 import org.jhydrocell.hydronetwork.HydroProperties;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import org.orbisgis.progress.NullProgressMonitor;
 
 /**
@@ -26,13 +26,13 @@ public class ST_TinPropertyHelpTest extends TestCase {
                 ST_TINPropertyHelp function2 = new ST_TINPropertyHelp();
                 assertNull(function2.getMetadata(new Metadata[]{}));
                 // Generate parameters
-                DataSourceFactory dsf = null;
+                SQLDataSourceFactory dsf = null;
                 DataSource[] tables = null;
                 Value[] values = null;
-                IProgressMonitor pm = new NullProgressMonitor();
+                ProgressMonitor pm = new NullProgressMonitor();
 
                 // Call function
-                ObjectDriver drvr = function2.evaluate(dsf, tables, values, pm);
+                DataSet drvr = function2.evaluate(dsf, tables, values, pm);
                 
                 Field[] fields = HydroProperties.class.getFields();
                 long intCount = 0;

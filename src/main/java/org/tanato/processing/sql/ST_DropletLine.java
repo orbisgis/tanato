@@ -44,9 +44,11 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.util.ArrayList;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
-import org.gdms.data.types.GeometryConstraint;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.types.Constraint;
+import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -76,14 +78,15 @@ public class ST_DropletLine extends ST_DropletAbstract {
 
         @Override
         public final String getSqlOrder() {
-                return "SELECT ST_DropletLine([autorizedProperties [, endingproperties]]) FROM out_point, out_edges, out_triangles, startPoints";
+                return "SELECT * FROM ST_DropletLine([autorizedProperties [, endingproperties],] out_point, out_edges, out_triangles, startPoints)";
         }
 
 		@Override
         public Metadata getMetadata(Metadata[] tables) throws DriverException {
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.LINESTRING)), TypeFactory.createType(Type.INT)},
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, 
+                                ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,
+                                GeometryTypeConstraint.LINESTRING)), TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
                 return md;
         }

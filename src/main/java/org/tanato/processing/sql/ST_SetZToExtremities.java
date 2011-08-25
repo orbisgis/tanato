@@ -37,27 +37,28 @@
  */
 package org.tanato.processing.sql;
 
-import org.gdms.data.DataSourceFactory;
 import org.gdms.data.types.Constraint;
-import org.gdms.data.types.DimensionConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
 import org.gdms.sql.function.FunctionException;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiLineString;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.types.ConstraintFactory;
 import org.gdms.geometryUtils.GeometryEdit;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 
-public class ST_SetZToExtremities implements Function {
+public class ST_SetZToExtremities extends AbstractScalarFunction {
 
 	@Override
-        public final Value evaluate(DataSourceFactory dsf, Value[] args) throws FunctionException {
+        public final Value evaluate(SQLDataSourceFactory dsf, Value[] args) throws FunctionException {
 
                 Geometry geom = args[0].getAsGeometry();
                 double startZ = args[1].getAsDouble();
@@ -67,11 +68,11 @@ public class ST_SetZToExtremities implements Function {
                         LineString[] lines = new LineString[nbGeom];
                         for (int i = 0; i < nbGeom; i++) {
                                 Geometry subGeom = geom.getGeometryN(i);
-                                lines[i] = (LineString) GeometryEdit.force_3DStartEnd(subGeom, startZ, endZ);
+                                lines[i] = (LineString) GeometryEdit.force3DStartEnd(subGeom, startZ, endZ);
                         }
 
                 } else if (geom instanceof LineString) {
-                        geom = GeometryEdit.force_3DStartEnd(geom, startZ, endZ);
+                        geom = GeometryEdit.force3DStartEnd(geom, startZ, endZ);
                 }
 
 
@@ -83,13 +84,6 @@ public class ST_SetZToExtremities implements Function {
         public final String getDescription() {
                 return "This function modify (or set) the z component of each vertex extremities lines"
                         + " given by a two fields.";
-        }
-
-	@Override
-        public final Arguments[] getFunctionArguments() {
-
-                return new Arguments[]{new Arguments(Argument.GEOMETRY,
-                                Argument.NUMERIC, Argument.NUMERIC)};
         }
 
 	@Override
@@ -107,22 +101,24 @@ public class ST_SetZToExtremities implements Function {
 
                 Type type = argsTypes[0];
                 Constraint[] constrs = type.getConstraints(Constraint.ALL
-                        & ~Constraint.GEOMETRY_DIMENSION);
+                        & ~Constraint.DIMENSION_2D_GEOMETRY);
                 Constraint[] result = new Constraint[constrs.length + 1];
                 System.arraycopy(constrs, 0, result, 0, constrs.length);
-                result[result.length - 1] = new DimensionConstraint(3);
+                result[result.length - 1] = ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY);
 
                 return TypeFactory.createType(type.getTypeCode(), result);
 
         }
 
-	@Override
-        public final boolean isAggregate() {
-                return false;
+        @Override
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new BasicFunctionSignature(TypeFactory.createType(Type.LINESTRING,
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
+                        ScalarArgument.GEOMETRY,
+                        ScalarArgument.DOUBLE,
+                        ScalarArgument.DOUBLE
+                        )};
         }
-
-	@Override
-        public final Value getAggregateResult() {
-                return null;
-        }
+        
 }

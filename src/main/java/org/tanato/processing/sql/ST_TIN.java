@@ -54,32 +54,32 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.gdms.data.AlreadyClosedException;
+import org.gdms.sql.function.FunctionException;
 import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
-import org.gdms.data.types.DimensionConstraint;
-import org.gdms.data.types.GeometryConstraint;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
+import org.gdms.data.types.Constraint;
+import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
 import org.gdms.driver.gdms.GdmsWriter;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.executor.AbstractExecutorFunction;
+import org.gdms.sql.function.executor.ExecutorFunctionSignature;
 import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.geometries.DEdge;
 import org.jdelaunay.delaunay.geometries.DPoint;
 import org.jdelaunay.delaunay.geometries.DTriangle;
 import org.jdelaunay.delaunay.error.DelaunayError;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.model.TINSchema;
 
 /**
@@ -89,22 +89,26 @@ import org.tanato.model.TINSchema;
  * 
  * @author alexis
  */
-public class ST_TIN implements CustomQuery {
+public class ST_TIN extends AbstractExecutorFunction {
 
         @Override
-        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
-                Value[] values, IProgressMonitor pm) throws ExecutionException {
-                DataSource ds = tables[0];
+        public final void evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
+                Value[] values, ProgressMonitor pm) throws FunctionException {
                 //We need to read our source.
-                SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
+                DataSet sds = tables[0];
                 long count = 0;
 
                 //To simplify the use of st_tin the user can execute only st_tin() without any arguments.
                 //Consequently some parameters are filled by default.
                 boolean inter = true;
                 boolean flat = false;
-                String name = ds.getName();
-
+                String name = sds instanceof DataSource ? ((DataSource) sds).getName() : dsf.getUID();
+                int geomIndex = -1;
+                try{
+                        geomIndex = MetadataUtilities.getSpatialFieldIndex(sds.getMetadata());
+                } catch (DriverException d){
+                        throw new FunctionException("Can't find a geometry index", d);
+                }
                 if (values.length != 0) {
                         //We retrieve the values to know how we are supposed to proceed.
                         inter = values[0].getAsBoolean();
@@ -114,10 +118,9 @@ public class ST_TIN implements CustomQuery {
 
                 //We open the source
                 try {
-                        sds.open();
                         count = sds.getRowCount();
                 } catch (DriverException ex) {
-                        throw new ExecutionException("There has been an error while opening the table, or counting its lines.\n", ex);
+                        throw new FunctionException("There has been an error while opening the table, or counting its lines.\n", ex);
                 }
                 Geometry geom = null;
                 //We prepare our input structures.
@@ -126,9 +129,9 @@ public class ST_TIN implements CustomQuery {
                 //We fill the input structures with our table.
                 for (long i = 0; i < count; i++) {
                         try {
-                                geom = sds.getGeometry(i);
+                                geom = sds.getGeometry(i,geomIndex);
                         } catch (DriverException ex) {
-                                throw new ExecutionException("Can't retrieve the  geometry.\n", ex);
+                                throw new FunctionException("Can't retrieve the  geometry.\n", ex);
                         }
                         if (geom instanceof Point) {
                                 addPoint(pointsToAdd, (Point) geom);
@@ -141,13 +144,6 @@ public class ST_TIN implements CustomQuery {
                         }
                 }
                 //We have filled the input of our mesh. We can close our source.
-                try {
-                        sds.close();
-                } catch (DriverException ex) {
-                        throw new ExecutionException("The driver failed during the closure.\n", ex);
-                } catch (AlreadyClosedException ex) {
-                        throw new ExecutionException("The source seems to have been closed externally\n", ex);
-                }
                 Collections.sort(edges);
 
                 ConstrainedMesh mesh = new ConstrainedMesh();
@@ -167,7 +163,7 @@ public class ST_TIN implements CustomQuery {
                                 mesh.removeFlatTriangles();
                         }
                 } catch (DelaunayError ex) {
-                        throw new ExecutionException("Generation of the mesh failed.\n", ex);
+                        throw new FunctionException("Generation of the mesh failed.\n", ex);
                 }
                 //And we write and register our results.
                 String edgesOut = name + "_edges";
@@ -176,25 +172,24 @@ public class ST_TIN implements CustomQuery {
                 try {
                         registerEdges(edgesOut, dsf, mesh);
                 } catch (IOException ex) {
-                        throw new ExecutionException("Failed to write the file containing the edges.\n", ex);
+                        throw new FunctionException("Failed to write the file containing the edges.\n", ex);
                 } catch (DriverException ex) {
-                        throw new ExecutionException("Driver failure while saving the edges.\n", ex);
+                        throw new FunctionException("Driver failure while saving the edges.\n", ex);
                 }
                 try {
                         registerPoints(pointsOut, dsf, mesh);
                 } catch (IOException ex) {
-                        throw new ExecutionException("Failed to write the file containing the points.\n", ex);
+                        throw new FunctionException("Failed to write the file containing the points.\n", ex);
                 } catch (DriverException ex) {
-                        throw new ExecutionException("Driver failure while saving the points.\n", ex);
+                        throw new FunctionException("Driver failure while saving the points.\n", ex);
                 }
                 try {
                         registerTriangles(trianglesOut, dsf, mesh);
                 } catch (IOException ex) {
-                        throw new ExecutionException("Failed to write the file containing the triangles.\n", ex);
+                        throw new FunctionException("Failed to write the file containing the triangles.\n", ex);
                 } catch (DriverException ex) {
-                        throw new ExecutionException("Driver failure while saving the triangles.\n", ex);
+                        throw new FunctionException("Driver failure while saving the triangles.\n", ex);
                 }
-                return null;
         }
 
         @Override
@@ -212,46 +207,33 @@ public class ST_TIN implements CustomQuery {
                 return "SELECT ST_TIN(false, true, tinName) FROM source_table;";
         }
 
-        @Override
-        public final Metadata getMetadata(Metadata[] tables) throws DriverException {
-                return null;
-        }
 
         /**
-         * The tables we need after the clause FROM in the query.
+         * Retrieve the the signature of this function. We need 0 or 2 arguments<br/>
+         *<ul><li>
+         * BOOLEAN : Flat triangles removal or not.</li>
+         * <li>BOOLEAN : Intersection processing </li></ul>
          * @return
          */
         @Override
-        public final TableDefinition[] getTablesDefinitions() {
-                return new TableDefinition[]{TableDefinition.GEOMETRY};
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new ExecutorFunctionSignature(),
+                        new ExecutorFunctionSignature(ScalarArgument.BOOLEAN, ScalarArgument.BOOLEAN)};
         }
-
-        /**
-         * Retrieve the arguments this function can take. We always need three arguments<br/><br/>
-         *
-         * BOOLEAN : Flat triangles removal or not.<br/>
-         * BOOLEAN : Intersection processing <br/>
-         * STRING : Prefixe name of the TIN table<br/>
-         * @return
-         */
-        @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(), new Arguments(Argument.BOOLEAN, Argument.BOOLEAN)};
-        }
-
         /**
          * We add a point to the given list
          * @param points
          * @param geom
-         * @throws ExecutionException
+         * @throws FunctionException
          */
-        private void addPoint(List<DPoint> points, Point geom) throws ExecutionException {
+        private void addPoint(List<DPoint> points, Point geom) throws FunctionException {
                 Coordinate pt = geom.getCoordinate();
                 double z = Double.isNaN(pt.z) ? 0 : pt.z;
                 try {
                         points.add(new DPoint(pt.x, pt.y, z));
                 } catch (DelaunayError ex) {
-                        throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", ex);
+                        throw new FunctionException("You're trying to create a 3D point with a NaN value.\n", ex);
                 }
 
         }
@@ -260,9 +242,9 @@ public class ST_TIN implements CustomQuery {
          * Add a MultiPoint geometry.
          * @param points
          * @param pts
-         * @throws ExecutionException
+         * @throws FunctionException
          */
-        private void addMultiPoint(List<DPoint> points, MultiPoint pts) throws ExecutionException {
+        private void addMultiPoint(List<DPoint> points, MultiPoint pts) throws FunctionException {
                 Coordinate[] coords = pts.getCoordinates();
                 for (int i = 0; i < coords.length; i++) {
                         try {
@@ -271,7 +253,7 @@ public class ST_TIN implements CustomQuery {
                                                 coords[i].y, 
                                                 Double.isNaN(coords[i].z) ? 0 : coords[i].z));
                         } catch (DelaunayError ex) {
-                                throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", ex);
+                                throw new FunctionException("You're trying to create a 3D point with a NaN value.\n", ex);
                         }
                 }
         }
@@ -280,9 +262,9 @@ public class ST_TIN implements CustomQuery {
          * add a geometry to the input.
          * @param edges
          * @param geom
-         * @throws ExecutionException
+         * @throws FunctionException
          */
-        private void addGeometry(List<DEdge> edges, Geometry geom) throws ExecutionException {
+        private void addGeometry(List<DEdge> edges, Geometry geom) throws FunctionException {
                 if (geom.isValid()) {
                         Coordinate c1 = geom.getCoordinates()[0];
                         c1.z = Double.isNaN(c1.z) ? 0 : c1.z;
@@ -293,7 +275,7 @@ public class ST_TIN implements CustomQuery {
                                 try {
                                         edges.add(new DEdge(new DPoint(c1), new DPoint(c2)));
                                 } catch (DelaunayError d) {
-                                        throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", d);
+                                        throw new FunctionException("You're trying to create a 3D point with a NaN value.\n", d);
                                 }
                                 c1 = c2;
                         }
@@ -304,9 +286,9 @@ public class ST_TIN implements CustomQuery {
          * Add a GeometryCollection
          * @param edges
          * @param geomcol
-         * @throws ExecutionException
+         * @throws FunctionException
          */
-        private void addGeometryCollection(List<DEdge> edges, GeometryCollection geomcol) throws ExecutionException {
+        private void addGeometryCollection(List<DEdge> edges, GeometryCollection geomcol) throws FunctionException {
                 int num = geomcol.getNumGeometries();
                 for (int i = 0; i < num; i++) {
                         addGeometry(edges, geomcol.getGeometryN(i));
@@ -321,15 +303,18 @@ public class ST_TIN implements CustomQuery {
          * @throws IOException
          * @throws DriverException
          */
-        private void registerEdges(final String name, final DataSourceFactory dsf,
+        private void registerEdges(final String name, final SQLDataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(dsf.getResultDir()+acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.LINESTRING),
-                                new DimensionConstraint(3)),
+                        new Type[]{
+                                TypeFactory.createType(
+                                        Type.GEOMETRY, 
+                                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.LINESTRING), 
+                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)
+                                ),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -363,14 +348,18 @@ public class ST_TIN implements CustomQuery {
                 dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerPoints(final String name, final DataSourceFactory dsf,
+        private void registerPoints(final String name, final SQLDataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(dsf.getResultDir()+acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.POINT), new DimensionConstraint(3)),
+                        new Type[]{
+                                TypeFactory.createType(
+                                        Type.GEOMETRY, 
+                                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT), 
+                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)
+                                ),
                                 TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
                 int triangleCount = mesh.getPoints().size();
@@ -396,14 +385,17 @@ public class ST_TIN implements CustomQuery {
                 dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerTriangles(final String name, final DataSourceFactory dsf,
+        private void registerTriangles(final String name, final SQLDataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(dsf.getResultDir()+acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.POLYGON), new DimensionConstraint(3)),
+                        new Type[]{
+                                TypeFactory.createType(
+                                        Type.GEOMETRY, 
+                                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POLYGON), 
+                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),

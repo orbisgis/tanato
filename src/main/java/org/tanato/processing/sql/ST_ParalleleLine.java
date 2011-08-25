@@ -41,15 +41,16 @@ package org.tanato.processing.sql;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 
 /**
  * This function creates an edge parallel to the one given in its first argument,
@@ -59,12 +60,12 @@ import org.gdms.sql.function.FunctionException;
  * and lies at the specified distance from the original edge.
  * @author ebocher
  */
-public class ST_ParalleleLine implements Function {
+public class ST_ParalleleLine extends  AbstractScalarFunction {
 
         private GeometryFactory gf = new GeometryFactory();
 
         @Override
-        public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
+        public final Value evaluate(SQLDataSourceFactory dsf, Value... values) throws FunctionException {
 
                 LineString geom = (LineString) values[0].getAsGeometry();
 
@@ -75,16 +76,6 @@ public class ST_ParalleleLine implements Function {
         @Override
         public final String getName() {
                 return "ST_ParalleleLine";
-        }
-
-        @Override
-        public final boolean isAggregate() {
-                return false;
-        }
-
-        @Override
-        public final Value getAggregateResult() {
-                return null;
         }
 
         @Override
@@ -103,9 +94,9 @@ public class ST_ParalleleLine implements Function {
         }
 
         @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.GEOMETRY, Argument.NUMERIC)};
-
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{new BasicFunctionSignature(Type.GEOMETRY, 
+                        ScalarArgument.GEOMETRY, ScalarArgument.DOUBLE)};
         }
 
 	/**

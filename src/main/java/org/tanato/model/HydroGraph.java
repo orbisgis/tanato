@@ -38,7 +38,8 @@
 package org.tanato.model;
 
 import org.gdms.data.DataSource;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
 
 /**
@@ -52,10 +53,12 @@ public abstract class HydroGraph {
          * @param dataSource
          * @throws DriverException
          */
-        public void checkMetadata(DataSource dataSource) throws DriverException {
+        public void checkMetadata(DataSet dataSource) throws DriverException {
                 Metadata md = dataSource.getMetadata();
                 if ((md.getFieldIndex(TINSchema.PROPERTY_FIELD) == -1) || (md.getFieldIndex(TINSchema.HEIGHT_FIELD) == -1)) {
-                        throw new IllegalArgumentException("The table " + dataSource.getName() + " must contains two fields  : property and height");
+                        String name = dataSource instanceof DataSource ? ((DataSource) dataSource).getName() : "";
+                        throw new IllegalArgumentException("The table " + name + 
+                                " must contains two fields  : property and height");
 
                 }
         }

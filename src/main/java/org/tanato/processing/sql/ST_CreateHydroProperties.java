@@ -40,15 +40,16 @@ package org.tanato.processing.sql;
 import java.lang.reflect.Field;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 import org.jhydrocell.hydronetwork.HydroProperties;
 
 /**
@@ -56,7 +57,7 @@ import org.jhydrocell.hydronetwork.HydroProperties;
  * their int representation, as described in jDelaunay.
  * @author erwan, kwyhr, alexis
  */
-public class ST_CreateHydroProperties implements Function {
+public class ST_CreateHydroProperties extends AbstractScalarFunction {
         // Logger access
 
         private static final Logger logger = Logger.getLogger(DropletFollower.class.getName());
@@ -67,7 +68,7 @@ public class ST_CreateHydroProperties implements Function {
         private int error = 0;
         
         @Override
-        public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
+        public final Value evaluate(SQLDataSourceFactory dsf, Value... values) throws FunctionException {
                 int returnedValue = 0;
                 if (values.length == 0) {
                         // There MUST be at least 1 value
@@ -107,16 +108,6 @@ public class ST_CreateHydroProperties implements Function {
         }
         
         @Override
-        public final boolean isAggregate() {
-                return false;
-        }
-        
-        @Override
-        public final Value getAggregateResult() {
-                return null;
-        }
-        
-        @Override
         public final Type getType(Type[] types) {
                 return TypeFactory.createType(Type.INT);
         }
@@ -130,12 +121,14 @@ public class ST_CreateHydroProperties implements Function {
         public final String getSqlOrder() {
                 return "SELECT ST_CreateHHydroProperties(propertyField)";
         }
-        
+
         @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.STRING)};
-                
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new BasicFunctionSignature(Type.INT, ScalarArgument.STRING)};
         }
+        
+        
 
         // -----------------------------------------------------------
         /**
@@ -176,7 +169,7 @@ public class ST_CreateHydroProperties implements Function {
                                 position++;
                                 lastwasspace = false;
                         } else if (theChar == '*') {
-                                if (sb.equals("")) {
+                                if (sb.toString().isEmpty()) {
                                         sb.append("ALL");
                                         position++;
                                         found = true;

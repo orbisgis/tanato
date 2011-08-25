@@ -41,27 +41,30 @@ import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
-import org.gdms.data.types.GeometryConstraint;
+import org.gdms.sql.function.FunctionException;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
+import org.gdms.data.types.Constraint;
+import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
 import org.gdms.geometryUtils.GeometryTypeUtil;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
 import org.jdelaunay.delaunay.geometries.DPoint;
 import org.jdelaunay.delaunay.error.DelaunayError;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.model.TINSchema;
 
 /**
@@ -71,13 +74,13 @@ import org.tanato.model.TINSchema;
  *
  * @author kwyhr
  */
-public abstract class ST_DropletAbstract implements CustomQuery {
+public abstract class ST_DropletAbstract extends AbstractTableFunction {
 		DiskBufferDriver writer = null;
 		
         @Override
-        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
                 try {
-                        pm.startTask("Processing runoff path");
+                        pm.startTask("Processing runoff path",100);
 
                         // Generate Droplet element
                         DropletFollower dropletFollower = new DropletFollower(dsf, tables, values, pm);
@@ -86,9 +89,8 @@ public abstract class ST_DropletAbstract implements CustomQuery {
                         writer = new DiskBufferDriver(dsf, getMetadata(null));
 
                        // Get points to process
-                        SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(tables[3]);
-                        sds.open();
-
+                        DataSet sds = tables[3];
+                        int geomIndex = MetadataUtilities.getGeometryFieldIndex(sds.getMetadata());
                         long rowCount = sds.getRowCount();
                         for (int i = 0; i < rowCount; i++) {
                                 if (pm.isCancelled()) {
@@ -97,7 +99,7 @@ public abstract class ST_DropletAbstract implements CustomQuery {
                                 // Alter progression bar
                                 pm.progressTo((int) (100 * i / rowCount));
 
-                                Geometry geom = sds.getGeometry(i);
+                                Geometry geom = sds.getGeometry(i, geomIndex);
                                 if (GeometryTypeUtil.isPoint(geom)) {
                                         // We have the right geometry - Generate path and save it
                                         ArrayList<DPoint> result = dropletFollower.getPath(geom);
@@ -105,8 +107,6 @@ public abstract class ST_DropletAbstract implements CustomQuery {
                                 }
                         }
 
-                        // Close writer and tables
-                        sds.close();
                         dropletFollower.closeData();
                         writer.writingFinished();
 
@@ -124,7 +124,8 @@ public abstract class ST_DropletAbstract implements CustomQuery {
         @Override
         public Metadata getMetadata(Metadata[] tables) throws DriverException {
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(GeometryConstraint.POINT)),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY, 
+                                   ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT)),
                                    TypeFactory.createType(Type.INT),
                                    TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, "path"});
@@ -132,19 +133,27 @@ public abstract class ST_DropletAbstract implements CustomQuery {
         }
 
         @Override
-        public final TableDefinition[] getTablesDefinitions() {
-                return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
-
-
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new TableFunctionSignature(TableDefinition.SPATIAL,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY),
+                new TableFunctionSignature(TableDefinition.SPATIAL,
+                                ScalarArgument.INT,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY),
+                new TableFunctionSignature(TableDefinition.SPATIAL,ScalarArgument.INT,ScalarArgument.INT,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY,
+                                TableArgument.GEOMETRY)};
         }
-
-        @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(),
-                                new Arguments(Argument.INT),
-                                new Arguments(Argument.INT, Argument.INT)
-                        };
-        }
+        
+        
 
         /**
          * Save data in writer

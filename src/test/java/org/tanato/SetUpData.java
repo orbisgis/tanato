@@ -40,8 +40,8 @@ package org.tanato;
 import java.io.File;
 import junit.framework.TestCase;
 
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSource;
 
 public class SetUpData extends TestCase {
 
@@ -58,10 +58,10 @@ public class SetUpData extends TestCase {
         private static String pathFaces;
         private static String pathEdges;
         private static String pathNodes;
-        private static SpatialDataSourceDecorator sdsFaces;
-        private static SpatialDataSourceDecorator sdsEdges;
-        private static SpatialDataSourceDecorator sdsNodes;
-        public static DataSourceFactory dsf = new DataSourceFactory();
+        private static DataSource sdsFaces;
+        private static DataSource sdsEdges;
+        private static DataSource sdsNodes;
+        public static SQLDataSourceFactory dsf = new SQLDataSourceFactory();
 
         // Initialize the hydrological graph
         public static void createDataSourcesForTest(int testType) throws Exception {
@@ -216,21 +216,21 @@ public class SetUpData extends TestCase {
 
         }
 
-        public static SpatialDataSourceDecorator getSdsFaces() {
+        public static DataSource getSdsFaces() {
                 return sdsFaces;
         }
 
-        public static SpatialDataSourceDecorator getSdsEdges() {
+        public static DataSource getSdsEdges() {
                 return sdsEdges;
         }
 
-        public static SpatialDataSourceDecorator getSdsNodes() {
+        public static DataSource getSdsNodes() {
                 return sdsNodes;
         }
 
         private static void createDatasources(String pathNodes, String pathEdges, String pathFaces) throws Exception {
-                sdsNodes = new SpatialDataSourceDecorator(dsf.getDataSource(new File(pathNodes)));
-                sdsEdges = new SpatialDataSourceDecorator(dsf.getDataSource(new File(pathEdges)));
-                sdsFaces = sdsNodes = new SpatialDataSourceDecorator(dsf.getDataSource(new File(pathFaces)));
+                sdsNodes = dsf.getDataSource(new File(pathNodes));
+                sdsEdges = dsf.getDataSource(new File(pathEdges));
+                sdsFaces = sdsNodes = dsf.getDataSource(new File(pathFaces));
         }
 }

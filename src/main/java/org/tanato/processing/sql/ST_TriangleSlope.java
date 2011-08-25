@@ -40,16 +40,17 @@
 package org.tanato.processing.sql;
 
 import com.vividsolutions.jts.geom.Geometry;
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.InvalidTypeException;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 import org.jdelaunay.delaunay.geometries.DTriangle;
 import org.jdelaunay.delaunay.error.DelaunayError;
 import org.tanato.factory.TINFeatureFactory;
@@ -58,10 +59,10 @@ import org.tanato.factory.TINFeatureFactory;
  *
  * @author ebocher
  */
-public class ST_TriangleSlope implements Function{
+public class ST_TriangleSlope extends AbstractScalarFunction{
 
         @Override
-        public Value evaluate(DataSourceFactory dsf, Value... args) throws FunctionException {
+        public Value evaluate(SQLDataSourceFactory dsf, Value... args) throws FunctionException {
                 
                 Value val = args[0];
                 Geometry geom = val.getAsGeometry();
@@ -83,16 +84,6 @@ public class ST_TriangleSlope implements Function{
         }
 
         @Override
-        public boolean isAggregate() {
-                return false;
-        }
-
-        @Override
-        public Value getAggregateResult() {
-                return null;
-        }
-
-        @Override
         public Type getType(Type[] argsTypes) throws InvalidTypeException {
                 return TypeFactory.createType(Type.DOUBLE);
         }
@@ -108,8 +99,11 @@ public class ST_TriangleSlope implements Function{
         }
 
         @Override
-        public Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.GEOMETRY)};
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new BasicFunctionSignature(Type.DOUBLE, ScalarArgument.GEOMETRY)};
         }
+        
+        
 
 }

@@ -39,23 +39,23 @@ package org.tanato.processing.sql;
 
 import java.lang.reflect.Field;
 import java.util.TreeMap;
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.sql.function.FunctionException;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.generic.GenericObjectDriver;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Arguments;
+import org.gdms.driver.memory.MemoryDataSetDriver;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
 import org.jhydrocell.hydronetwork.HydroProperties;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 
 /**
  * This customQuery will create a GenericObjectDriver, that encapsulates a table explaining
@@ -64,11 +64,11 @@ import org.orbisgis.progress.IProgressMonitor;
  * @see org.jhydrocell.hydronetwork.HydroProperties
  * @author erwan, kwyhr, alexis
  */
-public class ST_TINPropertyHelp implements CustomQuery {
+public class ST_TINPropertyHelp extends AbstractTableFunction {
 
         @Override
-        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
-                Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public final DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
+                Value[] values, ProgressMonitor pm) throws FunctionException {
 
                 try {
                         // Build header
@@ -77,7 +77,7 @@ public class ST_TINPropertyHelp implements CustomQuery {
                         defaultMetadata.addField("text", TypeFactory.createType(Type.STRING));
                         defaultMetadata.addField("type", TypeFactory.createType(Type.STRING));
 
-                        GenericObjectDriver genericObjectDriver = new GenericObjectDriver(
+                        MemoryDataSetDriver genericObjectDriver = new MemoryDataSetDriver(
                                 defaultMetadata);
 
                         // Build list
@@ -89,10 +89,10 @@ public class ST_TINPropertyHelp implements CustomQuery {
                                                 int intValue = theField.getInt(theField);
                                                 theFieldList.put(theField.getName(), intValue);
                                         } catch (IllegalArgumentException ex) {
-                                                throw new ExecutionException("We're dealing with an object that is"
+                                                throw new FunctionException("We're dealing with an object that is"
                                                         + "not an int. Surprising.",ex);
                                         } catch (IllegalAccessException ex) {
-                                                throw new ExecutionException("We're supposed to work only on public fields.",ex);
+                                                throw new FunctionException("We're supposed to work only on public fields.",ex);
                                         }
                                         
                                 }
@@ -113,24 +113,20 @@ public class ST_TINPropertyHelp implements CustomQuery {
 
                         return genericObjectDriver;
                 } catch (DriverException e) {
-                        throw new ExecutionException("there has been a problem while building the driver",e);
+                        throw new FunctionException("there has been a problem while building the driver",e);
                 }
 
-        }
-
-        @Override
-        public final TableDefinition[] getTablesDefinitions() {
-                return new TableDefinition[0];
         }
 
         @Override
         public final String getDescription() {
                 return "Create a table with all property value and text representation used by the mesh.";
         }
-
+        
         @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments()};
+        public final FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new TableFunctionSignature(TableDefinition.ANY)};
         }
 
         @Override
@@ -145,6 +141,6 @@ public class ST_TINPropertyHelp implements CustomQuery {
 
         @Override
         public final String getSqlOrder() {
-                return "SELECT ST_TINPropertyHelp()";
+                return "CALL ST_TINPropertyHelp()";
         }
 }

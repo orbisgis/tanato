@@ -47,60 +47,55 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.sql.function.FunctionException;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.DefaultSpatialIndexQuery;
 import org.gdms.data.indexes.IndexException;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.generic.GenericObjectDriver;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Arguments;
+import org.gdms.driver.memory.MemoryDataSetDriver;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
 import org.jdelaunay.delaunay.geometries.DPoint;
 import org.jdelaunay.delaunay.geometries.DTriangle;
 import org.jdelaunay.delaunay.error.DelaunayError;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.factory.TINFeatureFactory;
 
 /**
- * This custom query will try to affect a z value to each point of a geometry. To do so,
+ * This table function will try to affect a z value to each point of a geometry. To do so,
  * it will use a triangular irregulated network, and will interpolate the z values from it.
  * @author erwan, alexis
  */
-public class ST_SetZFromTriangles implements CustomQuery {
+public class ST_SetZFromTriangles extends AbstractTableFunction {
 
         @Override
-        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, 
-                                Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public final DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables, 
+                                Value[] values, ProgressMonitor pm) throws FunctionException {
 
 
-                DataSource ds = tables[0];
                 //We need to read our source.
-                SpatialDataSourceDecorator sdsTriangle = new SpatialDataSourceDecorator(ds);
+                DataSet sdsTriangle = tables[0];
 
-                ds = tables[1];
                 //We need to read our source.
-                SpatialDataSourceDecorator sdsToBeInterpolate = new SpatialDataSourceDecorator(ds);
+                DataSet sdsToBeInterpolate = tables[1];
 
                 try {
-                        sdsTriangle.open();
-                        sdsToBeInterpolate.open();
-
-
-                        GenericObjectDriver driver = new GenericObjectDriver(sdsToBeInterpolate.getMetadata());
+                        MemoryDataSetDriver driver = new MemoryDataSetDriver(sdsToBeInterpolate.getMetadata());
                         long countToBeInterpol = sdsToBeInterpolate.getRowCount();
-                        String geomField = sdsTriangle.getSpatialFieldName();
-                        int geomIndex = sdsTriangle.getSpatialFieldIndex();
+                        int geomIndex = MetadataUtilities.getGeometryFieldIndex(sdsTriangle.getMetadata());
+                        String geomField = sdsTriangle.getMetadata().getFieldName(geomIndex);
 
-                        if (!dsf.getIndexManager().isIndexed(sdsTriangle.getName(), geomField)) {
-                                dsf.getIndexManager().buildIndex(sdsTriangle.getName(), geomField, pm);
+                        if (!dsf.getIndexManager().isIndexed(sdsTriangle, geomField)) {
+                                dsf.getIndexManager().buildIndex(sdsTriangle, geomField, pm);
                         }
 
 
@@ -109,13 +104,13 @@ public class ST_SetZFromTriangles implements CustomQuery {
                         for (int i = 0; i < countToBeInterpol; i++) {
 
                                 valuesToBeInterpolate = sdsToBeInterpolate.getRow(i);
-                                geomToBeInterpol = sdsToBeInterpolate.getGeometry(i);
+                                geomToBeInterpol = sdsToBeInterpolate.getGeometry(i, geomIndex);
                                 DefaultSpatialIndexQuery query = new DefaultSpatialIndexQuery(geomToBeInterpol.getEnvelopeInternal(), geomField);
-                                Iterator<Integer> it = sdsTriangle.queryIndex(query);
+                                Iterator<Integer> it = sdsTriangle.queryIndex(dsf, query);
                                 ArrayList<DTriangle> triangles = new ArrayList<DTriangle>();
                                 while (it.hasNext()) {
                                         Integer index = it.next();
-                                        Geometry g = sdsTriangle.getGeometry(index);
+                                        Geometry g = sdsTriangle.getGeometry(index, geomIndex);
                                         DTriangle dTriangle = TINFeatureFactory.createDTriangle(g);
                                         triangles.add(dTriangle);
                                 }
@@ -126,22 +121,20 @@ public class ST_SetZFromTriangles implements CustomQuery {
                                 driver.addValues(valuesToBeInterpolate);
 
                         }
-                        sdsTriangle.close();
-                        sdsToBeInterpolate.close();
 
                         return driver;
 
                 } catch (IndexException ex) {
-                        throw new ExecutionException("Can't build the geometric index.",ex);
+                        throw new FunctionException("Can't build the geometric index.",ex);
 
                 } catch (NoSuchTableException ex) {
-                        throw new ExecutionException("It seems that the table of triangle does not exist", ex);
+                        throw new FunctionException("It seems that the table of triangle does not exist", ex);
 
                 } catch (DriverException ex) {
-                        throw new ExecutionException("The driver failed whil handling the datasource", ex);
+                        throw new FunctionException("The driver failed whil handling the datasource", ex);
 
                 } catch (DelaunayError ex) {
-                        throw new ExecutionException("Are you sure that this table only contains triangles ?", ex);
+                        throw new FunctionException("Are you sure that this table only contains triangles ?", ex);
                 }
         }
 
@@ -151,8 +144,9 @@ public class ST_SetZFromTriangles implements CustomQuery {
         }
 
         @Override
-        public final TableDefinition[] getTablesDefinitions() {
-                return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new TableFunctionSignature(TableDefinition.GEOMETRY, TableArgument.GEOMETRY, TableArgument.GEOMETRY)};
         }
 
         private static class TINZFilter implements CoordinateSequenceFilter {
@@ -214,11 +208,5 @@ public class ST_SetZFromTriangles implements CustomQuery {
         @Override
         public final String getSqlOrder() {
                 return "SELECT ST_SetZFromTriangles() FROM triangles, tableTobeInterpolate";
-        }
-
-        @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments()};
-
         }
 }

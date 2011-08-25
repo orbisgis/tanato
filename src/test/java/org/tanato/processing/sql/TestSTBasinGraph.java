@@ -44,12 +44,11 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LinearRing;
 import java.io.File;
 import junit.framework.TestCase;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.DataSet;
 import org.jdelaunay.delaunay.tools.Tools;
 
 /**
@@ -58,7 +57,7 @@ import org.jdelaunay.delaunay.tools.Tools;
  */
 public class TestSTBasinGraph extends TestCase {
         
-        private DataSourceFactory dsf = new DataSourceFactory("target", "target");
+        private SQLDataSourceFactory dsf = new SQLDataSourceFactory("target", "target");
         private GeometryFactory gf = new GeometryFactory();
         private String trianglesWithoutFlat = "src/test/resources/data/tin/small_courbes_chezine/without_flat_triangles.shp";
         private String edgesWithoutFlat =  "src/test/resources/data/tin/small_courbes_chezine/without_flat_edges.shp";
@@ -72,13 +71,10 @@ public class TestSTBasinGraph extends TestCase {
          */
         public void testBasinGraphSimple() throws Exception{
                 ST_BasinGraph fun = new ST_BasinGraph();
-                DataSource ds = dsf.getDataSource(new File(pointsWithoutFlat));
-                SpatialDataSourceDecorator points = new SpatialDataSourceDecorator(ds);
-                ds = dsf.getDataSource(new File(edgesWithoutFlat));
-                SpatialDataSourceDecorator edges = new SpatialDataSourceDecorator(ds);
-                ds = dsf.getDataSource(new File(trianglesWithoutFlat));
-                SpatialDataSourceDecorator triangles = new SpatialDataSourceDecorator(ds);
-                ObjectDriver od = fun.evaluate(dsf,
+                DataSource points = dsf.getDataSource(new File(pointsWithoutFlat));
+                DataSource edges = dsf.getDataSource(new File(edgesWithoutFlat));
+                DataSource triangles = dsf.getDataSource(new File(trianglesWithoutFlat));
+                DataSet od = fun.evaluate(dsf,
                         new DataSource[]{points, edges, triangles},
                         new Value[]{ValueFactory.createValue(9), ValueFactory.createValue(0)}, 
                         null);

@@ -40,26 +40,25 @@ package org.tanato.processing.postprocessing;
 import java.io.File;
 import java.util.ArrayList;
 
-import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.DataSource;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
 import org.gdms.driver.driverManager.DriverLoadException;
-import org.gdms.driver.generic.GenericObjectDriver;
 
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
+import org.gdms.driver.memory.MemoryDataSetDriver;
 
 public class TestFonctionLargeur {
 
-	public static DataSourceFactory dsf = new DataSourceFactory();
+	public static SQLDataSourceFactory dsf = new SQLDataSourceFactory();
 
 	//public static String path = "/home/bocher/Bureau/avupur/modelisation1/resultat/fossetalweg_network.shp";
 
@@ -71,16 +70,14 @@ public class TestFonctionLargeur {
 
 	//public static String path = "/home/bocher/Bureau/avupur/modelisation3/resultat/fossetalweg_network.shp";
 
-	private static SpatialDataSourceDecorator sds;
+	private static DataSource sds;
 
 	public static GeometryFactory gf = new GeometryFactory();
 
 	public static void main(String[] args) throws DriverLoadException,
 			DataSourceCreationException, DriverException {
 
-		DataSource ds = dsf.getDataSource(new File(path));
-
-		sds = new SpatialDataSourceDecorator(ds);
+		sds = dsf.getDataSource(new File(path));
 
 		// Fosse talweg network idOutlet = 57;
 		//int gidOutlet = 46;
@@ -221,7 +218,7 @@ public class TestFonctionLargeur {
 				TypeFactory.createType(Type.INT),
 				TypeFactory.createType(Type.INT) }, new String[] { "x", "y" });
 
-		GenericObjectDriver driver = new GenericObjectDriver(metadata);
+		MemoryDataSetDriver driver = new MemoryDataSetDriver(metadata);
 
 		for (int i = 0; i < range.length; i++) {
 
@@ -230,7 +227,7 @@ public class TestFonctionLargeur {
 					ValueFactory.createValue(range[i]) });
 
 		}
-		DataSource ds = dsf.getDataSource(driver);
+		DataSource ds = dsf.getDataSource(driver,"result");
 
 		File gdmsFile = new File("/tmp/largeur.csv");
 		gdmsFile.delete();

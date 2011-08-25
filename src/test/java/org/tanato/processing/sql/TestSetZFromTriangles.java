@@ -41,11 +41,10 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import java.io.File;
 import junit.framework.TestCase;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.values.Value;
-import org.gdms.driver.ObjectDriver;
+import org.gdms.driver.DataSet;
 
 /**
  * This class is intended the Z interpolation we perform on tins to get a Z values
@@ -62,17 +61,15 @@ import org.gdms.driver.ObjectDriver;
  */
 public class TestSetZFromTriangles extends TestCase {
         
-        private DataSourceFactory dsf = new DataSourceFactory("target","target");
+        private SQLDataSourceFactory dsf = new SQLDataSourceFactory("target","target");
         
         public void testWithoutFlatRemoval() throws Exception {
-                DataSource inp = dsf.getDataSource(new File("src/test/resources/data/source/small_data"
+                DataSource input = dsf.getDataSource(new File("src/test/resources/data/source/small_data"
                         + "/points_to_interpolate_chezine.gdms"));
-                DataSource triang = dsf.getDataSource(new File("src/test/resources/data/tin/small_courbes_chezine/"
+                DataSource triangles = dsf.getDataSource(new File("src/test/resources/data/tin/small_courbes_chezine/"
                         + "with_flat_triangles.shp"));
-                SpatialDataSourceDecorator input = new SpatialDataSourceDecorator(inp);
-                SpatialDataSourceDecorator triangles = new SpatialDataSourceDecorator(triang);
                 ST_SetZFromTriangles fun = new ST_SetZFromTriangles();
-                ObjectDriver od = fun.evaluate(dsf, new DataSource[] {triangles, input}, new Value[]{}, null);
+                DataSet od = fun.evaluate(dsf, new DataSource[] {triangles, input}, new Value[]{}, null);
                 long size = od.getRowCount();
                 for(long i = 0; i < size; i++){
                         Geometry geom = od.getFieldValue(i,0).getAsGeometry();

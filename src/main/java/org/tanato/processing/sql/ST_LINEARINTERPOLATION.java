@@ -45,26 +45,27 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiLineString;
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.gdms.sql.function.Function;
+import org.gdms.sql.function.AbstractScalarFunction;
+import org.gdms.sql.function.BasicFunctionSignature;
 import org.gdms.sql.function.FunctionException;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
 
 /**
  *
  * @author ebocher
  */
-public class ST_LINEARINTERPOLATION implements Function {
+public class ST_LINEARINTERPOLATION extends AbstractScalarFunction {
 
         private GeometryFactory gf = new GeometryFactory();
 
         @Override
-        public final Value evaluate(DataSourceFactory dsf, Value... values) throws FunctionException {
+        public final Value evaluate(SQLDataSourceFactory dsf, Value... values) throws FunctionException {
                 Geometry geom = values[0].getAsGeometry();
                 if (geom instanceof MultiLineString) {
                         int nbGeom = geom.getNumGeometries();
@@ -96,16 +97,6 @@ public class ST_LINEARINTERPOLATION implements Function {
         }
 
         @Override
-        public final boolean isAggregate() {
-                return false;
-        }
-
-        @Override
-        public final Value getAggregateResult() {
-                return null;
-        }
-
-        @Override
         public final Type getType(Type[] types) {
                 return TypeFactory.createType(Type.GEOMETRY);
         }
@@ -121,9 +112,9 @@ public class ST_LINEARINTERPOLATION implements Function {
         }
 
         @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.GEOMETRY)};
-
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new BasicFunctionSignature(Type.GEOMETRY, ScalarArgument.GEOMETRY)};
         }
 
         private class LinearZInterpolationFilter implements CoordinateSequenceFilter {

@@ -54,25 +54,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.sql.function.FunctionException;
 import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
-import org.gdms.data.SpatialDataSourceDecorator;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
-import org.gdms.data.types.DimensionConstraint;
-import org.gdms.data.types.GeometryConstraint;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
+import org.gdms.data.schema.MetadataUtilities;
+import org.gdms.data.types.Constraint;
+import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
 import org.gdms.driver.gdms.GdmsWriter;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.executor.AbstractExecutorFunction;
+import org.gdms.sql.function.executor.ExecutorFunctionSignature;
+import org.gdms.sql.function.table.TableArgument;
 import org.jdelaunay.delaunay.ConstrainedMesh;
 import org.jdelaunay.delaunay.geometries.DEdge;
 import org.jdelaunay.delaunay.geometries.DPoint;
@@ -80,7 +82,7 @@ import org.jdelaunay.delaunay.geometries.DTriangle;
 import org.jdelaunay.delaunay.error.DelaunayError;
 import org.jhydrocell.hydronetwork.HydroProperties;
 import org.jhydrocell.hydronetwork.HydroTINBuilder;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.factory.TINFeatureFactory;
 import org.tanato.model.TINSchema;
 
@@ -89,26 +91,24 @@ import org.tanato.model.TINSchema;
  * a constrained delaunay triangulation from the geometry given in input.
  *
  * 
- * @author alexis
+ * @author alexis, erwan, jeanyves
  */
-public class ST_HydroTIN implements CustomQuery {
+public class ST_HydroTIN extends AbstractExecutorFunction {
 
         @Override
-        public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables,
-                Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public final void evaluate(SQLDataSourceFactory dsf, DataSet[] tables,
+                Value[] values, ProgressMonitor pm) throws FunctionException {
 
                 try {
-                        //Process contourlines
-                        DataSource ds = tables[0];
-                        //We need to read our source.
-                        SpatialDataSourceDecorator sds = new SpatialDataSourceDecorator(ds);
-                        sds.open();
+                        //We need to retrieve our source.
+                        final DataSet sds = tables[0];
                         HashMap<Integer, Integer> weights = new HashMap<Integer, Integer>();
 
-                        int propertyIndex = sds.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
-                        int heightIndex = sds.getFieldIndexByName(TINSchema.HEIGHT_FIELD);
-                        int weigthIndex = sds.getFieldIndexByName(TINSchema.WEIGTH_FIELD);
-                        int gidIndex = sds.getFieldIndexByName(TINSchema.GID);
+                        int propertyIndex = sds.getMetadata().getFieldIndex(TINSchema.PROPERTY_FIELD);
+                        int heightIndex = sds.getMetadata().getFieldIndex(TINSchema.HEIGHT_FIELD);
+                        int weigthIndex = sds.getMetadata().getFieldIndex(TINSchema.WEIGTH_FIELD);
+                        int gidIndex = sds.getMetadata().getFieldIndex(TINSchema.GID);
+                        int geomIndex = MetadataUtilities.getGeometryFieldIndex(sds.getMetadata());
 
 
                         if ((propertyIndex == -1) || (heightIndex == -1)) {
@@ -123,13 +123,11 @@ public class ST_HydroTIN implements CustomQuery {
                                 inter = values[0].getAsBoolean();
                                 flat = values[1].getAsBoolean();
                                 useTriangulationRules = values[2].getAsBoolean();
-                                if (useTriangulationRules) {
-                                        if ((weigthIndex == -1)) {
-                                                throw new IllegalArgumentException("The table must contains a weight field that defines rules weight.");
-                                        }
+                                if (useTriangulationRules && weigthIndex == -1) {
+                                        throw new IllegalArgumentException("The table must contains a weight field that defines rules weight.");
                                 }
                         }
-                        String name = ds.getName();
+                        String name = sds instanceof DataSource ? ((DataSource)sds).getName() : dsf.getUID();
                         long count = sds.getRowCount();
                         Geometry geom = null;
                         //We prepare our input structures.
@@ -139,7 +137,7 @@ public class ST_HydroTIN implements CustomQuery {
                         boolean notSewer = false;
                         //We fill the input structures with our table.
                         for (long i = 0; i < count; i++) {
-                                geom = sds.getGeometry(i);
+                                geom = sds.getGeometry(i,geomIndex);
                                 double heightValue = sds.getFieldValue(i, heightIndex).getAsDouble();
                                 propertyValue = sds.getFieldValue(i, propertyIndex).getAsInt();
                                 if (gidIndex != -1) {
@@ -165,8 +163,6 @@ public class ST_HydroTIN implements CustomQuery {
                                 }
                         }
 
-                        //We have filled the input of our mesh. We can close our source.
-                        sds.close();
                         Collections.sort(edges);
                         HydroTINBuilder mesh = new HydroTINBuilder();
                         if (useTriangulationRules) {
@@ -203,16 +199,12 @@ public class ST_HydroTIN implements CustomQuery {
 
 
                 } catch (IOException ex) {
-                        throw new ExecutionException("Failed to write the file containing the edges.\n", ex);
+                        throw new FunctionException("Failed to write the file containing the edges.\n", ex);
                 } catch (DriverException ex) {
-                        throw new ExecutionException("Driver failure while saving the edges.\n", ex);
+                        throw new FunctionException("Driver failure while saving the edges.\n", ex);
                 } catch (DelaunayError ex) {
-                        throw new ExecutionException("Generation of the mesh failed.\n", ex);
+                        throw new FunctionException("Generation of the mesh failed.\n", ex);
                 }
-
-                return null;
-
-
         }
 
         @Override
@@ -232,53 +224,28 @@ public class ST_HydroTIN implements CustomQuery {
 
         @Override
         public final String getSqlOrder() {
-                return "SELECT ST_HydroTIN(true, true, false) FROM source_table;";
-
-
+                return "CALL ST_HydroTIN(source_table,true, true, false);";
         }
 
         @Override
-        public final Metadata getMetadata(Metadata[] tables) throws DriverException {
-                return null;
-
-
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new ExecutorFunctionSignature(),
+                        new ExecutorFunctionSignature(
+                                TableArgument.GEOMETRY,
+                                ScalarArgument.BOOLEAN, 
+                                ScalarArgument.BOOLEAN,
+                                ScalarArgument.BOOLEAN)
+                };
         }
-
-        /**
-         * The tables we need after the clause FROM in the query.
-         * @return
-         */
-        @Override
-        public final TableDefinition[] getTablesDefinitions() {
-                return new TableDefinition[]{TableDefinition.GEOMETRY};
-
-
-        }
-
-        /**
-         * Retrieve the arguments this function can take. We always need three arguments<br/><br/>
-         *
-         *
-         * BOOLEAN : Flat triangles removal or not.<br/>
-         * BOOLEAN : Intersection processing <br/>
-         * BOOLEAN : Rules used or not  <br/>
-         *
-         * @return
-         */
-        @Override
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(), new Arguments(Argument.BOOLEAN, Argument.BOOLEAN, Argument.BOOLEAN)};
-
-
-        }
-
+        
         /**
          * We add a geometry to the given list
          * @param points
          * @param geom
          */
         private void addGeometry(Geometry geom, List<DPoint> pointsToAdd, List<DEdge> edges, int propertyValue,
-                double height, int gidSource) throws ExecutionException {
+                double height, int gidSource) throws FunctionException {
                 if (geom instanceof Point) {
                         addPoint(pointsToAdd, (Point) geom, propertyValue, height, gidSource);
 
@@ -298,7 +265,7 @@ public class ST_HydroTIN implements CustomQuery {
          * @param geom
          */
         private void addPoint(List<DPoint> points, Point geom, int propertyValue, double height,
-                int gidSource) throws ExecutionException {
+                int gidSource) throws FunctionException {
                 try {
                         DPoint dPoint = TINFeatureFactory.createDPoint(geom.getCoordinate());
                         dPoint.setProperty(propertyValue);
@@ -308,13 +275,13 @@ public class ST_HydroTIN implements CustomQuery {
 
 
                 } catch (DelaunayError ex) {
-                        throw new ExecutionException("You're trying to create a 3D point with a NaN value.\n", ex);
+                        throw new FunctionException("You're trying to create a 3D point with a NaN value.\n", ex);
                 }
 
         }
 
         private void addGeometry(List<DEdge> edges, Geometry geometry, int propertyValue,
-                double height, int gidSource) throws ExecutionException {
+                double height, int gidSource) throws FunctionException {
 
                 Coordinate c1 = geometry.getCoordinates()[0];
                 Coordinate c2;
@@ -332,7 +299,7 @@ public class ST_HydroTIN implements CustomQuery {
                                 edge.setHeight(height);
                                 edges.add(edge);
                         } catch (DelaunayError d) {
-                                throw new ExecutionException("You're trying to craete a 3D point with a NaN value.\n", d);
+                                throw new FunctionException("You're trying to craete a 3D point with a NaN value.\n", d);
                         }
                         c1 = c2;
 
@@ -348,14 +315,15 @@ public class ST_HydroTIN implements CustomQuery {
          * @throws IOException
          * @throws DriverException
          */
-        private void registerEdges(final String name, final DataSourceFactory dsf,
+        private void registerEdges(final String name, final SQLDataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.LINESTRING), new DimensionConstraint(3)),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY,
+                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.LINESTRING), 
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -405,14 +373,15 @@ public class ST_HydroTIN implements CustomQuery {
                 dsf.getSourceManager().register(acName, out);
         }
 
-        private void registerPoints(final String name, final DataSourceFactory dsf,
+        private void registerPoints(final String name, final SQLDataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.POINT), new DimensionConstraint(3)),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY,
+                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT), 
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
@@ -454,14 +423,15 @@ public class ST_HydroTIN implements CustomQuery {
 
         }
 
-        private void registerTriangles(final String name, final DataSourceFactory dsf,
+        private void registerTriangles(final String name, final SQLDataSourceFactory dsf,
                 final ConstrainedMesh mesh) throws IOException, DriverException {
                 final String acName = dsf.getSourceManager().getUniqueName(name);
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.POLYGON), new DimensionConstraint(3)),
+                        new Type[]{TypeFactory.createType(Type.GEOMETRY,
+                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POLYGON), 
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),

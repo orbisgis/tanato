@@ -40,26 +40,26 @@ package org.tanato.processing.sql;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.driver.DataSet;
+import org.gdms.sql.function.FunctionException;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.IndexException;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.metadata.Metadata;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.Metadata;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
-import org.gdms.driver.generic.GenericObjectDriver;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Argument;
-import org.gdms.sql.function.Arguments;
-import org.orbisgis.progress.IProgressMonitor;
+import org.gdms.driver.memory.MemoryDataSetDriver;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.ScalarArgument;
+import org.gdms.sql.function.table.AbstractTableFunction;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.gdms.sql.function.table.TableFunctionSignature;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.basin.BasinBuilder;
 import org.tanato.model.TINSchema;
 
@@ -67,40 +67,34 @@ import org.tanato.model.TINSchema;
  *
  * @author alexis
  */
-public class ST_BasinGraph implements CustomQuery  {
+public class ST_BasinGraph extends AbstractTableFunction  {
 
 
 	private static final Logger logger = Logger.getLogger(ST_BasinGraph.class.getName());
 	// Table informations to navigate
-	private SpatialDataSourceDecorator sdsPoints = null;
-	private SpatialDataSourceDecorator sdsEdges = null;
-	private SpatialDataSourceDecorator sdsTriangles = null;
+	private DataSet sdsPoints = null;
+	private DataSet sdsEdges = null;
+	private DataSet sdsTriangles = null;
 	
 	@Override
-	public final ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+	public final DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
 		if (tables.length < 3) {
 		    // There MUST be at least 3 tables
-		    throw new ExecutionException("needs points, edges and triangles.");
+		    throw new FunctionException("needs points, edges and triangles.");
 		} else {
 			try {
 				// First is points
-				DataSource dsPoints = tables[0];
-				sdsPoints = new SpatialDataSourceDecorator(dsPoints);
-				sdsPoints.open();
-				if (!dsf.getIndexManager().isIndexed(dsPoints.getName(), TINSchema.GID)) {
-					dsf.getIndexManager().buildIndex(dsPoints.getName(), TINSchema.GID, pm);
+				sdsPoints =  tables[0];
+				if (!dsf.getIndexManager().isIndexed(sdsPoints, TINSchema.GID)) {
+					dsf.getIndexManager().buildIndex(sdsPoints, TINSchema.GID, pm);
 				}
-				DataSource dsEdges = tables[1];
-				sdsEdges = new SpatialDataSourceDecorator(dsEdges);
-				sdsEdges.open();
-				if (!dsf.getIndexManager().isIndexed(sdsEdges.getName(), TINSchema.GID)) {
-					dsf.getIndexManager().buildIndex(sdsEdges.getName(), TINSchema.GID, pm);
+				sdsEdges = tables[1];
+				if (!dsf.getIndexManager().isIndexed(sdsEdges, TINSchema.GID)) {
+					dsf.getIndexManager().buildIndex(sdsEdges, TINSchema.GID, pm);
 				}
-				DataSource dsTriangles = tables[2];
-				sdsTriangles = new SpatialDataSourceDecorator(dsTriangles);
-				sdsTriangles.open();
-				if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GID)) {
-					dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GID, pm);
+				sdsTriangles =tables[2];
+				if (!dsf.getIndexManager().isIndexed(sdsTriangles, TINSchema.GID)) {
+					dsf.getIndexManager().buildIndex(sdsTriangles, TINSchema.GID, pm);
 				}
 				BasinBuilder bb = new BasinBuilder(dsf, sdsPoints, sdsEdges, sdsTriangles,
 						values[0].getAsInt(), values[1].getAsInt());
@@ -108,11 +102,8 @@ public class ST_BasinGraph implements CustomQuery  {
                                 Metadata md = new DefaultMetadata(
                                         new Type[]{TypeFactory.createType(Type.GEOMETRY),},
                                         new String[]{TINSchema.GEOM_FIELD});
-                                GenericObjectDriver od = new GenericObjectDriver(md);
+                                MemoryDataSetDriver od = new MemoryDataSetDriver(md);
                                 od.addValues(ValueFactory.createValue(bb.getBasin()));
-				sdsEdges.close();
-				sdsTriangles.close();
-				sdsPoints.close();
                                 return od;
 			} catch (NoSuchTableException ex) {
 				Logger.getLogger(ST_DropletPath.class.getName()).log(Level.SEVERE, null, ex);
@@ -137,22 +128,27 @@ public class ST_BasinGraph implements CustomQuery  {
 
 	@Override
 	public final String getSqlOrder() {
-		return "SELECT ST_BasinGraph(555,0) FROM points, edges, triangles;";
+		return "CALL ST_BasinGraph(555,0, points, edges, triangles);";
 	}
 
-	@Override
 	public final Metadata getMetadata(Metadata[] tables) throws DriverException {
                 return null;
 	}
 
-	@Override
 	public final TableDefinition[] getTablesDefinitions() {
         return new TableDefinition[]{TableDefinition.GEOMETRY, TableDefinition.GEOMETRY, TableDefinition.GEOMETRY};
 	}
 
-	@Override
-	public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments(Argument.INT, Argument.INT)};
-	}
+
+        @Override
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{new TableFunctionSignature(
+                        TableDefinition.GEOMETRY,
+                        ScalarArgument.INT, 
+                        ScalarArgument.INT,
+                        new TableArgument(TableDefinition.GEOMETRY),
+                        new TableArgument(TableDefinition.GEOMETRY),
+                        new TableArgument(TableDefinition.GEOMETRY))};
+        }
         
 }

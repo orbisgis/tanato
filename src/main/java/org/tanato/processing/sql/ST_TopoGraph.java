@@ -40,20 +40,20 @@ package org.tanato.processing.sql;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSource;
-import org.gdms.data.DataSourceFactory;
-import org.gdms.data.ExecutionException;
+import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.sql.function.FunctionException;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.DataSource;
 import org.gdms.data.indexes.IndexException;
-import org.gdms.data.metadata.Metadata;
 import org.gdms.data.values.Value;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
-import org.gdms.driver.ObjectDriver;
-import org.gdms.sql.customQuery.CustomQuery;
-import org.gdms.sql.customQuery.TableDefinition;
-import org.gdms.sql.function.Arguments;
-import org.orbisgis.progress.IProgressMonitor;
+import org.gdms.sql.function.FunctionSignature;
+import org.gdms.sql.function.executor.AbstractExecutorFunction;
+import org.gdms.sql.function.executor.ExecutorFunctionSignature;
+import org.gdms.sql.function.table.TableArgument;
+import org.gdms.sql.function.table.TableDefinition;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.model.TopographicGraph;
 
 /**
@@ -63,18 +63,21 @@ import org.tanato.model.TopographicGraph;
  *
  * @author kwyhr
  */
-public class ST_TopoGraph implements CustomQuery {
+public class ST_TopoGraph extends AbstractExecutorFunction {
 
+        @Override
         public final String getName() {
                 return "ST_TopoGraph";
         }
 
+        @Override
         public final String getDescription() {
                 return "Compute the topoGraph from the TIN.";
         }
 
+        @Override
         public final String getSqlOrder() {
-                return "SELECT ST_TopoGraph() FROM out_edges, out_triangles";
+                return "CALL ST_TopoGraph(out_edges, out_triangles);";
         }
 
         public final TableDefinition[] getTablesDefinitions() {
@@ -83,14 +86,10 @@ public class ST_TopoGraph implements CustomQuery {
 
         }
 
-        public final Arguments[] getFunctionArguments() {
-                return new Arguments[]{new Arguments()};
-        }
-
         @Override
-        public ObjectDriver evaluate(DataSourceFactory dsf, DataSource[] tables, Value[] values, IProgressMonitor pm) throws ExecutionException {
+        public void evaluate(SQLDataSourceFactory dsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
                 try {
-                        TopographicGraph topographicGraph = new TopographicGraph(dsf, new SpatialDataSourceDecorator(tables[0]), new SpatialDataSourceDecorator(tables[1]));
+                        TopographicGraph topographicGraph = new TopographicGraph(dsf, tables[0], tables[1]);
                         topographicGraph.createGraph(pm);
                 } catch (DriverException ex) {
                         Logger.getLogger(ST_TopoGraph.class.getName()).log(Level.SEVERE, null, ex);
@@ -101,11 +100,13 @@ public class ST_TopoGraph implements CustomQuery {
                 } catch (IndexException ex) {
                         Logger.getLogger(ST_TopoGraph.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                return null;
         }
 
         @Override
-        public Metadata getMetadata(Metadata[] tables) throws DriverException {
-                return null;
+        public FunctionSignature[] getFunctionSignatures() {
+                return new FunctionSignature[]{
+                        new ExecutorFunctionSignature(
+                                new TableArgument(TableDefinition.GEOMETRY), 
+                                new TableArgument(TableDefinition.GEOMETRY))};
         }
 }

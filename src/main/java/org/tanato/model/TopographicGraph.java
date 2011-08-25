@@ -46,42 +46,55 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SpatialDataSourceDecorator;
+import org.gdms.data.DataSource;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.indexes.rtree.DiskRTree;
-import org.gdms.data.metadata.DefaultMetadata;
-import org.gdms.data.types.GeometryConstraint;
+import org.gdms.data.schema.DefaultMetadata;
+import org.gdms.data.schema.MetadataUtilities;
+import org.gdms.data.types.Constraint;
+import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
+import org.gdms.sql.function.FunctionException;
 import org.jdelaunay.delaunay.geometries.DEdge;
 import org.jdelaunay.delaunay.geometries.DPoint;
 import org.jdelaunay.delaunay.geometries.DTriangle;
 import org.jdelaunay.delaunay.error.DelaunayError;
 import org.jhydrocell.hydronetwork.HydroProperties;
-import org.orbisgis.progress.IProgressMonitor;
+import org.orbisgis.progress.ProgressMonitor;
 import org.tanato.factory.TINFeatureFactory;
 
 /**
  *
- * @author ebocher
+ * @author ebocher, alexis
  */
 public class TopographicGraph extends HydroGraph {
 
-        private final SpatialDataSourceDecorator sdsEdges;
-        private final SpatialDataSourceDecorator sdsTriangles;
-        private final DataSourceFactory dsf;
+        private final DataSet sdsEdges;
+        private final DataSet sdsTriangles;
+        private final SQLDataSourceFactory dsf;
         private GeometryFactory gf = new GeometryFactory();
         private int gidNode = 1;
+        private int edgeGeomIndex;
+        private int triangleGeomIndex;
 
-        public TopographicGraph(DataSourceFactory dsf, SpatialDataSourceDecorator sdsEdges, SpatialDataSourceDecorator sdsTriangles) {
+        public TopographicGraph(SQLDataSourceFactory dsf, DataSet sdsEdges, DataSet sdsTriangles) throws FunctionException {
                 this.sdsEdges = sdsEdges;
                 this.sdsTriangles = sdsTriangles;
+                try{
+                        edgeGeomIndex = MetadataUtilities.getGeometryFieldIndex(sdsEdges.getMetadata());
+                        triangleGeomIndex = MetadataUtilities.getGeometryFieldIndex(sdsTriangles.getMetadata());
+                } catch (DriverException e){
+                        throw new FunctionException("Can't find the indices of geometric fields", e);
+                }
                 this.dsf = dsf;
         }
 
@@ -89,10 +102,8 @@ public class TopographicGraph extends HydroGraph {
          * Create a graph to connect all TIN features according the steepest downslope direction.
          * 
          */
-        public void createGraph(IProgressMonitor pm) throws DriverException, IOException, NoSuchTableException, IndexException {
+        public void createGraph(ProgressMonitor pm) throws DriverException, IOException, NoSuchTableException, IndexException {
 
-                sdsEdges.open();
-                sdsTriangles.open();
                 checkMetadata(sdsEdges);
 
                 //Create the node table metadata.
@@ -109,8 +120,10 @@ public class TopographicGraph extends HydroGraph {
                 DiskRTree diskRTree = new DiskRTree();
                 diskRTree.newIndex(new File(diskTreePath));
 
-                DefaultMetadata edgeMetadata = new DefaultMetadata(new Type[]{TypeFactory.createType(Type.GEOMETRY, new GeometryConstraint(
-                                GeometryConstraint.LINESTRING)),
+                DefaultMetadata edgeMetadata = new DefaultMetadata(new Type[]{
+                        TypeFactory.createType(
+                                Type.GEOMETRY, 
+                                ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE, GeometryTypeConstraint.LINESTRING)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -120,11 +133,11 @@ public class TopographicGraph extends HydroGraph {
                 DiskBufferDriver edgesDriver = new DiskBufferDriver(dsf, edgeMetadata);
 
                 long sdsEdgesCount = sdsEdges.getRowCount();
-                int propertyFieldIndex = sdsEdges.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
-                int leftTriangleFieldIndex = sdsEdges.getFieldIndexByName(TINSchema.LEFT_TRIANGLE_FIELD);
-                int rightTriangleFieldIndex = sdsEdges.getFieldIndexByName(TINSchema.RIGHT_TRIANGLE_FIELD);
+                int propertyFieldIndex = sdsEdges.getMetadata().getFieldIndex(TINSchema.PROPERTY_FIELD);
+                int leftTriangleFieldIndex = sdsEdges.getMetadata().getFieldIndex(TINSchema.LEFT_TRIANGLE_FIELD);
+                int rightTriangleFieldIndex = sdsEdges.getMetadata().getFieldIndex(TINSchema.RIGHT_TRIANGLE_FIELD);
 
-                pm.startTask("Create the topographic graph");
+                pm.startTask("Create the topographic graph",100);
                 LineString geomEdge;
                 int lineGid = 1;
                 for (int i = 0; i < sdsEdgesCount; i++) {
@@ -137,7 +150,7 @@ public class TopographicGraph extends HydroGraph {
                                         }
                                 }
                                 //Get the geometry as a DEdge
-                                DEdge line = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(i));
+                                DEdge line = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(i,edgeGeomIndex));
                                 Coordinate middlePointEdge = line.getMiddle().getCoordinate();
                                 //Get the morphological property that describes if the edge is a talweg, a ridge, a flat slope...
                                 int property = sdsEdges.getFieldValue(i, propertyFieldIndex).getAsInt();
@@ -316,9 +329,7 @@ public class TopographicGraph extends HydroGraph {
                         }
                 }
                 pm.endTask();
-                String src_sds_Name = sdsEdges.getName().split("_")[0];
-                sdsEdges.close();
-                sdsTriangles.close();
+                String src_sds_Name= sdsEdges instanceof DataSource ? ((DataSource) sdsEdges).getName().split("_")[0]:dsf.getUID();
                 edgesDriver.writingFinished();
                 nodesDriver.writingFinished();
 
@@ -358,7 +369,7 @@ public class TopographicGraph extends HydroGraph {
         /**
          * Build an index to improve the graph computing
          */
-        public void createIndex(SpatialDataSourceDecorator sds, String field, IProgressMonitor pm) throws NoSuchTableException, IndexException {
+        public void createIndex(DataSource sds, String field, ProgressMonitor pm) throws NoSuchTableException, IndexException {
                 if (!dsf.getIndexManager().isIndexed(sds.getName(), field)) {
                         dsf.getIndexManager().buildIndex(sds.getName(), field, pm);
                 }
@@ -374,7 +385,7 @@ public class TopographicGraph extends HydroGraph {
         private DTriangle getTriangle(int gid) throws DriverException, DelaunayError {
 
                 if (gid != -1) {
-                        return TINFeatureFactory.createDTriangle(sdsTriangles.getGeometry(gid - 1));
+                        return TINFeatureFactory.createDTriangle(sdsTriangles.getGeometry(gid - 1, triangleGeomIndex));
                 }
                 return null;
 

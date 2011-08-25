@@ -41,7 +41,6 @@ import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
-import org.gdms.driver.DiskBufferDriver;
 import org.gdms.driver.DriverException;
 import org.jdelaunay.delaunay.geometries.DPoint;
 

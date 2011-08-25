@@ -55,13 +55,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.gdms.data.DataSourceFactory;
+import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.SpatialDataSourceDecorator;
 import org.gdms.data.indexes.DefaultAlphaQuery;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.values.Value;
 import org.gdms.data.values.ValueFactory;
+import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
 import org.jdelaunay.delaunay.error.DelaunayError;
 import org.jdelaunay.delaunay.geometries.DEdge;
@@ -82,15 +82,15 @@ public class BasinBuilder {
 
 	private int firstGID;
 	private int startType;
-        private SpatialDataSourceDecorator sdsEdges;
-        private SpatialDataSourceDecorator sdsTriangles;
-        private SpatialDataSourceDecorator sdsPoints;
+        private final DataSet sdsEdges;
+        private final DataSet sdsTriangles;
+        private final DataSet sdsPoints;
         private GeometryFactory gf = new GeometryFactory();
         //Used to set the dimension of the TIN feature we use to start our processing.
         public static final int TIN_POINT = 0;
         public static final int TIN_EDGE = 1;
         public static final int TIN_TRIANGLE = 2;
-        private final DataSourceFactory dsf;
+        private final SQLDataSourceFactory dsf;
 	private EdgePartManager remainingEP;
 	private LinkedList<PointPart> remainingPoints;
 	private Geometry basin;
@@ -118,8 +118,8 @@ public class BasinBuilder {
 	 * @param type
 	 *	The type of the object, used to choose the table where to pick the object up.
 	 */
-	public BasinBuilder(DataSourceFactory dsf , SpatialDataSourceDecorator sdsPoints,
-                SpatialDataSourceDecorator sdsEdges, SpatialDataSourceDecorator sdsTriangles, int gid, int type){
+	public BasinBuilder(SQLDataSourceFactory dsf , DataSet sdsPoints,
+                DataSet sdsEdges, DataSet sdsTriangles, int gid, int type){
 		firstGID = gid;
 		startType = type;
                 this.sdsTriangles = sdsTriangles;
@@ -131,20 +131,17 @@ public class BasinBuilder {
 		lines = new MultiLineString(new LineString[0], gf);
 		basin = gf.createPolygon(gf.createLinearRing(new Coordinate[0]), new LinearRing[0]);
 		try {
-			if(!sdsTriangles.isOpen()){
-					sdsTriangles.open();
-			}
-			geomTriIndex = sdsTriangles.getFieldIndexByName(TINSchema.GEOM_FIELD);
-			gidTriE0Index = sdsTriangles.getFieldIndexByName(TINSchema.EDGE_0_GID_FIELD);
-			gidTriE1Index = sdsTriangles.getFieldIndexByName(TINSchema.EDGE_1_GID_FIELD);
-			gidTriE2Index = sdsTriangles.getFieldIndexByName(TINSchema.EDGE_2_GID_FIELD);
-			gidEdgeLeft = sdsEdges.getFieldIndexByName(TINSchema.LEFT_TRIANGLE_FIELD);
-			gidEdgeRight = sdsEdges.getFieldIndexByName(TINSchema.RIGHT_TRIANGLE_FIELD);
-			gidEdgeStart = sdsEdges.getFieldIndexByName(TINSchema.STARTPOINT_NODE_FIELD);
-			gidEdgeEnd = sdsEdges.getFieldIndexByName(TINSchema.ENDPOINT_NODE_FIELD);
-			geomPointIndex = sdsPoints.getFieldIndexByName(TINSchema.GEOM_FIELD);
-			geomEdgeIndex = sdsEdges.getFieldIndexByName(TINSchema.GEOM_FIELD);
-			edgeProperty = sdsEdges.getFieldIndexByName(TINSchema.PROPERTY_FIELD);
+			geomTriIndex = sdsTriangles.getMetadata().getFieldIndex(TINSchema.GEOM_FIELD);
+			gidTriE0Index = sdsTriangles.getMetadata().getFieldIndex(TINSchema.EDGE_0_GID_FIELD);
+			gidTriE1Index = sdsTriangles.getMetadata().getFieldIndex(TINSchema.EDGE_1_GID_FIELD);
+			gidTriE2Index = sdsTriangles.getMetadata().getFieldIndex(TINSchema.EDGE_2_GID_FIELD);
+			gidEdgeLeft = sdsEdges.getMetadata().getFieldIndex(TINSchema.LEFT_TRIANGLE_FIELD);
+			gidEdgeRight = sdsEdges.getMetadata().getFieldIndex(TINSchema.RIGHT_TRIANGLE_FIELD);
+			gidEdgeStart = sdsEdges.getMetadata().getFieldIndex(TINSchema.STARTPOINT_NODE_FIELD);
+			gidEdgeEnd = sdsEdges.getMetadata().getFieldIndex(TINSchema.ENDPOINT_NODE_FIELD);
+			geomPointIndex = sdsPoints.getMetadata().getFieldIndex(TINSchema.GEOM_FIELD);
+			geomEdgeIndex = sdsEdges.getMetadata().getFieldIndex(TINSchema.GEOM_FIELD);
+			edgeProperty = sdsEdges.getMetadata().getFieldIndex(TINSchema.PROPERTY_FIELD);
 
 		} catch (DriverException ex) {
 			Logger.getLogger(BasinBuilder.class.getName()).log(Level.SEVERE, null, ex);
@@ -161,26 +158,26 @@ public class BasinBuilder {
 		try {
                         //We start by building the indexes we'll need for each data structure. Note that
                         //if they already exist, we acn use tem directly.
-			if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GEOM_FIELD)) {
-				dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GEOM_FIELD, new NullProgressMonitor());
+			if (!dsf.getIndexManager().isIndexed(sdsTriangles, TINSchema.GEOM_FIELD)) {
+				dsf.getIndexManager().buildIndex(sdsTriangles, TINSchema.GEOM_FIELD, new NullProgressMonitor());
 			}
-			if (!dsf.getIndexManager().isIndexed(sdsEdges.getName(), TINSchema.GEOM_FIELD)) {
-				dsf.getIndexManager().buildIndex(sdsEdges.getName(), TINSchema.GEOM_FIELD, new NullProgressMonitor());
+			if (!dsf.getIndexManager().isIndexed(sdsEdges, TINSchema.GEOM_FIELD)) {
+				dsf.getIndexManager().buildIndex(sdsEdges, TINSchema.GEOM_FIELD, new NullProgressMonitor());
 			}
-			if (!dsf.getIndexManager().isIndexed(sdsPoints.getName(), TINSchema.GEOM_FIELD)) {
-				dsf.getIndexManager().buildIndex(sdsPoints.getName(), TINSchema.GEOM_FIELD, new NullProgressMonitor());
+			if (!dsf.getIndexManager().isIndexed(sdsPoints, TINSchema.GEOM_FIELD)) {
+				dsf.getIndexManager().buildIndex(sdsPoints, TINSchema.GEOM_FIELD, new NullProgressMonitor());
 			}
-			if (!dsf.getIndexManager().isIndexed(sdsTriangles.getName(), TINSchema.GID)) {
-				dsf.getIndexManager().buildIndex(sdsTriangles.getName(), TINSchema.GID, new NullProgressMonitor());
+			if (!dsf.getIndexManager().isIndexed(sdsTriangles, TINSchema.GID)) {
+				dsf.getIndexManager().buildIndex(sdsTriangles, TINSchema.GID, new NullProgressMonitor());
 			}
-			if (!dsf.getIndexManager().isIndexed(sdsEdges.getName(), TINSchema.GID)){
-				dsf.getIndexManager().buildIndex(sdsEdges.getName(), TINSchema.GID, new NullProgressMonitor());
+			if (!dsf.getIndexManager().isIndexed(sdsEdges, TINSchema.GID)){
+				dsf.getIndexManager().buildIndex(sdsEdges, TINSchema.GID, new NullProgressMonitor());
 			}
-			if(!dsf.getIndexManager().isIndexed(sdsEdges.getName(), TINSchema.ENDPOINT_NODE_FIELD)){
-				dsf.getIndexManager().buildIndex(sdsEdges.getName(), TINSchema.ENDPOINT_NODE_FIELD, new NullProgressMonitor());
+			if(!dsf.getIndexManager().isIndexed(sdsEdges, TINSchema.ENDPOINT_NODE_FIELD)){
+				dsf.getIndexManager().buildIndex(sdsEdges, TINSchema.ENDPOINT_NODE_FIELD, new NullProgressMonitor());
 			}
-			if(!dsf.getIndexManager().isIndexed(sdsPoints.getName(), TINSchema.GID)){
-				dsf.getIndexManager().buildIndex(sdsPoints.getName(), TINSchema.GID, new NullProgressMonitor());
+			if(!dsf.getIndexManager().isIndexed(sdsPoints, TINSchema.GID)){
+				dsf.getIndexManager().buildIndex(sdsPoints, TINSchema.GID, new NullProgressMonitor());
 			}
                         //we define the type of input that has been given.
 			if(startType==TIN_POINT){
@@ -313,8 +310,8 @@ public class BasinBuilder {
 		DefaultAlphaQuery daq = new DefaultAlphaQuery(TINSchema.ENDPOINT_NODE_FIELD, ValueFactory.createValue(ptGID));
 		DefaultAlphaQuery ptquery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(ptGID));
 		try{
-			Iterator<Integer> it = sdsEdges.queryIndex(daq);
-			Iterator<Integer> ipt = sdsPoints.queryIndex(ptquery);
+			Iterator<Integer> it = sdsEdges.queryIndex(dsf, daq);
+			Iterator<Integer> ipt = sdsPoints.queryIndex(dsf, ptquery);
 			Value[] ptValue = sdsPoints.getRow(ipt.next());
 
 			while(it.hasNext()){
@@ -332,7 +329,7 @@ public class BasinBuilder {
 						HydroProperties.check(edProp, HydroProperties.TALWEG);
 				if(isWell || isRiverOrDitch || isTalweg){
 					//These edges will have to be processed as EdgeParts later.
-					DEdge ed = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(cur));
+					DEdge ed = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(cur, geomEdgeIndex));
 					if(ed.getGradient() != DEdge.FLATSLOPE){
 						ed.forceTopographicOrientation();
 					}
@@ -390,7 +387,7 @@ public class BasinBuilder {
 			//We must know the triangle we need to analyze. To do so, let's retrieve
 			//the good line in the table of triangles.
 			DefaultAlphaQuery triquery = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(triangleGID));
-			Iterator<Integer> itri = sdsTriangles.queryIndex(triquery);
+			Iterator<Integer> itri = sdsTriangles.queryIndex(dsf, triquery);
 			//We actually rtrieve the line that interests us.
 			Value[] triline = sdsTriangles.getRow(itri.next());
 			DTriangle dtr = TINFeatureFactory.createDTriangle(triline[geomTriIndex].getAsGeometry());
@@ -414,7 +411,7 @@ public class BasinBuilder {
 				for(Integer i : edgeGids){
 					//We know the GID of the edge, we must retrieve its geometry as a DEdge.
 					DefaultAlphaQuery search = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(i));
-					Iterator<Integer> it = sdsEdges.queryIndex(search);
+					Iterator<Integer> it = sdsEdges.queryIndex(dsf, search);
 					Value[] val = sdsEdges.getRow(it.next());
 					DEdge cur = TINFeatureFactory.createDEdge(val[geomEdgeIndex].getAsGeometry());
 					//We check that the current edge contains si.
@@ -481,7 +478,7 @@ public class BasinBuilder {
 		int epGID = ep.getGid();
 		DefaultAlphaQuery daq = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(epGID));
 		try {
-			Iterator<Integer> it = sdsEdges.queryIndex(daq);
+			Iterator<Integer> it = sdsEdges.queryIndex(dsf, daq);
 			long edgeIndex = it.next();
 			int epProp = sdsEdges.getInt(edgeIndex, TINSchema.PROPERTY_FIELD);
 			//If the edge is a ridge, we just add it.
@@ -489,7 +486,7 @@ public class BasinBuilder {
 				//We process the union.
 				ArrayList<Geometry> geom = new ArrayList<Geometry>();
 				geom.add(lines);
-				geom.add((LineString) sdsEdges.getGeometry(edgeIndex));
+				geom.add((LineString) sdsEdges.getGeometry(edgeIndex, geomEdgeIndex));
 				Geometry res = UnaryUnionOp.union(geom);
 				if(res instanceof MultiLineString){
 					lines =  (MultiLineString) res;
@@ -526,14 +523,14 @@ public class BasinBuilder {
 	private void analyzeTriangle(EdgePart ep, long edgeIndex, int triangleGID){
 		DefaultAlphaQuery daq = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(triangleGID));
 		try {
-			Iterator<Integer> it = sdsTriangles.queryIndex(daq);
+			Iterator<Integer> it = sdsTriangles.queryIndex(dsf, daq);
 			if(it.hasNext()){
 				//We retrieve the line of values associated to the triangle.
 				Value [] triLine = sdsTriangles.getRow(it.next());
 				//We build the matching DTriangle.
 				DTriangle left =  TINFeatureFactory.createDTriangle(triLine[geomTriIndex].getAsGeometry());
 				//We build the DEdge.
-				DEdge current = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(edgeIndex));
+				DEdge current = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(edgeIndex,geomEdgeIndex));
 				if(current.getGradient() != DEdge.FLATSLOPE){
 					current.forceTopographicOrientation();
 				}
@@ -791,9 +788,9 @@ public class BasinBuilder {
 	 * @return
 	 * @throws DriverException
 	 */
-	private Value[] retrieveLine(int gid, SpatialDataSourceDecorator sds) throws DriverException{
+	private Value[] retrieveLine(int gid, DataSet sds) throws DriverException{
 		DefaultAlphaQuery daq = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(gid));
-		Iterator<Integer> it = sds.queryIndex(daq);
+		Iterator<Integer> it = sds.queryIndex(dsf, daq);
 		return sds.getRow(it.next());
 	}
 
@@ -805,10 +802,10 @@ public class BasinBuilder {
 	private DEdge retrieveEdge(int gid) throws DriverException{
 		DefaultAlphaQuery daq = new DefaultAlphaQuery(TINSchema.GID, ValueFactory.createValue(gid));
 		try {
-			Iterator<Integer> it = sdsEdges.queryIndex(daq);
+			Iterator<Integer> it = sdsEdges.queryIndex(dsf, daq);
 			long edgeIndex = it.next();
 			int epProp = sdsEdges.getInt(edgeIndex, TINSchema.PROPERTY_FIELD);
-			DEdge ret = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(edgeIndex));
+			DEdge ret = TINFeatureFactory.createDEdge(sdsEdges.getGeometry(edgeIndex, geomEdgeIndex));
 			if(ret.getGradient() != DEdge.FLATSLOPE){
 				ret.forceTopographicOrientation();
 			}
