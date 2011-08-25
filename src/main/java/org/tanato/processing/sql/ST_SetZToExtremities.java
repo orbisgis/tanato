@@ -104,7 +104,7 @@ public class ST_SetZToExtremities extends AbstractScalarFunction {
                         & ~Constraint.DIMENSION_2D_GEOMETRY);
                 Constraint[] result = new Constraint[constrs.length + 1];
                 System.arraycopy(constrs, 0, result, 0, constrs.length);
-                result[result.length - 1] = ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY);
+                result[result.length - 1] = ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3);
 
                 return TypeFactory.createType(type.getTypeCode(), result);
 
@@ -114,7 +114,7 @@ public class ST_SetZToExtremities extends AbstractScalarFunction {
         public FunctionSignature[] getFunctionSignatures() {
                 return new FunctionSignature[]{
                         new BasicFunctionSignature(TypeFactory.createType(Type.LINESTRING,
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
                         ScalarArgument.GEOMETRY,
                         ScalarArgument.DOUBLE,
                         ScalarArgument.DOUBLE

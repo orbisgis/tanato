@@ -313,7 +313,7 @@ public class ST_TIN extends AbstractExecutorFunction {
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
                                         ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.LINESTRING), 
-                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)
+                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)
                                 ),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -358,7 +358,7 @@ public class ST_TIN extends AbstractExecutorFunction {
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
                                         ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT), 
-                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)
+                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)
                                 ),
                                 TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
@@ -395,7 +395,7 @@ public class ST_TIN extends AbstractExecutorFunction {
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
                                         ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POLYGON), 
-                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
+                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),

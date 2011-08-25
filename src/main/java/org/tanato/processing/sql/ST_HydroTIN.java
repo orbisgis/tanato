@@ -323,7 +323,7 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY,
                         ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.LINESTRING), 
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -381,7 +381,7 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY,
                         ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT), 
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
@@ -431,7 +431,7 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(Type.GEOMETRY,
                         ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POLYGON), 
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY)),
+                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
