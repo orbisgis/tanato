@@ -69,6 +69,8 @@ public class TestSetZFromTriangles extends TestCase {
                 DataSource triangles = dsf.getDataSource(new File("src/test/resources/data/tin/small_courbes_chezine/"
                         + "with_flat_triangles.shp"));
                 ST_SetZFromTriangles fun = new ST_SetZFromTriangles();
+                input.open();
+                triangles.open();
                 DataSet od = fun.evaluate(dsf, new DataSource[] {triangles, input}, new Value[]{}, null);
                 long size = od.getRowCount();
                 for(long i = 0; i < size; i++){
@@ -88,5 +90,7 @@ public class TestSetZFromTriangles extends TestCase {
                                 assertTrue(geom.getCoordinates()[1].z==10);
                         }
                 }
+                input.close();
+                triangles.close();
         }
 }

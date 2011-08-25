@@ -268,8 +268,10 @@ public class Tanato2SQLTest extends TestCase {
                         ValueFactory.createValue(true),
                         ValueFactory.createValue(true)
                 };
+                in.open();
                 query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
                 DataSource sds = dsf.getDataSource(in.getName() + "_points");
+                in.close();
                 assertNotNull(sds);
                 sds.open();
                 //There have been two insertions, because two triangles were flat.
@@ -329,7 +331,9 @@ public class Tanato2SQLTest extends TestCase {
                         ValueFactory.createValue(true),
                         ValueFactory.createValue(false)
                 };
+                in.open();
                 query.evaluate(dsf, new DataSource[]{in}, vals, new NullProgressMonitor());
+                in.close();
                 DataSource sds = dsf.getDataSource(in.getName() + "_points");
                 assertNotNull(sds);
                 sds.open();
@@ -478,7 +482,9 @@ public class Tanato2SQLTest extends TestCase {
                 // triangle 5  -> edge 34 -> triangle 6 -> edge 30 (a talweg) -> -> edge 38 (a talweg) -> points 9
                 Geometry targetPoint = wKTReader.read("POINT (178.11619336849773 180.89460753843517)");
                 driver.addValues(new Value[]{ValueFactory.createValue(targetPoint)});
-
+                dsPoints.open();
+                dsEdges.open();
+                dsTriangles.open();
 
                 DataSet sds = sT_DropletLine.evaluate(dsf, new DataSet[]{dsPoints, dsEdges, dsTriangles, driver}, new Value[]{}, new NullProgressMonitor());
 
@@ -498,13 +504,18 @@ public class Tanato2SQLTest extends TestCase {
                 assertTrue(checkFeature(coords[3], 30, dsEdges));
                 assertTrue(checkFeature(coords[3], 38, dsEdges));
                 assertTrue(checkFeature(coords[4], 38, dsEdges));
+                dsPoints.close();
+                dsEdges.close();
+                dsTriangles.close();
         }
 
         public void testST_DropletLine2() throws Exception {
                 DataSource dsPoints = dsf.getDataSource(new File("src/test/resources/data/tin/chezine_amont/chezine_amont_points.shp"));
                 DataSource dsEdges = dsf.getDataSource(new File("src/test/resources/data/tin/chezine_amont/chezine_amont_edges.shp"));
                 DataSource dsTriangles = dsf.getDataSource(new File("src/test/resources/data/tin/chezine_amont/chezine_amont_triangles.shp"));
-
+                dsPoints.open();
+                dsEdges.open();
+                dsTriangles.open();
                 ST_DropletLine sT_DropletLine = new ST_DropletLine();
 
                 DefaultMetadata metadata = new DefaultMetadata();
@@ -523,6 +534,9 @@ public class Tanato2SQLTest extends TestCase {
                 assertTrue(sds.getRowCount() > 0);
                 Geometry geom = sds.getGeometry(0, MetadataUtilities.getGeometryFieldIndex(sds.getMetadata()));
                 assertTrue(geom.getDimension() == 1);
+                dsPoints.close();
+                dsEdges.close();
+                dsTriangles.close();
         }
 
         /**

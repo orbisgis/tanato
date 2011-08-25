@@ -74,6 +74,9 @@ public class TestSTBasinGraph extends TestCase {
                 DataSource points = dsf.getDataSource(new File(pointsWithoutFlat));
                 DataSource edges = dsf.getDataSource(new File(edgesWithoutFlat));
                 DataSource triangles = dsf.getDataSource(new File(trianglesWithoutFlat));
+                points.open();
+                edges.open();
+                triangles.open();
                 DataSet od = fun.evaluate(dsf,
                         new DataSource[]{points, edges, triangles},
                         new Value[]{ValueFactory.createValue(9), ValueFactory.createValue(0)}, 
@@ -93,6 +96,9 @@ public class TestSTBasinGraph extends TestCase {
                 ConvexHull ch = new ConvexHull(bis);
                 Geometry ter = ch.getConvexHull();
                 assertTrue(buff.covers(ter));
+                points.close();
+                edges.close();
+                triangles.close();
         }
         
 }
