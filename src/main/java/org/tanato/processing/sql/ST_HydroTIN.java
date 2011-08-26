@@ -60,8 +60,7 @@ import org.gdms.data.DataSource;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
-import org.gdms.data.types.Constraint;
-import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.Dimension3DConstraint;
 import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -321,9 +320,11 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY,
-                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.LINESTRING), 
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
+                        new Type[]{TypeFactory.createType(
+                                Type.GEOMETRY,
+                                new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING),
+                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
+                        ),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -379,9 +380,11 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY,
-                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT), 
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
+                        new Type[]{TypeFactory.createType(
+                                Type.GEOMETRY,
+                                new GeometryTypeConstraint(GeometryTypeConstraint.POINT), 
+                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
+                        ),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
@@ -429,9 +432,11 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 File out = new File(acName + ".gdms");
                 GdmsWriter writer = new GdmsWriter(out);
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY,
-                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POLYGON), 
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
+                        new Type[]{TypeFactory.createType(
+                                Type.GEOMETRY,
+                                new GeometryTypeConstraint(GeometryTypeConstraint.POLYGON), 
+                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
+                        ),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),

@@ -46,8 +46,6 @@ import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
-import org.gdms.data.types.Constraint;
-import org.gdms.data.types.ConstraintFactory;
 import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -129,10 +127,12 @@ public abstract class ST_DropletAbstract extends AbstractTableFunction {
         @Override
         public Metadata getMetadata(Metadata[] tables) throws DriverException {
                 Metadata md = new DefaultMetadata(
-                        new Type[]{TypeFactory.createType(Type.GEOMETRY, 
-                                   ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT)),
-                                   TypeFactory.createType(Type.INT),
-                                   TypeFactory.createType(Type.INT)},
+                        new Type[]{TypeFactory.createType(
+                                        Type.GEOMETRY,
+                                        new GeometryTypeConstraint(GeometryTypeConstraint.POINT)
+                                ),
+                                TypeFactory.createType(Type.INT),
+                                TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, "path"});
                 return md;
         }

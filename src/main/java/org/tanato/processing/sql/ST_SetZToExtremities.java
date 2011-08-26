@@ -48,7 +48,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.MultiLineString;
 import org.gdms.data.SQLDataSourceFactory;
-import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.Dimension3DConstraint;
 import org.gdms.geometryUtils.GeometryEdit;
 import org.gdms.sql.function.AbstractScalarFunction;
 import org.gdms.sql.function.BasicFunctionSignature;
@@ -104,7 +104,7 @@ public class ST_SetZToExtremities extends AbstractScalarFunction {
                         & ~Constraint.DIMENSION_2D_GEOMETRY);
                 Constraint[] result = new Constraint[constrs.length + 1];
                 System.arraycopy(constrs, 0, result, 0, constrs.length);
-                result[result.length - 1] = ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3);
+                result[result.length - 1] = new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D);
 
                 return TypeFactory.createType(type.getTypeCode(), result);
 
@@ -114,7 +114,7 @@ public class ST_SetZToExtremities extends AbstractScalarFunction {
         public FunctionSignature[] getFunctionSignatures() {
                 return new FunctionSignature[]{
                         new BasicFunctionSignature(TypeFactory.createType(Type.LINESTRING,
-                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
+                        new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)),
                         ScalarArgument.GEOMETRY,
                         ScalarArgument.DOUBLE,
                         ScalarArgument.DOUBLE

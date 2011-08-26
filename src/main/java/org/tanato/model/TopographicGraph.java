@@ -53,8 +53,6 @@ import org.gdms.data.indexes.IndexException;
 import org.gdms.data.indexes.rtree.DiskRTree;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.MetadataUtilities;
-import org.gdms.data.types.Constraint;
-import org.gdms.data.types.ConstraintFactory;
 import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -123,7 +121,7 @@ public class TopographicGraph extends HydroGraph {
                 DefaultMetadata edgeMetadata = new DefaultMetadata(new Type[]{
                         TypeFactory.createType(
                                 Type.GEOMETRY, 
-                                ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE, GeometryTypeConstraint.LINESTRING)),
+                                new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),

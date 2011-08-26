@@ -60,8 +60,7 @@ import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
-import org.gdms.data.types.Constraint;
-import org.gdms.data.types.ConstraintFactory;
+import org.gdms.data.types.Dimension3DConstraint;
 import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -312,8 +311,8 @@ public class ST_TIN extends AbstractExecutorFunction {
                         new Type[]{
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
-                                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.LINESTRING), 
-                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)
+                                        new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING), 
+                                        new Dimension3DConstraint(3)
                                 ),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -357,8 +356,8 @@ public class ST_TIN extends AbstractExecutorFunction {
                         new Type[]{
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
-                                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POINT), 
-                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)
+                                        new GeometryTypeConstraint(GeometryTypeConstraint.POINT),
+                                        new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
                                 ),
                                 TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID});
@@ -394,8 +393,8 @@ public class ST_TIN extends AbstractExecutorFunction {
                         new Type[]{
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
-                                        ConstraintFactory.createConstraint(Constraint.GEOMETRY_TYPE,GeometryTypeConstraint.POLYGON), 
-                                        ConstraintFactory.createConstraint(Constraint.DIMENSION_3D_GEOMETRY,3)),
+                                        new GeometryTypeConstraint(GeometryTypeConstraint.POLYGON), 
+                                        new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
