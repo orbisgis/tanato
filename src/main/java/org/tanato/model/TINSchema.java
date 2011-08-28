@@ -49,7 +49,7 @@ public final class TINSchema {
          * Field names used by TIN datasources
          */
         public static final String PROPERTY_FIELD = "property";
-        public static final String WEIGTH_FIELD = "weight";
+        public static final String WEIGHT_FIELD = "weight";
         public static final String HEIGHT_FIELD = "height";
         public static final String STARTPOINT_NODE_FIELD = "startp_n";
         public static final String ENDPOINT_NODE_FIELD = "endp_n";

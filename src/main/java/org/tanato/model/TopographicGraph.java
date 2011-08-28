@@ -126,7 +126,7 @@ public class TopographicGraph extends HydroGraph {
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT)}, new String[]{TINSchema.GEOM_FIELD,
-                                TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, "contribution"});
+                                TINSchema.GID, TINSchema.STARTPOINT_NODE_FIELD, TINSchema.ENDPOINT_NODE_FIELD, TINSchema.WEIGHT_FIELD});
 
                 DiskBufferDriver edgesDriver = new DiskBufferDriver(dsf, edgeMetadata);
 

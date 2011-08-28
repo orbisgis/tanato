@@ -43,7 +43,6 @@ import java.util.logging.Logger;
 import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.sql.function.FunctionException;
 import org.gdms.data.NoSuchTableException;
-import org.gdms.data.DataSource;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DataSet;

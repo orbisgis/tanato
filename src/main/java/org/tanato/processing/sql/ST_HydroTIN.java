@@ -105,7 +105,7 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
 
                         int propertyIndex = sds.getMetadata().getFieldIndex(TINSchema.PROPERTY_FIELD);
                         int heightIndex = sds.getMetadata().getFieldIndex(TINSchema.HEIGHT_FIELD);
-                        int weigthIndex = sds.getMetadata().getFieldIndex(TINSchema.WEIGTH_FIELD);
+                        int weigthIndex = sds.getMetadata().getFieldIndex(TINSchema.WEIGHT_FIELD);
                         int gidIndex = sds.getMetadata().getFieldIndex(TINSchema.GID);
                         int geomIndex = MetadataUtilities.getGeometryFieldIndex(sds.getMetadata());
 

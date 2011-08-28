@@ -142,44 +142,6 @@ public class Tanato2SQLTest extends TestCase {
 
         }
 
-        /**
-         * A test to valid the ST_LINEARINTERPOLATION function
-         * @throws Exception
-         */
-        public void testST_LinearInterpolation() throws Exception {
-                ST_AddZ function = new ST_AddZ();
-
-                Value[] values = new Value[]{ValueFactory.createValue(jTSLineString2D), ValueFactory.createValue(12)};
-                Geometry geom = function.evaluate(null, values).getAsGeometry();
-                Coordinate[] coords = geom.getCoordinates();
-
-                for (Coordinate coordinate : coords) {
-                        assertTrue(coordinate.z == 12);
-                }
-                ST_LINEARINTERPOLATION function2 = new ST_LINEARINTERPOLATION();
-
-                values = new Value[]{ValueFactory.createValue(geom)};
-
-                geom = function2.evaluate(null, values).getAsGeometry();
-                coords = geom.getCoordinates();
-                for (Coordinate coordinate : coords) {
-                        assertTrue(coordinate.z == 12);
-                }
-
-                values = new Value[]{ValueFactory.createValue(jTSLineString3D)};
-
-                geom = function2.evaluate(null, values).getAsGeometry();
-                coords = geom.getCoordinates();
-
-                assertTrue(coords[1].z == 6);
-
-                values = new Value[]{ValueFactory.createValue(jTS3DCollection)};
-
-                geom = function2.evaluate(null, values).getAsGeometry().getGeometryN(1);
-                coords = geom.getCoordinates();
-                assertTrue(coords[1].z == 6);
-        }
-
         public void testST_ParallelLine() throws Exception {
                 ST_ParalleleLine fun = new ST_ParalleleLine();
                 LineString edge = gf.createLineString(new Coordinate[]{
