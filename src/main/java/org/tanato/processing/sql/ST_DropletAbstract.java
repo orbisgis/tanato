@@ -46,7 +46,7 @@ import org.gdms.data.SQLDataSourceFactory;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
-import org.gdms.data.types.GeometryTypeConstraint;
+import org.gdms.data.types.GeometryDimensionConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -73,20 +73,21 @@ import org.tanato.model.TINSchema;
  * @author kwyhr, alexis
  */
 public abstract class ST_DropletAbstract extends AbstractTableFunction {
+
         DiskBufferDriver writer = null;
-		
+
         @Override
         public DataSet evaluate(SQLDataSourceFactory dsf, DataSet[] tables, Value[] values, ProgressMonitor pm) throws FunctionException {
                 try {
-                        pm.startTask("Processing runoff path",100);
+                        pm.startTask("Processing runoff path", 100);
 
                         // Generate Droplet element
                         DropletFollower dropletFollower = new DropletFollower(dsf, tables, values, pm);
 
-                         // Create writer
+                        // Create writer
                         writer = new DiskBufferDriver(dsf, getMetadata(null));
 
-                       // Get points to process
+                        // Get points to process
                         DataSet sds = tables[3];
                         int geomIndex = MetadataUtilities.getGeometryFieldIndex(sds.getMetadata());
                         long rowCount = sds.getRowCount();
@@ -121,16 +122,17 @@ public abstract class ST_DropletAbstract extends AbstractTableFunction {
 
         @Override
         public void workFinished() throws DriverException {
-                writer.stop();
+                if (writer != null) {
+                        writer.stop();
+                }
         }
 
         @Override
         public Metadata getMetadata(Metadata[] tables) throws DriverException {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(
-                                        Type.GEOMETRY,
-                                        new GeometryTypeConstraint(GeometryTypeConstraint.POINT)
-                                ),
+                                Type.GEOMETRY,
+                                new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_POINT)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT)},
                         new String[]{TINSchema.GEOM_FIELD, TINSchema.GID, "path"});
@@ -140,25 +142,23 @@ public abstract class ST_DropletAbstract extends AbstractTableFunction {
         @Override
         public FunctionSignature[] getFunctionSignatures() {
                 return new FunctionSignature[]{
-                        new TableFunctionSignature(TableDefinition.SPATIAL,
+                                new TableFunctionSignature(TableDefinition.SPATIAL,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY),
-                new TableFunctionSignature(TableDefinition.SPATIAL,
+                                new TableFunctionSignature(TableDefinition.SPATIAL,
                                 ScalarArgument.INT,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY),
-                new TableFunctionSignature(TableDefinition.SPATIAL,ScalarArgument.INT,ScalarArgument.INT,
+                                new TableFunctionSignature(TableDefinition.SPATIAL, ScalarArgument.INT, ScalarArgument.INT,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY,
                                 TableArgument.GEOMETRY)};
         }
-        
-        
 
         /**
          * Save data in writer

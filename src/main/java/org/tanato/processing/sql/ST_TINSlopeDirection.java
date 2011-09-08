@@ -41,6 +41,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import org.gdms.data.SQLDataSourceFactory;
+import org.gdms.data.types.GeometryDimensionConstraint;
 import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -91,7 +92,7 @@ public class ST_TINSlopeDirection extends AbstractScalarFunction {
         @Override
         public final Type getType(Type[] types) {
                 return TypeFactory.createType(Type.GEOMETRY, 
-                        new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING));
+                        new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_LINE));
         }
 
         @Override
@@ -110,7 +111,7 @@ public class ST_TINSlopeDirection extends AbstractScalarFunction {
                  new BasicFunctionSignature(
                         TypeFactory.createType(
                                 Type.GEOMETRY, 
-                                new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING)
+                                new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_LINE)
                         ),
                         ScalarArgument.GEOMETRY)};
         }

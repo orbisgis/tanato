@@ -46,6 +46,7 @@ import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import java.util.ArrayList;
 import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
+import org.gdms.data.types.GeometryDimensionConstraint;
 import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -84,7 +85,7 @@ public class ST_DropletLine extends ST_DropletAbstract {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(
                                         Type.GEOMETRY, 
-                                        new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING)
+                                        new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_LINE)
                                 ), 
                                 TypeFactory.createType(Type.INT)
                         },

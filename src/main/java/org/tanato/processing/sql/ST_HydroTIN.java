@@ -61,7 +61,7 @@ import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.types.Dimension3DConstraint;
-import org.gdms.data.types.GeometryTypeConstraint;
+import org.gdms.data.types.GeometryDimensionConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
 import org.gdms.data.values.Value;
@@ -126,7 +126,7 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                                         throw new IllegalArgumentException("The table must contains a weight field that defines rules weight.");
                                 }
                         }
-                        String name = sds instanceof DataSource ? ((DataSource)sds).getName() : dsf.getUID();
+                        String name = sds instanceof DataSource ? ((DataSource) sds).getName() : dsf.getUID();
                         long count = sds.getRowCount();
                         Geometry geom = null;
                         //We prepare our input structures.
@@ -136,7 +136,7 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                         boolean notSewer = false;
                         //We fill the input structures with our table.
                         for (long i = 0; i < count; i++) {
-                                geom = sds.getGeometry(i,geomIndex);
+                                geom = sds.getGeometry(i, geomIndex);
                                 double heightValue = sds.getFieldValue(i, heightIndex).getAsDouble();
                                 propertyValue = sds.getFieldValue(i, propertyIndex).getAsInt();
                                 if (gidIndex != -1) {
@@ -229,15 +229,15 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
         @Override
         public FunctionSignature[] getFunctionSignatures() {
                 return new FunctionSignature[]{
-                        new ExecutorFunctionSignature(),
-                        new ExecutorFunctionSignature(
+                                new ExecutorFunctionSignature(),
+                                new ExecutorFunctionSignature(
                                 TableArgument.GEOMETRY,
-                                ScalarArgument.BOOLEAN, 
+                                ScalarArgument.BOOLEAN,
                                 ScalarArgument.BOOLEAN,
                                 ScalarArgument.BOOLEAN)
-                };
+                        };
         }
-        
+
         /**
          * We add a geometry to the given list
          * @param points
@@ -322,9 +322,8 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(
                                 Type.GEOMETRY,
-                                new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING),
-                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
-                        ),
+                                new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_LINE),
+                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
@@ -382,9 +381,8 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(
                                 Type.GEOMETRY,
-                                new GeometryTypeConstraint(GeometryTypeConstraint.POINT), 
-                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
-                        ),
+                                new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_POINT),
+                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),
@@ -434,9 +432,8 @@ public class ST_HydroTIN extends AbstractExecutorFunction {
                 Metadata md = new DefaultMetadata(
                         new Type[]{TypeFactory.createType(
                                 Type.GEOMETRY,
-                                new GeometryTypeConstraint(GeometryTypeConstraint.POLYGON), 
-                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
-                        ),
+                                new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_POLYGON),
+                                new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.FLOAT),
                                 TypeFactory.createType(Type.INT),

@@ -61,6 +61,7 @@ import org.gdms.data.schema.DefaultMetadata;
 import org.gdms.data.schema.Metadata;
 import org.gdms.data.schema.MetadataUtilities;
 import org.gdms.data.types.Dimension3DConstraint;
+import org.gdms.data.types.GeometryDimensionConstraint;
 import org.gdms.data.types.GeometryTypeConstraint;
 import org.gdms.data.types.Type;
 import org.gdms.data.types.TypeFactory;
@@ -311,7 +312,7 @@ public class ST_TIN extends AbstractExecutorFunction {
                         new Type[]{
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
-                                        new GeometryTypeConstraint(GeometryTypeConstraint.LINESTRING), 
+                                        new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_LINE),
                                         new Dimension3DConstraint(3)
                                 ),
                                 TypeFactory.createType(Type.INT),
@@ -356,7 +357,7 @@ public class ST_TIN extends AbstractExecutorFunction {
                         new Type[]{
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
-                                        new GeometryTypeConstraint(GeometryTypeConstraint.POINT),
+                                        new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_POINT),
                                         new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)
                                 ),
                                 TypeFactory.createType(Type.INT)},
@@ -393,7 +394,7 @@ public class ST_TIN extends AbstractExecutorFunction {
                         new Type[]{
                                 TypeFactory.createType(
                                         Type.GEOMETRY, 
-                                        new GeometryTypeConstraint(GeometryTypeConstraint.POLYGON), 
+                                        new GeometryDimensionConstraint(GeometryDimensionConstraint.DIMENSION_POLYGON),
                                         new Dimension3DConstraint(Dimension3DConstraint.DIMENSION_3D)),
                                 TypeFactory.createType(Type.INT),
                                 TypeFactory.createType(Type.INT),
